@@ -1,0 +1,82 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoffeeApp - Gestión de Recetas</title>
+    <link rel="stylesheet" href="/static/fonts/fonts.css">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --accent-color: #fbbf24;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: 'Outfit', sans-serif;
+            padding: 2rem;
+        }
+
+        .container { max-width: 900px; margin: 0 auto; }
+        
+        .recipe-card {
+            background: var(--card-bg);
+            border-radius: 1rem;
+            border: 1px solid var(--glass-border);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .ingredient-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h1>Configuración de Recetas (BOM)</h1>
+            <a href="/" style="color: white; text-decoration: none;">← Volver</a>
+        </header>
+
+        <div id="recipes-container">
+            <!-- Dinamico -->
+        </div>
+    </div>
+
+    <script>
+        async function loadRecipes() {
+            const response = await fetch('/recipes/data');
+            const data = await response.json();
+            const container = document.getElementById('recipes-container');
+            container.innerHTML = '';
+
+            for (const [product, ingredients] of Object.entries(data)) {
+                let ingredientsHtml = ingredients.map(i => `
+                    <div class="ingredient-row">
+                        <span>${i.name}</span>
+                        <span><strong>${i.qty}</strong> ${i.unit}</span>
+                    </div>
+                `).join('');
+
+                container.innerHTML += `
+                    <div class="recipe-card">
+                        <h2 style="color: var(--accent-color); margin-bottom: 1rem;">${product}</h2>
+                        <div>${ingredientsHtml}</div>
+                    </div>
+                `;
+            }
+        }
+        loadRecipes();
+    </script>
+</body>
+</html>
+

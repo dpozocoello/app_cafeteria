@@ -1,0 +1,81 @@
+/*
+ * CoffeeApp - Fuentes de Tipografía Local
+ * Outfit Variable Font — cargada localmente para funcionar sin internet
+ * Pesos disponibles: 300 (Light), 400 (Regular), 500 (Medium), 600 (SemiBold), 700 (Bold)
+ */
+
+/* ── Outfit: Peso 300 (Light) ─────────────────────────────────────────────── */
+@font-face {
+    font-family: 'Outfit';
+    font-style: normal;
+    font-weight: 300;
+    font-display: swap;
+    src: url('/static/fonts/Outfit-300-normal.woff2') format('woff2');
+}
+
+/* ── Outfit: Peso 400 (Regular) ────────────────────────────────────────────── */
+@font-face {
+    font-family: 'Outfit';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('/static/fonts/Outfit-400-normal.woff2') format('woff2');
+}
+
+/* ── Outfit: Peso 500 (Medium) ──────────────────────────────────────────────── */
+@font-face {
+    font-family: 'Outfit';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url('/static/fonts/Outfit-500-normal.woff2') format('woff2');
+}
+
+/* ── Outfit: Peso 600 (SemiBold) ────────────────────────────────────────────── */
+@font-face {
+    font-family: 'Outfit';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url('/static/fonts/Outfit-600-normal.woff2') format('woff2');
+}
+
+/* ── Outfit: Peso 700 (Bold) ────────────────────────────────────────────────── */
+@font-face {
+    font-family: 'Outfit';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('/static/fonts/Outfit-700-normal.woff2') format('woff2');
+}
+
+/*
+ * Tipografía por defecto del sistema
+ * Cascada: Outfit (local) → system-ui → sans-serif
+ */
+:root {
+    --font-primary: 'Outfit', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+}
+
+html, body {
+    font-family: var(--font-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
+
+/* Asegurar que todos los elementos heredan la fuente por defecto */
+*, *::before, *::after {
+    font-family: inherit;
+}
+
+/* Inputs, buttons y selects también usan la fuente del sistema */
+input, select, textarea, button {
+    font-family: var(--font-primary);
+}
+
+/* Code blocks mantienen fuente monoespaciada */
+code, pre, kbd, samp {
+    font-family: var(--font-mono);
+}

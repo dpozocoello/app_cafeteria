@@ -1,0 +1,451 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoffeeApp - Toma de Pedidos</title>
+    <link rel="stylesheet" href="/static/fonts/fonts.css">
+    <style>
+        :root{--bg:#020617;--sidebar:#0f172a;--card:rgba(30,41,59,.6);--accent:#fbbf24;--text:#f8fafc;--muted:#94a3b8;--border:rgba(255,255,255,.08);--success:#10b981;--danger:#ef4444;--info:#3b82f6;}
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+        body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);display:flex;height:100vh;overflow:hidden;}
+
+        /* ── Sidebar ── */
+        .sidebar{width:230px;background:var(--sidebar);border-right:1px solid var(--border);padding:1.2rem;display:flex;flex-direction:column;flex-shrink:0;gap:.2rem;}
+        .sidebar-logo{display:flex;align-items:center;gap:.6rem;margin-bottom:1.2rem;padding-bottom:1rem;border-bottom:1px solid var(--border);}
+        .sidebar-logo img{width:36px;border-radius:8px;}
+        .sidebar-brand{font-weight:700;color:var(--accent);font-size:.9rem;}
+        .nav-section{font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:.3rem .5rem;margin-top:.8rem;}
+        .nav-item{padding:.7rem .9rem;border-radius:9px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:9px;transition:all .15s;font-weight:500;font-size:.88rem;}
+        .nav-item:hover,.nav-item.active{background:rgba(251,191,36,.12);color:var(--accent);}
+        .sidebar-bottom{margin-top:auto;padding-top:1rem;display:flex;flex-direction:column;gap:.5rem;}
+        .btn-logout{background:rgba(255,255,255,.05);color:var(--muted);border:none;padding:.55rem;border-radius:8px;cursor:pointer;font-size:.82rem;width:100%;}
+
+        /* ── Layout principal ── */
+        .layout{flex:1;display:grid;grid-template-columns:1fr 380px;overflow:hidden;}
+
+        /* ── Panel izquierdo: Menú ── */
+        .menu-panel{display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--border);}
+        .menu-topbar{padding:1rem 1.5rem;background:var(--sidebar);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:1rem;flex-wrap:wrap;}
+        .menu-topbar h1{font-size:1.2rem;color:var(--accent);}
+
+        /* Selector de tipo de servicio */
+        .service-selector{display:flex;gap:.4rem;}
+        .svc-btn{padding:.45rem 1rem;border:2px solid var(--border);border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;font-weight:600;font-size:.82rem;transition:all .15s;}
+        .svc-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(251,191,36,.1);}
+
+        /* Tabs de categoría */
+        .category-tabs{display:flex;gap:.5rem;padding:.9rem 1.5rem;overflow-x:auto;border-bottom:1px solid var(--border);background:rgba(15,23,42,.6);}
+        .cat-tab{padding:.4rem .9rem;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:.82rem;white-space:nowrap;transition:all .15s;}
+        .cat-tab.active{background:var(--accent);color:#000;border-color:var(--accent);font-weight:700;}
+
+        /* Grid de productos */
+        .products-grid{flex:1;overflow-y:auto;padding:1.2rem 1.5rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:1rem;align-content:start;}
+        .product-card{background:var(--card);border:2px solid var(--border);border-radius:1rem;cursor:pointer;transition:all .18s;overflow:hidden;display:flex;flex-direction:column;}
+        .product-card:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow:0 8px 24px rgba(251,191,36,.15);}
+        .product-card:active{transform:scale(.97);}
+        .prod-img{width:100%;height:110px;object-fit:cover;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;font-size:2.5rem;}
+        .prod-img img{width:100%;height:100%;object-fit:cover;}
+        .prod-body{padding:.8rem;}
+        .prod-name{font-weight:600;font-size:.9rem;margin-bottom:.2rem;}
+        .prod-cat{font-size:.72rem;color:var(--muted);}
+        .prod-price{font-size:1.1rem;font-weight:700;color:var(--accent);margin-top:.5rem;}
+
+        /* ── Panel derecho: Carrito ── */
+        .cart-panel{display:flex;flex-direction:column;background:rgba(15,23,42,.8);}
+        .cart-header{padding:1rem 1.5rem;border-bottom:1px solid var(--border);background:var(--sidebar);}
+        .cart-header h2{font-size:1.1rem;}
+        .cart-meta{display:flex;gap:.5rem;margin-top:.6rem;flex-wrap:wrap;}
+        .cart-meta select,.cart-meta input{background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--text);padding:.4rem .7rem;border-radius:7px;font-size:.83rem;flex:1;min-width:120px;}
+        .cart-items{flex:1;overflow-y:auto;padding:.8rem 1rem;}
+        .cart-item{display:flex;align-items:center;gap:.7rem;padding:.7rem 0;border-bottom:1px solid var(--border);}
+        .cart-item:last-child{border-bottom:none;}
+        .cart-item-name{flex:1;font-size:.88rem;font-weight:600;}
+        .cart-item-price{font-size:.85rem;color:var(--muted);white-space:nowrap;}
+        .qty-ctrl{display:flex;align-items:center;gap:.3rem;}
+        .qty-btn{width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.08);color:var(--text);cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:background .15s;}
+        .qty-btn:hover{background:rgba(251,191,36,.2);color:var(--accent);}
+        .qty-num{width:24px;text-align:center;font-weight:700;}
+
+        /* Totales */
+        .cart-totals{padding:1rem;border-top:1px solid var(--border);background:var(--sidebar);}
+        .total-row{display:flex;justify-content:space-between;font-size:.88rem;margin-bottom:.4rem;color:var(--muted);}
+        .total-final{font-size:1.4rem;font-weight:700;color:var(--accent);}
+        .notes-area{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--text);padding:.5rem .7rem;border-radius:8px;font-size:.83rem;resize:none;height:56px;margin-bottom:.8rem;}
+        .cart-actions{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;}
+        .btn-send{padding:.85rem;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:.95rem;transition:all .18s;}
+        .btn-send.primary{background:var(--accent);color:#000;}
+        .btn-send.secondary{background:rgba(255,255,255,.07);color:var(--muted);}
+        .btn-send.primary:hover{box-shadow:0 0 20px rgba(251,191,36,.4);}
+
+        /* Empty state */
+        .cart-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);gap:.5rem;font-size:.9rem;}
+
+        /* Toast */
+        .toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);padding:.8rem 1.5rem;border-radius:10px;font-weight:600;z-index:9999;animation:toastIn .3s ease;background:#052e16;border:1px solid var(--success);color:var(--success);}
+        .toast.error{background:#450a0a;border-color:var(--danger);color:var(--danger);}
+        @keyframes toastIn{from{opacity:0;bottom:.5rem}to{opacity:1;bottom:1.5rem}}
+
+        /* Selector de mesa */
+        .mesa-badge{background:rgba(251,191,36,.15);border:1px solid var(--accent);color:var(--accent);padding:.25rem .7rem;border-radius:6px;font-size:.8rem;font-weight:700;}
+        .table-picker{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:.5rem;max-height:220px;overflow-y:auto;padding:.5rem;}
+        .tbl-btn{padding:.6rem .4rem;border-radius:8px;border:2px solid var(--border);background:transparent;color:var(--text);cursor:pointer;font-size:.8rem;font-weight:600;text-align:center;transition:all .15s;}
+        .tbl-btn.libre{border-color:var(--success);color:var(--success);}
+        .tbl-btn.ocupada{border-color:var(--danger);color:var(--danger);opacity:.6;}
+        .tbl-btn.selected{background:var(--success);color:#000;}
+        .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;align-items:center;justify-content:center;}
+        .modal-overlay.open{display:flex;}
+        .modal-box{background:#1e293b;border:1px solid var(--border);border-radius:1.2rem;padding:1.5rem;width:100%;max-width:480px;}
+        .modal-box h3{margin-bottom:1rem;color:var(--accent);}
+    </style>
+</head>
+<body>
+<!-- Sidebar -->
+<aside class="sidebar">
+    <div class="sidebar-logo">
+        <img src="/static/logo.png" alt="logo" onerror="this.style.display='none'">
+        <div>
+            <div class="sidebar-brand" id="sidebar-brand">CoffeeApp</div>
+            <div style="font-size:.68rem;color:var(--muted)">Sistema de Gestión</div>
+        </div>
+    </div>
+    <div class="nav-section">Operación</div>
+    <a href="/" class="nav-item">📊 Dashboard</a>
+    <a href="/pos" class="nav-item">🛒 Punto de Venta</a>
+    <a href="/pedidos" class="nav-item active">🍽️ Toma de Pedidos</a>
+    <a href="/comandas" class="nav-item">📝 Comandas KDS</a>
+    <div class="nav-section">Administración</div>
+    <a href="/inventory" class="nav-item">📦 Inventario</a>
+    <a href="/admin/recipes" class="nav-item">🧪 Recetas</a>
+    <a href="/admin/menus" class="nav-item">📋 Menús &amp; Mesas</a>
+    <div class="nav-section">Sistema</div>
+    <a href="/admin/profiles" class="nav-item">🎭 Perfiles</a>
+    <a href="/admin/users" class="nav-item">👥 Usuarios</a>
+    <a href="/admin/settings" class="nav-item">⚙️ Configuración</a>
+    <a href="/admin/migration" class="nav-item">🔄 Migración BD</a>
+    <a href="/audit" class="nav-item">🔍 Auditoría</a>
+    <div class="sidebar-bottom">
+        <button class="btn-logout" onclick="doLogout()">🚪 Cerrar Sesión</button>
+    </div>
+</aside>
+
+<!-- Layout principal -->
+<div class="layout">
+    <!-- Panel del Menú -->
+    <div class="menu-panel">
+        <div class="menu-topbar">
+            <h1>🍽️ Toma de Pedidos</h1>
+            <div class="service-selector">
+                <button class="svc-btn active" id="btn-MESA" onclick="setService('MESA')">🪑 Mesa</button>
+                <button class="svc-btn" id="btn-LLEVAR" onclick="setService('LLEVAR')">🛍️ Llevar</button>
+                <button class="svc-btn" id="btn-DOMICILIO" onclick="setService('DOMICILIO')">🛵 Domicilio</button>
+            </div>
+            <button onclick="openTablePicker()" class="svc-btn" id="mesa-badge-btn" style="border-color:var(--accent);color:var(--accent)">
+                🪑 <span id="selected-table-label">Seleccionar Mesa</span>
+            </button>
+        </div>
+
+        <!-- Tabs de categorías -->
+        <div class="category-tabs" id="category-tabs">
+            <button class="cat-tab active" onclick="filterCategory('Todos', this)">Todos</button>
+        </div>
+
+        <!-- Grid de productos -->
+        <div class="products-grid" id="products-grid">
+            <div style="color:var(--muted);grid-column:1/-1;text-align:center;padding:3rem">Cargando menú...</div>
+        </div>
+    </div>
+
+    <!-- Panel del Carrito -->
+    <div class="cart-panel">
+        <div class="cart-header">
+            <h2>📋 Pedido en Curso</h2>
+            <div class="cart-meta" id="cart-meta-fields">
+                <input id="customer-name" placeholder="Cliente (opcional)">
+            </div>
+        </div>
+
+        <div id="cart-empty" class="cart-empty">
+            <span style="font-size:3rem">🛒</span>
+            <p>Agrega productos del menú</p>
+        </div>
+        <div class="cart-items" id="cart-items" style="display:none"></div>
+
+        <div class="cart-totals" id="cart-totals" style="display:none">
+            <div class="total-row"><span>Subtotal</span><span id="t-sub">$0.00</span></div>
+            <div class="total-row" id="t-iva-row"><span>IVA (15%)</span><span id="t-iva">$0.00</span></div>
+            <div class="total-row" id="t-surch-row" style="display:none"><span>Recargo domicilio</span><span id="t-surch">$0.00</span></div>
+            <div class="total-row" style="margin-top:.4rem;padding-top:.4rem;border-top:1px solid var(--border);">
+                <span style="font-weight:700">TOTAL</span>
+                <span class="total-final" id="t-total">$0.00</span>
+            </div>
+            <textarea class="notes-area" id="order-notes" placeholder="Notas adicionales (alérgenos, extras...)"></textarea>
+            <div class="cart-actions">
+                <button class="btn-send secondary" onclick="clearCart()">🗑️ Limpiar</button>
+                <button class="btn-send primary" onclick="sendOrder()">✅ Enviar Pedido</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Selector de Mesa -->
+<div class="modal-overlay" id="table-modal">
+    <div class="modal-box">
+        <h3>🪑 Seleccionar Mesa</h3>
+        <div class="table-picker" id="table-picker"></div>
+        <div style="display:flex;gap:.5rem;margin-top:1rem">
+            <button class="btn-send secondary" style="flex:1" onclick="closeTableModal()">Cancelar</button>
+            <button class="btn-send primary" style="flex:1" onclick="confirmTable()">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ─── Estado global ────────────────────────────────────────────────────────────
+let allMenuItems = [];
+let allTables    = [];
+let cart         = [];   // [{product_id, name, price, qty, image_url}]
+let serviceType  = "MESA";
+let selectedTableId   = null;
+let selectedTableNum  = null;
+let tempSelectedId    = null;
+let currentCategory   = "Todos";
+const IVA = 0.15;
+
+// ─── Inicialización ───────────────────────────────────────────────────────────
+async function init() {
+    await Promise.all([loadMenus(), loadTables()]);
+    // Preseleccionar mesa por URL param
+    const params = new URLSearchParams(location.search);
+    if (params.get("tid")) selectTable(parseInt(params.get("tid")), params.get("mesa"));
+    // Cargar brand name
+    fetch('/api/settings/theme').then(r=>r.json()).then(t=>{
+        if(t.brand_name) document.getElementById('sidebar-brand').innerText = t.brand_name;
+    }).catch(()=>{});
+}
+
+async function loadMenus() {
+    const res = await fetch('/api/orders/menus');
+    const menus = await res.json();
+    allMenuItems = [];
+    const cats = new Set(["Todos"]);
+    menus.forEach(m => {
+        m.items.forEach(item => {
+            allMenuItems.push(item);
+            if(item.category) cats.add(item.category);
+        });
+    });
+    // Render category tabs
+    const tabsEl = document.getElementById('category-tabs');
+    tabsEl.innerHTML = [...cats].map(c =>
+        `<button class="cat-tab ${c==='Todos'?'active':''}" onclick="filterCategory('${c}',this)">${c}</button>`
+    ).join('');
+    renderProducts(allMenuItems);
+}
+
+async function loadTables() {
+    const res = await fetch('/api/orders/tables');
+    allTables = await res.json();
+}
+
+// ─── Render Productos ─────────────────────────────────────────────────────────
+function renderProducts(items) {
+    const grid = document.getElementById('products-grid');
+    if (!items.length) {
+        grid.innerHTML = '<div style="color:var(--muted);grid-column:1/-1;text-align:center;padding:3rem">Sin productos disponibles</div>';
+        return;
+    }
+    grid.innerHTML = items.map(p => `
+        <div class="product-card" onclick="addToCart(${p.product_id},'${escHtml(p.name)}',${p.price},'${p.image_url||''}')">
+            <div class="prod-img">
+                ${p.image_url
+                    ? `<img src="${p.image_url}" alt="${escHtml(p.name)}" onerror="this.parentNode.innerHTML='☕'">`
+                    : '☕'}
+            </div>
+            <div class="prod-body">
+                <div class="prod-name">${escHtml(p.name)}</div>
+                <div class="prod-cat">${p.category || ''}</div>
+                <div class="prod-price">$${p.price.toFixed(2)}</div>
+            </div>
+        </div>`).join('');
+}
+
+function filterCategory(cat, btn) {
+    currentCategory = cat;
+    document.querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('active'));
+    btn.classList.add('active');
+    const filtered = cat === 'Todos' ? allMenuItems : allMenuItems.filter(p => p.category === cat);
+    renderProducts(filtered);
+}
+
+// ─── Carrito ──────────────────────────────────────────────────────────────────
+function addToCart(id, name, price, imageUrl) {
+    const existing = cart.find(i => i.product_id === id);
+    if (existing) { existing.qty++; }
+    else          { cart.push({product_id:id, name, price, qty:1, image_url:imageUrl}); }
+    renderCart();
+    // Animación flash
+    const cards = document.querySelectorAll('.product-card');
+    cards.forEach(c => { if(c.innerText.includes(name)){ c.style.borderColor='var(--accent)'; setTimeout(()=>c.style.borderColor='',400); } });
+}
+
+function changeQty(id, delta) {
+    const item = cart.find(i => i.product_id === id);
+    if (!item) return;
+    item.qty += delta;
+    if (item.qty <= 0) cart = cart.filter(i => i.product_id !== id);
+    renderCart();
+}
+
+function clearCart() { cart = []; renderCart(); }
+
+function renderCart() {
+    const itemsEl  = document.getElementById('cart-items');
+    const emptyEl  = document.getElementById('cart-empty');
+    const totalsEl = document.getElementById('cart-totals');
+    if (!cart.length) {
+        emptyEl.style.display  = 'flex';
+        itemsEl.style.display  = 'none';
+        totalsEl.style.display = 'none';
+        return;
+    }
+    emptyEl.style.display  = 'none';
+    itemsEl.style.display  = 'block';
+    totalsEl.style.display = 'block';
+
+    itemsEl.innerHTML = cart.map(i => `
+        <div class="cart-item">
+            <div class="cart-item-name">${escHtml(i.name)}</div>
+            <div class="qty-ctrl">
+                <button class="qty-btn" onclick="changeQty(${i.product_id},-1)">−</button>
+                <span class="qty-num">${i.qty}</span>
+                <button class="qty-btn" onclick="changeQty(${i.product_id},1)">+</button>
+            </div>
+            <div class="cart-item-price">$${(i.price*i.qty).toFixed(2)}</div>
+        </div>`).join('');
+
+    const sub  = cart.reduce((s,i) => s + i.price * i.qty, 0);
+    const iva  = sub * IVA;
+    const total = sub + iva;
+    document.getElementById('t-sub').innerText   = `$${sub.toFixed(2)}`;
+    document.getElementById('t-iva').innerText   = `$${iva.toFixed(2)}`;
+    document.getElementById('t-total').innerText = `$${total.toFixed(2)}`;
+}
+
+// ─── Tipo de Servicio ─────────────────────────────────────────────────────────
+function setService(type) {
+    serviceType = type;
+    document.querySelectorAll('.svc-btn').forEach(b=>b.classList.remove('active'));
+    document.getElementById(`btn-${type}`)?.classList.add('active');
+
+    const metaEl = document.getElementById('cart-meta-fields');
+    const mesaBtn = document.getElementById('mesa-badge-btn');
+    if (type === 'MESA') {
+        mesaBtn.style.display = 'flex';
+        metaEl.innerHTML = `<input id="customer-name" placeholder="Cliente (opcional)">`;
+    } else if (type === 'DOMICILIO') {
+        mesaBtn.style.display = 'none';
+        metaEl.innerHTML = `
+            <input id="customer-name" placeholder="Nombre del cliente *" style="min-width:200px">
+            <input id="customer-address" placeholder="Dirección de entrega *" style="min-width:200px">`;
+    } else {
+        mesaBtn.style.display = 'none';
+        metaEl.innerHTML = `<input id="customer-name" placeholder="Nombre del cliente (opcional)">`;
+    }
+    document.getElementById('t-surch-row').style.display = type === 'DOMICILIO' ? 'flex' : 'none';
+}
+
+// ─── Mesa Picker ──────────────────────────────────────────────────────────────
+function openTablePicker() {
+    const picker = document.getElementById('table-picker');
+    picker.innerHTML = allTables.map(t => `
+        <button class="tbl-btn ${t.status.toLowerCase()} ${t.id===selectedTableId?'selected':''}"
+                onclick="tempSelectTable(${t.id},'${t.number}')" ${t.status==='OCUPADA'?'title="Ocupada"':''}>
+            <div style="font-size:1.1rem;font-weight:700">${t.number}</div>
+            <div style="font-size:.65rem">${t.zone||''}</div>
+            <div style="font-size:.65rem">${t.status}</div>
+        </button>`).join('');
+    document.getElementById('table-modal').classList.add('open');
+}
+
+function tempSelectTable(id, num) {
+    tempSelectedId = {id, num};
+    document.querySelectorAll('.tbl-btn').forEach(b=>b.classList.remove('selected'));
+    event.currentTarget.classList.add('selected');
+}
+function confirmTable() {
+    if (tempSelectedId) selectTable(tempSelectedId.id, tempSelectedId.num);
+    closeTableModal();
+}
+function selectTable(id, num) {
+    selectedTableId  = id;
+    selectedTableNum = num;
+    document.getElementById('selected-table-label').innerText = `Mesa ${num}`;
+}
+function closeTableModal() { document.getElementById('table-modal').classList.remove('open'); }
+
+// ─── Enviar Pedido ────────────────────────────────────────────────────────────
+async function sendOrder() {
+    if (!cart.length) return showToast('Agrega al menos un producto', true);
+    if (serviceType === 'MESA' && !selectedTableId)
+        return showToast('Selecciona una mesa primero', true);
+    if (serviceType === 'DOMICILIO' && !document.getElementById('customer-address')?.value)
+        return showToast('Ingresa la dirección de entrega', true);
+
+    const payload = {
+        service_type: serviceType,
+        table_id: serviceType === 'MESA' ? selectedTableId : null,
+        customer_name: document.getElementById('customer-name')?.value || 'CONSUMIDOR FINAL',
+        customer_address: document.getElementById('customer-address')?.value || null,
+        notes: document.getElementById('order-notes').value || null,
+        items: cart.map(i => ({product_id: i.product_id, quantity: i.qty})),
+        user_id: 1,
+        branch_id: 1,
+    };
+
+    try {
+        const res = await fetch('/api/orders', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+            showToast(`✅ Pedido ${data.order_number} enviado a cocina · Total: $${parseFloat(data.total).toFixed(2)}`);
+            clearCart();
+            selectedTableId = null;
+            selectedTableNum = null;
+            document.getElementById('selected-table-label').innerText = 'Seleccionar Mesa';
+            await loadTables();
+        } else {
+            showToast(data.detail || 'Error al enviar pedido', true);
+        }
+    } catch(e) {
+        showToast('Error de conexión', true);
+    }
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function escHtml(s) { return s.replace(/[<>&"']/g, c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function showToast(msg, isError=false) {
+    document.querySelectorAll('.toast').forEach(t=>t.remove());
+    const t = document.createElement('div');
+    t.className = 'toast' + (isError ? ' error' : '');
+    t.innerText = msg;
+    document.body.appendChild(t);
+    setTimeout(()=>t.remove(), 4000);
+}
+
+function doLogout() {
+    const tk = localStorage.getItem('coffee_token');
+    if(tk) fetch('/api/auth/logout',{method:'POST',headers:{'Authorization':`Bearer ${tk}`}});
+    localStorage.removeItem('coffee_token');
+    window.location.href = '/login';
+}
+
+init();
+</script>
+</body>
+</html>
+

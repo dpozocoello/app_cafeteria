@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+pydantic
+sqlalchemy[postgresql] # Para cuando migres a Postgres
+python-multipart
+lxml # Para generacion de XML del SRI
+cryptography # Para manejo de certificados .p12

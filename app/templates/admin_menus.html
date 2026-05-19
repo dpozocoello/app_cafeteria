@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoffeeApp - Gestión de Menús y Mesas</title>
+    <link rel="stylesheet" href="/static/fonts/fonts.css">
+    <style>
+        :root{--bg:#020617;--sidebar:#0f172a;--card:rgba(30,41,59,.5);--accent:#fbbf24;--text:#f8fafc;--muted:#94a3b8;--border:rgba(255,255,255,.07);--success:#10b981;--danger:#ef4444;--info:#3b82f6;}
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+        body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;}
+        .sidebar{width:240px;background:var(--sidebar);border-right:1px solid var(--border);padding:1.5rem;display:flex;flex-direction:column;flex-shrink:0;}
+        .sidebar-logo{display:flex;align-items:center;gap:.7rem;margin-bottom:2rem;}
+        .sidebar-logo img{width:40px;border-radius:8px;}
+        .nav-item{padding:.8rem 1rem;border-radius:10px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:10px;margin-bottom:.3rem;transition:all .2s;font-weight:500;}
+        .nav-item:hover,.nav-item.active{background:rgba(251,191,36,.12);color:var(--accent);}
+        .main{flex:1;padding:2rem;overflow-y:auto;}
+        .tabs{display:flex;gap:.5rem;margin-bottom:2rem;}
+        .tab{padding:.6rem 1.5rem;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-weight:600;transition:all .2s;}
+        .tab.active{background:var(--accent);color:#000;border-color:var(--accent);}
+        .section{display:none;}.section.active{display:block;}
+        .page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;}
+        h2{font-size:1.4rem;}
+        .card{background:var(--card);border:1px solid var(--border);border-radius:1rem;padding:1.2rem;margin-bottom:1rem;}
+        .menu-card{display:flex;justify-content:space-between;align-items:flex-start;}
+        .menu-items-preview{font-size:.8rem;color:var(--muted);margin-top:.4rem;}
+        .btn{padding:.5rem 1rem;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:.9rem;}
+        .btn-primary{background:var(--accent);color:#000;}
+        .btn-edit{background:rgba(59,130,246,.2);color:var(--info);}
+        .btn-delete{background:rgba(239,68,68,.2);color:var(--danger);}
+        .btn-sm{padding:.3rem .7rem;font-size:.8rem;}
+        .table-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:1rem;margin-top:1rem;}
+        .table-card{background:var(--card);border:2px solid var(--border);border-radius:1rem;padding:1.2rem;text-align:center;cursor:pointer;transition:all .2s;}
+        .table-card.libre{border-color:var(--success);}
+        .table-card.ocupada{border-color:var(--danger);background:rgba(239,68,68,.08);}
+        .table-card.reservada{border-color:var(--accent);}
+        .table-number{font-size:2rem;font-weight:700;}
+        .table-status{font-size:.75rem;margin-top:.3rem;text-transform:uppercase;letter-spacing:1px;}
+        /* Config domicilio */
+        .config-row{display:flex;align-items:center;gap:1rem;padding:1rem;background:var(--card);border:1px solid var(--border);border-radius:1rem;margin-bottom:.8rem;}
+        .config-row label{color:var(--muted);font-size:.85rem;white-space:nowrap;}
+        .config-row input{background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--text);padding:.5rem;border-radius:8px;width:100px;}
+        /* Modal */
+        .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;align-items:center;justify-content:center;}
+        .modal-overlay.open{display:flex;}
+        .modal{background:#1e293b;border:1px solid var(--border);border-radius:1.2rem;padding:2rem;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;}
+        .modal h3{margin-bottom:1.2rem;}
+        .form-group{display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem;}
+        label{font-size:.85rem;color:var(--muted);}
+        input,select{background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--text);padding:.6rem .8rem;border-radius:8px;font-size:.95rem;width:100%;}
+        .product-checkbox-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;max-height:200px;overflow-y:auto;margin-top:.5rem;}
+        .product-check{display:flex;align-items:center;gap:.5rem;padding:.4rem;border-radius:6px;background:rgba(255,255,255,.04);}
+        .product-check input{width:auto;}
+        .modal-footer{display:flex;gap:1rem;justify-content:flex-end;margin-top:1.5rem;}
+        .btn-cancel{background:rgba(255,255,255,.07);color:var(--muted);}
+        /* Ítems del menú con imagen */
+        .menu-items-table{width:100%;border-collapse:collapse;margin-top:.8rem;}
+        .menu-items-table th{padding:.5rem .7rem;font-size:.72rem;color:var(--muted);text-transform:uppercase;border-bottom:1px solid var(--border);text-align:left;}
+        .menu-items-table td{padding:.55rem .7rem;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle;font-size:.88rem;}
+        .dish-thumb{width:48px;height:48px;border-radius:8px;object-fit:cover;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:1.4rem;}
+        .dish-thumb img{width:48px;height:48px;border-radius:8px;object-fit:cover;}
+        .upload-zone{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .6rem;border:1px dashed var(--border);border-radius:7px;cursor:pointer;font-size:.75rem;color:var(--muted);transition:all .2s;}
+        .upload-zone:hover{border-color:var(--accent);color:var(--accent);}
+        /* QR modal */
+        .qr-modal-box{background:#1e293b;border:1px solid var(--border);border-radius:1.2rem;padding:2rem;text-align:center;width:320px;}
+        .qr-modal-box img{border-radius:1rem;width:200px;margin:1rem 0;}
+        /* Disponibilidad badge */
+        .avail-on{color:var(--success);font-size:.75rem;font-weight:600;}
+        .avail-off{color:var(--danger);font-size:.75rem;font-weight:600;}
+        /* Toast */
+        .toast{position:fixed;bottom:1.5rem;right:1.5rem;padding:.8rem 1.2rem;border-radius:10px;font-weight:600;z-index:9999;background:#052e16;border:1px solid var(--success);color:var(--success);}
+        .toast.error{background:#450a0a;border-color:var(--danger);color:var(--danger);}
+    </style>
+</head>
+<body>
+<div class="sidebar">
+    <div class="sidebar-logo"><img src="/static/logo.png" alt="logo" onerror="this.style.display='none'"><div><div style="font-weight:700;color:var(--accent);font-size:.9rem">CoffeeApp</div><div style="font-size:.7rem;color:var(--muted)">Sistema de Gestión</div></div></div>
+    <div style="font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:.3rem .5rem;margin-top:.3rem">Operación</div>
+    <a href="/" class="nav-item">📊 Dashboard</a>
+    <a href="/pos" class="nav-item">🛒 Punto de Venta</a>
+    <a href="/comandas" class="nav-item">📝 Comandas</a>
+    <a href="/pedidos" class="nav-item">🍽️ Toma de Pedidos</a>
+    <div style="font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:.3rem .5rem;margin-top:.8rem">Administración</div>
+    <a href="/inventory" class="nav-item">📦 Inventario</a>
+    <a href="/admin/recipes" class="nav-item">🧪 Recetas</a>
+    <a href="/admin/menus" class="nav-item active">📋 Menús &amp; Mesas</a>
+    <div style="font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:.3rem .5rem;margin-top:.8rem">Sistema</div>
+    <a href="/admin/profiles" class="nav-item">🎭 Perfiles</a>
+    <a href="/admin/users" class="nav-item">👥 Usuarios</a>
+    <a href="/admin/settings" class="nav-item">⚙️ Configuración</a>
+    <a href="/admin/migration" class="nav-item">🔄 Migración BD</a>
+    <a href="/audit" class="nav-item">🔍 Auditoría</a>
+    <div style="margin-top:auto;padding-top:1rem">
+        <button class="btn" style="width:100%;background:rgba(255,255,255,.06);color:var(--muted);border:none;padding:.6rem;border-radius:8px;cursor:pointer;font-size:.85rem" onclick="doLogout()">🚪 Cerrar Sesión</button>
+    </div>
+</div>
+
+<div class="main">
+    <div class="tabs">
+        <button class="tab active" onclick="showTab('menus', this)">📋 Menús</button>
+        <button class="tab" onclick="showTab('tables', this)">🪑 Mesas</button>
+        <button class="tab" onclick="showTab('delivery', this)">🛵 Domicilio</button>
+    </div>
+
+    <!-- TAB: MENÚS -->
+    <div class="section active" id="sec-menus">
+        <div class="page-header">
+            <h2>Gestión de Menús</h2>
+            <button class="btn btn-primary" onclick="openMenuModal()">+ Nuevo Menú</button>
+        </div>
+        <div id="menus-list"></div>
+    </div>
+
+    <!-- TAB: MESAS -->
+    <div class="section" id="sec-tables">
+        <div class="page-header">
+            <h2>Distribución de Mesas</h2>
+            <button class="btn btn-primary" onclick="openTableModal()">+ Nueva Mesa</button>
+        </div>
+        <p style="color:var(--muted);font-size:.9rem;margin-bottom:1rem">Haz clic en una mesa para cambiar su estado.</p>
+        <div class="table-grid" id="tables-grid"></div>
+    </div>
+
+    <!-- TAB: DOMICILIO -->
+    <div class="section" id="sec-delivery">
+        <div class="page-header"><h2>Configuración de Servicio a Domicilio</h2></div>
+        <div class="config-row">
+            <label>Activo</label>
+            <select id="del-active" style="width:120px"><option value="true">Sí</option><option value="false">No</option></select>
+        </div>
+        <div class="config-row">
+            <label>% de Recargo</label>
+            <input id="del-pct" type="number" step="0.01" placeholder="10.00">
+            <span style="color:var(--muted);font-size:.85rem">% sobre el subtotal</span>
+        </div>
+        <div class="config-row">
+            <label>Factor Base ($)</label>
+            <input id="del-factor" type="number" step="0.01" placeholder="1.50">
+            <span style="color:var(--muted);font-size:.85rem">Mínimo a cobrar (Ej: $1.50)</span>
+        </div>
+        <div class="config-row">
+            <label>Descripción</label>
+            <input id="del-desc" placeholder="Servicio a domicilio sector Norte">
+        </div>
+        <div style="background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);border-radius:1rem;padding:1rem;margin:1rem 0;font-size:.9rem;color:var(--muted)">
+            <strong style="color:var(--accent)">Fórmula de cálculo:</strong><br>
+            <code>recargo = max(subtotal × porcentaje/100, factor_base)</code><br>
+            Si el recargo porcentual es menor al factor base, se aplica el factor base.
+        </div>
+        <button class="btn btn-primary" onclick="saveDeliveryConfig()">💾 Guardar Configuración</button>
+        <div id="del-preview" style="margin-top:1rem;"></div>
+    </div>
+</div>
+
+<!-- MODAL MENÚ -->
+<div class="modal-overlay" id="menu-modal">
+    <div class="modal">
+        <h3 id="menu-modal-title">Nuevo Menú</h3>
+        <input type="hidden" id="menu-edit-id">
+        <div class="form-group"><label>Nombre del Menú *</label><input id="m-name" placeholder="Ej: Desayunos, Cafetería Tarde"></div>
+        <div class="form-group"><label>Descripción</label><input id="m-desc" placeholder="Descripción opcional"></div>
+        <div class="form-group">
+            <label>Productos del Menú</label>
+            <div class="product-checkbox-grid" id="menu-products-check"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-cancel" onclick="document.getElementById('menu-modal').classList.remove('open')">Cancelar</button>
+            <button class="btn btn-primary" onclick="saveMenu()">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL MESA -->
+<div class="modal-overlay" id="table-modal">
+    <div class="modal">
+        <h3 id="table-modal-title">Nueva Mesa</h3>
+        <input type="hidden" id="table-edit-id">
+        <div class="form-group"><label>Número / Nombre *</label><input id="t-number" placeholder="Ej: 1, A1, VIP"></div>
+        <div class="form-group"><label>Capacidad (personas)</label><input id="t-capacity" type="number" value="4"></div>
+        <div class="form-group"><label>Zona</label><select id="t-zone"><option value="">Sin zona</option><option>Interior</option><option>Terraza</option><option>Barra</option><option>VIP</option></select></div>
+        <div class="form-group"><label>Estado</label><select id="t-status"><option value="LIBRE">Libre</option><option value="OCUPADA">Ocupada</option><option value="RESERVADA">Reservada</option></select></div>
+        <div class="modal-footer">
+            <button class="btn btn-cancel" onclick="document.getElementById('table-modal').classList.remove('open')">Cancelar</button>
+            <button class="btn btn-primary" onclick="saveTable()">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ─── Tabs ───────────────────────────────────────────────────────────────────
+function showTab(name, btn) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(`sec-${name}`).classList.add('active');
+    btn.classList.add('active');
+    if (name === 'menus') loadMenus();
+    if (name === 'tables') loadTables();
+    if (name === 'delivery') loadDelivery();
+}
+
+// ─── MENÚS ──────────────────────────────────────────────────────────────────
+let allProducts = [];
+async function loadMenus() {
+    const [menusRes, prodsRes] = await Promise.all([fetch('/api/menus/'), fetch('/api/products/')]);
+    const menus = await menusRes.json();
+    allProducts = await prodsRes.json();
+    const container = document.getElementById('menus-list');
+    if (!menus.length) {
+        container.innerHTML = '<p style="color:var(--muted);text-align:center;padding:2rem">No hay menús creados.</p>';
+        return;
+    }
+    container.innerHTML = menus.map(m => {
+        const itemsTable = m.items.length ? `
+            <table class="menu-items-table">
+                <thead><tr><th>Foto</th><th>Producto</th><th>Categoría</th><th>Precio</th><th>Estado</th><th>Imagen</th></tr></thead>
+                <tbody>${m.items.map(it => {
+                    const thumb = it.image_url
+                        ? `<img src="${it.image_url}" alt="${it.product_name}" onerror="this.parentNode.innerHTML='🍽️'">`
+                        : '🍽️';
+                    const avail = it.is_available
+                        ? `<span class="avail-on" style="cursor:pointer" onclick="toggleAvail(${it.item_id})">✓ Disponible</span>`
+                        : `<span class="avail-off" style="cursor:pointer" onclick="toggleAvail(${it.item_id})">✗ Agotado</span>`;
+                    const delBtn = it.image_url
+                        ? `<button class="btn btn-delete btn-sm" style="margin-left:.3rem" onclick="removeDishImage(${it.product_id})">✕</button>`
+                        : '';
+                    return `<tr>
+                        <td><div class="dish-thumb">${thumb}</div></td>
+                        <td>${it.product_name}</td>
+                        <td style="color:var(--muted)">${it.category || '—'}</td>
+                        <td style="color:var(--accent);font-weight:600">$${parseFloat(it.price).toFixed(2)}</td>
+                        <td>${avail}</td>
+                        <td>
+                            <label class="upload-zone">
+                                📷 ${it.image_url ? 'Cambiar foto' : 'Subir foto'}
+                                <input type="file" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="uploadDishImage(${it.product_id},this)">
+                            </label>${delBtn}
+                        </td>
+                    </tr>`;
+                }).join('')}</tbody>
+            </table>` : '<div style="color:var(--muted);font-size:.82rem;margin-top:.4rem">Sin productos asignados</div>';
+
+        return `
+        <div class="card">
+            <div class="menu-card" style="align-items:flex-start;gap:1rem">
+                <div style="flex:1;min-width:0">
+                    <div style="display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;margin-bottom:.4rem">
+                        <strong style="font-size:1.05rem">${m.name}</strong>
+                        <span style="font-size:.72rem;padding:.18rem .55rem;background:${m.is_active?'rgba(16,185,129,.15)':'rgba(255,255,255,.07)'};color:${m.is_active?'var(--success)':'var(--muted)'};border-radius:20px">${m.is_active ? 'Activo' : 'Inactivo'}</span>
+                        <span style="font-size:.75rem;color:var(--muted)">${m.items.length} producto${m.items.length!==1?'s':''}</span>
+                    </div>
+                    <div style="font-size:.82rem;color:var(--muted);margin-bottom:.6rem">${m.description || ''}</div>
+                    ${itemsTable}
+                </div>
+                <div style="display:flex;flex-direction:column;gap:.4rem;flex-shrink:0">
+                    <button class="btn btn-edit btn-sm" onclick="editMenu(${m.id})">✏️ Editar</button>
+                    <button class="btn btn-delete btn-sm" onclick="deleteMenu(${m.id})">🗑️ Eliminar</button>
+                    <button class="btn btn-sm" style="background:rgba(16,185,129,.15);color:var(--success)" onclick="showMenuQR(${m.id},'${m.name.replace(/'/g,"\\'")}')">🔳 QR Menú</button>
+                    <a href="/menu-digital/${m.id}" target="_blank" class="btn btn-sm" style="background:rgba(59,130,246,.15);color:var(--info);text-decoration:none">🌐 Ver Digital</a>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+
+async function openMenuModal(menu = null) {
+    if (!allProducts.length) { const r = await fetch('/api/products/'); allProducts = await r.json(); }
+    const sellable = allProducts.filter(p => p.is_ready_to_sell);
+    const selectedIds = menu ? menu.items.map(i => i.product_id) : [];
+    document.getElementById('menu-modal-title').innerText = menu ? 'Editar Menú' : 'Nuevo Menú';
+    document.getElementById('menu-edit-id').value = menu?.id || '';
+    document.getElementById('m-name').value = menu?.name || '';
+    document.getElementById('m-desc').value = menu?.description || '';
+    document.getElementById('menu-products-check').innerHTML = sellable.map(p =>
+        `<label class="product-check"><input type="checkbox" value="${p.id}" ${selectedIds.includes(p.id)?'checked':''}> ${p.name}</label>`
+    ).join('');
+    document.getElementById('menu-modal').classList.add('open');
+}
+
+async function editMenu(id) {
+    const res = await fetch(`/api/menus/${id}`);
+    const menu = await res.json();
+    openMenuModal(menu);
+}
+
+async function saveMenu() {
+    const id = document.getElementById('menu-edit-id').value;
+    const productIds = [...document.querySelectorAll('#menu-products-check input:checked')].map(cb => parseInt(cb.value));
+    const payload = { name: document.getElementById('m-name').value, description: document.getElementById('m-desc').value, is_active: true, product_ids: productIds };
+    const url = id ? `/api/menus/${id}` : '/api/menus/';
+    const method = id ? 'PUT' : 'POST';
+    const res = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    if (res.ok) { document.getElementById('menu-modal').classList.remove('open'); loadMenus(); }
+}
+
+async function deleteMenu(id) {
+    if (!confirm('¿Eliminar este menú?')) return;
+    await fetch(`/api/menus/${id}`, { method: 'DELETE' });
+    loadMenus();
+}
+
+// ─── MESAS ──────────────────────────────────────────────────────────────────
+async function loadTables() {
+    const res = await fetch('/api/tables');
+    const tables = await res.json();
+    const grid = document.getElementById('tables-grid');
+    grid.innerHTML = tables.map(t => `
+        <div class="table-card ${t.status.toLowerCase()}">
+            <div onclick="editTable(${t.id})" style="cursor:pointer">
+                <div class="table-number">${t.number}</div>
+                <div>${t.zone || 'Mesa'}</div>
+                <div>👥 ${t.capacity} pax</div>
+                <div class="table-status" style="color:${t.status==='LIBRE'?'var(--success)':t.status==='OCUPADA'?'var(--danger)':'var(--accent)'}">${t.status}</div>
+            </div>
+            <button onclick="event.stopPropagation();showTableQR(${t.id},'${t.number}')"
+                style="margin-top:.6rem;width:100%;padding:.3rem;border:1px solid rgba(255,255,255,.12);border-radius:6px;background:rgba(255,255,255,.05);color:var(--muted);cursor:pointer;font-size:.72rem">
+                🔳 QR Mesa
+            </button>
+        </div>`).join('') || '<p style="color:var(--muted);padding:2rem">No hay mesas registradas.</p>';
+}
+
+function openTableModal() {
+    document.getElementById('table-modal-title').innerText = 'Nueva Mesa';
+    document.getElementById('table-edit-id').value = '';
+    ['t-number','t-zone'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('t-capacity').value = 4;
+    document.getElementById('t-status').value = 'LIBRE';
+    document.getElementById('table-modal').classList.add('open');
+}
+
+async function editTable(id) {
+    const res = await fetch('/api/tables');
+    const tables = await res.json();
+    const t = tables.find(x => x.id === id);
+    document.getElementById('table-modal-title').innerText = 'Editar Mesa';
+    document.getElementById('table-edit-id').value = t.id;
+    document.getElementById('t-number').value = t.number;
+    document.getElementById('t-capacity').value = t.capacity;
+    document.getElementById('t-zone').value = t.zone || '';
+    document.getElementById('t-status').value = t.status;
+    document.getElementById('table-modal').classList.add('open');
+}
+
+async function saveTable() {
+    const id = document.getElementById('table-edit-id').value;
+    const payload = { number: document.getElementById('t-number').value, capacity: parseInt(document.getElementById('t-capacity').value), status: document.getElementById('t-status').value, zone: document.getElementById('t-zone').value || null };
+    const url = id ? `/api/tables/${id}` : '/api/tables';
+    const method = id ? 'PUT' : 'POST';
+    const res = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    if (res.ok) { document.getElementById('table-modal').classList.remove('open'); loadTables(); }
+    else { const err = await res.json(); alert('Error: ' + (err.detail || JSON.stringify(err))); }
+}
+
+// ─── DOMICILIO ──────────────────────────────────────────────────────────────
+async function loadDelivery() {
+    const res = await fetch('/api/service-config');
+    const configs = await res.json();
+    const dom = configs.find(c => c.service_type === 'DOMICILIO');
+    if (dom) {
+        document.getElementById('del-active').value = dom.is_active ? 'true' : 'false';
+        document.getElementById('del-pct').value = dom.surcharge_percentage;
+        document.getElementById('del-factor').value = dom.base_factor;
+        document.getElementById('del-desc').value = dom.description || '';
+    }
+}
+
+async function saveDeliveryConfig() {
+    const payload = {
+        service_type: 'DOMICILIO',
+        is_active: document.getElementById('del-active').value === 'true',
+        surcharge_percentage: parseFloat(document.getElementById('del-pct').value) || 0,
+        base_factor: parseFloat(document.getElementById('del-factor').value) || 0,
+        description: document.getElementById('del-desc').value
+    };
+    const res = await fetch('/api/service-config/DOMICILIO', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    if (res.ok) {
+        alert('✅ Configuración de domicilio guardada');
+        // Mostrar simulación de cálculo
+        const subtotal = 10.0;
+        const preview = await fetch(`/api/service-config/calculate-surcharge?subtotal=${subtotal}`);
+        const data = await preview.json();
+        document.getElementById('del-preview').innerHTML = `
+            <div style="background:rgba(255,255,255,.05);border-radius:1rem;padding:1rem;font-size:.9rem">
+                <strong>Simulación para pedido de $${subtotal}:</strong><br>
+                Recargo aplicado: <strong style="color:var(--accent)">$${data.surcharge}</strong>
+                (Criterio: ${data.breakdown?.applied || '—'})
+            </div>`;
+    }
+}
+
+// Init
+loadMenus();
+
+function doLogout() {
+    const t = localStorage.getItem('coffee_token');
+    if (t) fetch('/api/auth/logout', { method: 'POST', headers: { 'Authorization': `Bearer ${t}` } });
+    localStorage.removeItem('coffee_token');
+    window.location.href = '/login';
+}
+
+// ─── Imagen de plato (sube a nivel de producto) ─────────────────────────────
+async function uploadDishImage(productId, input) {
+    const file = input.files[0];
+    if (!file) return;
+    // Validar tamaño (máx 5MB)
+    if (file.size > 5 * 1024 * 1024) { showToast('La imagen supera los 5MB', true); return; }
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+        showToast('⏳ Subiendo imagen...');
+        const res = await fetch(`/api/products/${productId}/image`, { method: 'POST', body: fd });
+        if (res.ok) {
+            const d = await res.json();
+            showToast('✅ Imagen guardada correctamente');
+            loadMenus();
+        } else {
+            const e = await res.json();
+            showToast(e.detail || 'Error al subir imagen', true);
+        }
+    } catch(e) { showToast('Error de conexión: ' + e.message, true); }
+}
+
+async function removeDishImage(productId) {
+    if (!confirm('¿Eliminar la imagen de este producto?')) return;
+    const res = await fetch(`/api/products/${productId}/image`, { method: 'DELETE' });
+    if (res.ok) { showToast('✅ Imagen eliminada'); loadMenus(); }
+    else { showToast('Error al eliminar imagen', true); }
+}
+
+async function toggleAvail(itemId) {
+    const res = await fetch(`/api/menus/items/${itemId}/availability`, { method: 'PUT' });
+    if (res.ok) { const d = await res.json(); showToast(`Estado: ${d.is_available ? '✓ Disponible' : '✗ Agotado'}`); loadMenus(); }
+}
+
+// ─── QR de Menú ──────────────────────────────────────────────────────────────
+function showMenuQR(menuId, menuName) {
+    const qrUrl = `/api/menus/${menuId}/qr.png?t=${Date.now()}`;
+    document.getElementById('qr-title').innerText = `QR: ${menuName}`;
+    document.getElementById('qr-img').src = qrUrl;
+    document.getElementById('qr-link').href = `/menu-digital/${menuId}`;
+    document.getElementById('qr-download').href = qrUrl;
+    document.getElementById('qr-download').download = `menu-qr-${menuId}.png`;
+    document.getElementById('qr-modal').classList.add('open');
+}
+
+// ─── QR de Mesa ──────────────────────────────────────────────────────────────
+function showTableQR(tableId, tableNum) {
+    const qrUrl = `/api/qr/table/${tableId}.png?t=${Date.now()}`;
+    document.getElementById('qr-title').innerText = `QR: Mesa ${tableNum}`;
+    document.getElementById('qr-img').src = qrUrl;
+    document.getElementById('qr-link').href = `/pedidos?mesa=${tableNum}&tid=${tableId}`;
+    document.getElementById('qr-download').href = qrUrl;
+    document.getElementById('qr-download').download = `mesa-qr-${tableId}.png`;
+    document.getElementById('qr-modal').classList.add('open');
+}
+
+// ─── Toast ───────────────────────────────────────────────────────────────────
+function showToast(msg, isError = false) {
+    document.querySelectorAll('.toast').forEach(t => t.remove());
+    const t = document.createElement('div');
+    t.className = 'toast' + (isError ? ' error' : '');
+    t.innerText = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 4000);
+}
+</script>
+
+<!-- Modal QR compartido para Menú y Mesa -->
+<div class="modal-overlay" id="qr-modal">
+    <div class="qr-modal-box">
+        <h3 id="qr-title" style="color:var(--accent);margin-bottom:.5rem">Código QR</h3>
+        <img id="qr-img" src="" alt="QR Code" style="border-radius:1rem;width:200px;margin:1rem 0;background:#fff;padding:8px">
+        <div style="display:flex;flex-direction:column;gap:.5rem;margin-top:.5rem">
+            <a id="qr-link" href="#" target="_blank" class="btn" style="background:rgba(59,130,246,.2);color:var(--info);text-decoration:none;justify-content:center">🌐 Abrir enlace</a>
+            <a id="qr-download" href="#" class="btn" style="background:rgba(16,185,129,.2);color:var(--success);text-decoration:none;justify-content:center">⬇️ Descargar QR</a>
+            <button class="btn" style="background:rgba(255,255,255,.07);color:var(--muted)" onclick="window.open(document.getElementById('qr-img').src.replace('qr.png','page').replace('.png?','?').split('?')[0]+'/page','_blank')">🖨️ Imprimir</button>
+            <button class="btn" style="background:rgba(255,255,255,.07);color:var(--muted)" onclick="document.getElementById('qr-modal').classList.remove('open')">✕ Cerrar</button>
+        </div>
+    </div>
+</div>
+</body>
+</html>
