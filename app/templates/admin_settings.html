@@ -283,6 +283,86 @@
                 </div>
             </div>
         </div>
+
+        <!-- ═══ TAB: CORREO SMTP ══════════════════════════════════════════════════ -->
+        <div class="tab-section" id="tab-email">
+            <div class="flex-between mb-lg">
+                <h2>📧 Configuración de Correo SMTP</h2>
+                <div class="flex gap-sm">
+                    <button class="btn btn-ghost" onclick="testEmail()">🧪 Probar Conexión</button>
+                    <button class="btn btn-primary" onclick="saveEmail()">💾 Guardar</button>
+                </div>
+            </div>
+
+            <div class="card mb-lg">
+                <h3 class="mb-md">Servidor SMTP</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Proveedor</label>
+                        <select id="smtp-preset" onchange="applySmtpPreset()" style="width:100%;background:rgba(255,255,255,.05);border:1px solid var(--glass-border);color:var(--color-text);padding:.6rem;border-radius:8px">
+                            <option value="">-- Personalizado --</option>
+                            <option value="gmail">📧 Gmail (smtp.gmail.com)</option>
+                            <option value="outlook">📨 Outlook / Office365</option>
+                            <option value="yahoo">📩 Yahoo Mail</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Host SMTP</label>
+                        <input id="smtp-host" class="color-input" value="smtp.gmail.com" placeholder="smtp.gmail.com">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Puerto</label>
+                        <input id="smtp-port" class="color-input" type="number" value="587">
+                    </div>
+                    <div class="form-group">
+                        <label style="display:flex;align-items:center;gap:.5rem;margin-top:1.5rem">
+                            <input id="smtp-tls" type="checkbox" checked> Usar TLS/STARTTLS
+                        </label>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Usuario (email remitente)</label>
+                        <input id="smtp-user" class="color-input" type="email" placeholder="micorreo@gmail.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Contraseña / App Password</label>
+                        <input id="smtp-password" class="color-input" type="password" placeholder="App password de Gmail/Outlook">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nombre del remitente</label>
+                        <input id="smtp-from-name" class="color-input" placeholder="CoffeeApp">
+                    </div>
+                    <div class="form-group">
+                        <label>Email remitente (si difiere del usuario)</label>
+                        <input id="smtp-from-email" class="color-input" type="email" placeholder="noreply@micafe.com">
+                    </div>
+                </div>
+                <div id="test-result" style="margin-top:.8rem;display:none;padding:.8rem;border-radius:8px;font-size:.88rem"></div>
+            </div>
+
+            <div class="card">
+                <h3 class="mb-md">📜 Correo de Consentimiento GDPR / LOPDP</h3>
+                <p style="color:var(--color-muted);font-size:.85rem;margin-bottom:1rem">Se envía automáticamente al registrar un nuevo cliente con email en el Punto de Venta.</p>
+                <div class="form-group mb-md" style="display:flex;align-items:center;gap:.8rem">
+                    <input id="gdpr-enabled" type="checkbox" style="width:18px;height:18px">
+                    <label style="font-weight:600">Activar envío automático de correo GDPR</label>
+                </div>
+                <div class="form-group">
+                    <label>Asunto del correo</label>
+                    <input id="gdpr-subject" class="color-input" placeholder="Autorización para el tratamiento de sus datos personales">
+                </div>
+                <div class="form-group">
+                    <label>Cuerpo del correo (HTML) — Variables: <code style="color:var(--color-accent)">{{nombre}}</code>, <code style="color:var(--color-accent)">{{negocio}}</code>, <code style="color:var(--color-accent)">{{fecha}}</code>, <code style="color:var(--color-accent)">{{tipo_servicio}}</code></label>
+                    <textarea id="gdpr-body" style="width:100%;height:220px;background:rgba(255,255,255,.05);border:1px solid var(--glass-border);color:var(--color-text);padding:.8rem;border-radius:8px;font-family:monospace;font-size:.8rem;resize:vertical" placeholder="Deje vacío para usar la plantilla predeterminada"></textarea>
+                    <small style="color:var(--color-muted)">Deje vacío para usar la plantilla HTML predeterminada del sistema</small>
+                </div>
+            </div>
+        </div>
     </main>
 </div>
 
@@ -488,108 +568,6 @@ async function uploadLogo() {
     else showToast('❌ Error al subir el logo', true);
 }
 
-// ─── Toast ────────────────────────────────────────────────────────────────────
-function showToast(msg, isError = false) {
-    const toast = document.createElement('div');
-    toast.style.cssText = `position:fixed;bottom:2rem;right:2rem;padding:1rem 1.5rem;border-radius:12px;background:${isError?'#450a0a':'#052e16'};border:1px solid ${isError?'var(--color-danger)':'var(--color-success)'};color:${isError?'var(--color-danger)':'var(--color-success)'};z-index:9999;font-weight:600;animation:slideUp 0.3s ease`;
-    toast.innerText = msg;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 4000);
-}
-
-init();
-
-function doLogout() {
-    const t = localStorage.getItem('coffee_token');
-    if (t) fetch('/api/auth/logout', { method: 'POST', headers: { 'Authorization': `Bearer ${t}` } });
-    localStorage.removeItem('coffee_token');
-    window.location.href = '/login';
-}
-</div>
-
-<!-- ═══ TAB: CORREO SMTP ══════════════════════════════════════════════════ -->
-<div class="tab-section animate-in" id="tab-email" style="display:none">
-  <div class="flex-between mb-lg">
-    <h2>📧 Configuración de Correo SMTP</h2>
-    <div class="flex gap-sm">
-      <button class="btn btn-ghost" onclick="testEmail()">🧪 Probar Conexión</button>
-      <button class="btn btn-primary" onclick="saveEmail()">💾 Guardar</button>
-    </div>
-  </div>
-
-  <div class="card mb-lg">
-    <h3 class="mb-md">Servidor SMTP</h3>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Proveedor</label>
-        <select id="smtp-preset" onchange="applySmtpPreset()" style="width:100%;background:rgba(255,255,255,.05);border:1px solid var(--glass-border);color:var(--color-text);padding:.6rem;border-radius:8px">
-          <option value="">-- Personalizado --</option>
-          <option value="gmail">📧 Gmail (smtp.gmail.com)</option>
-          <option value="outlook">📨 Outlook / Office365</option>
-          <option value="yahoo">📩 Yahoo Mail</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Host SMTP</label>
-        <input id="smtp-host" class="color-input" value="smtp.gmail.com" placeholder="smtp.gmail.com">
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Puerto</label>
-        <input id="smtp-port" class="color-input" type="number" value="587">
-      </div>
-      <div class="form-group">
-        <label style="display:flex;align-items:center;gap:.5rem">
-          <input id="smtp-tls" type="checkbox" checked> Usar TLS/STARTTLS
-        </label>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Usuario (email remitente)</label>
-        <input id="smtp-user" class="color-input" type="email" placeholder="micorreo@gmail.com">
-      </div>
-      <div class="form-group">
-        <label>Contraseña / App Password</label>
-        <input id="smtp-password" class="color-input" type="password" placeholder="App password de Gmail/Outlook">
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Nombre del remitente</label>
-        <input id="smtp-from-name" class="color-input" placeholder="CoffeeApp">
-      </div>
-      <div class="form-group">
-        <label>Email remitente (si difiere del usuario)</label>
-        <input id="smtp-from-email" class="color-input" type="email" placeholder="noreply@micafe.com">
-      </div>
-    </div>
-    <div id="test-result" style="margin-top:.8rem;display:none;padding:.8rem;border-radius:8px;font-size:.88rem"></div>
-  </div>
-
-  <div class="card">
-    <h3 class="mb-md">📜 Correo de Consentimiento GDPR / LOPDP</h3>
-    <p style="color:var(--color-muted);font-size:.85rem;margin-bottom:1rem">Se envía automáticamente al registrar un nuevo cliente con email en el Punto de Venta.</p>
-    <div class="form-group mb-md" style="display:flex;align-items:center;gap:.8rem">
-      <input id="gdpr-enabled" type="checkbox" style="width:18px;height:18px">
-      <label style="font-weight:600">Activar envío automático de correo GDPR</label>
-    </div>
-    <div class="form-group">
-      <label>Asunto del correo</label>
-      <input id="gdpr-subject" class="color-input" placeholder="Autorización para el tratamiento de sus datos personales">
-    </div>
-    <div class="form-group">
-      <label>Cuerpo del correo (HTML) — Variables: <code style="color:var(--color-accent)">{{nombre}}</code>, <code style="color:var(--color-accent)">{{negocio}}</code>, <code style="color:var(--color-accent)">{{fecha}}</code>, <code style="color:var(--color-accent)">{{tipo_servicio}}</code></label>
-      <textarea id="gdpr-body" style="width:100%;height:220px;background:rgba(255,255,255,.05);border:1px solid var(--glass-border);color:var(--color-text);padding:.8rem;border-radius:8px;font-family:monospace;font-size:.8rem;resize:vertical" placeholder="Deje vacío para usar la plantilla predeterminada"></textarea>
-      <small style="color:var(--color-muted)">Deje vacío para usar la plantilla HTML predeterminada del sistema</small>
-    </div>
-  </div>
-</div>
-
-</div><!-- end main content -->
-
-<script>
 // ─── Email SMTP ───────────────────────────────────────────────────────────────
 function applySmtpPreset() {
     const preset = document.getElementById('smtp-preset').value;
@@ -619,7 +597,9 @@ async function loadEmailConfig() {
         if (d.gdpr_email_subject) document.getElementById('gdpr-subject').value = d.gdpr_email_subject;
         if (d.gdpr_email_body_html) document.getElementById('gdpr-body').value = d.gdpr_email_body_html;
         if (d.smtp_password_set) document.getElementById('smtp-password').placeholder = '(contraseña guardada - dejar vacío para no cambiar)';
-    } catch(e) {}
+    } catch(e) {
+        console.error(e);
+    }
 }
 
 async function saveEmail() {
@@ -664,12 +644,6 @@ async function testEmail() {
     resultEl.innerText = d.ok ? (d.message || '✅ Conexión exitosa') : ('❌ ' + (d.error || 'Error'));
 }
 
-// Cargar config al abrir el tab email
-const _origSwitchTab = window.switchTab;
-window.switchTab = function(tab, btn) {
-    if (_origSwitchTab) _origSwitchTab(tab, btn);
-    if (tab === 'email') loadEmailConfig();
-};
 
 // Toast
 function showToast(msg, isError = false) {
