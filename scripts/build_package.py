@@ -1,5 +1,5 @@
 """
-Script de empaquetado para distribución de YUQUI Cafetería.
+Script de empaquetado para distribución del Sistema POS.
 
 Crea dist_package/ con una copia limpia del proyecto y genera dist_package.zip.
 Excluye: __pycache__, .git, base de datos SQLite, diedcomp, archivos temporales.
@@ -88,7 +88,7 @@ def zip_directory(source: Path, zip_path: Path):
 
 def main():
     print("=" * 60)
-    print("  YUQUI — Generador de Paquete de Distribución")
+    print("  SISTEMA POS — Generador de Paquete de Distribución")
     print("=" * 60)
 
     # Limpiar salida previa

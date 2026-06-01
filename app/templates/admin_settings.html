@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CoffeeApp - Configuración del Sistema</title>
+    <title>Sistema POS - Configuración del Sistema</title>
     <link rel="stylesheet" href="/static/fonts/fonts.css">
     <link rel="stylesheet" href="/static/app.css">
     <style>
@@ -73,7 +73,7 @@
         <div class="sidebar-logo">
             <img id="sidebar-logo" src="/static/logo.png" alt="logo" onerror="this.style.display='none'">
             <div>
-                <div class="sidebar-brand" id="sidebar-brand">CoffeeApp</div>
+                <div class="sidebar-brand" id="sidebar-brand">Sistema POS</div>
                 <div class="sidebar-tagline" id="sidebar-tagline">Sistema de Gestión</div>
             </div>
         </div>
@@ -204,7 +204,7 @@
                 <h3 class="mb-md">📄 Configuración SQLite</h3>
                 <div class="form-group">
                     <label>Ruta del archivo .db</label>
-                    <input type="text" id="sqlite-path" value="./coffee_app_v2.db">
+                    <input type="text" id="sqlite-path" value="./pos_app.db">
                 </div>
                 <p class="text-muted text-sm">SQLite es ideal para desarrollo y entornos de una sola instancia. No requiere instalación.</p>
             </div>
@@ -217,7 +217,7 @@
                     <div class="form-group"><label>Puerto</label><input id="pg-port" value="5432" type="number"></div>
                 </div>
                 <div class="form-row">
-                    <div class="form-group"><label>Base de Datos</label><input id="pg-db" value="coffeeapp"></div>
+                    <div class="form-group"><label>Base de Datos</label><input id="pg-db" value="pos_app"></div>
                     <div class="form-group"><label>Usuario</label><input id="pg-user" value="postgres"></div>
                 </div>
                 <div class="form-group"><label>Contraseña</label><input id="pg-pass" type="password" placeholder="••••••••"></div>
@@ -231,7 +231,7 @@
                     <div class="form-group"><label>Puerto</label><input id="my-port" value="3306" type="number"></div>
                 </div>
                 <div class="form-row">
-                    <div class="form-group"><label>Base de Datos</label><input id="my-db" value="coffeeapp"></div>
+                    <div class="form-group"><label>Base de Datos</label><input id="my-db" value="pos_app"></div>
                     <div class="form-group"><label>Usuario</label><input id="my-user" value="root"></div>
                 </div>
                 <div class="form-group"><label>Contraseña</label><input id="my-pass" type="password" placeholder="••••••••"></div>
@@ -264,7 +264,7 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label>Razón Social (Oficial)</label>
-                            <input id="brand-business-name" placeholder="YUQUI S.A." value="">
+                            <input id="brand-business-name" placeholder="Empresa Modelo S.A." value="">
                         </div>
                         <div class="form-group">
                             <label>RUC (13 dígitos)</label>
@@ -303,7 +303,7 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label>Nombre Comercial</label>
-                            <input id="brand-name" placeholder="YUQUI - Piqueos & Cafeteria" value="">
+                            <input id="brand-name" placeholder="Sistema POS" value="">
                         </div>
                         <div class="form-group">
                             <label>Eslogan / Tagline</label>
@@ -459,7 +459,7 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>Nombre del remitente</label>
-                        <input id="smtp-from-name" class="color-input" placeholder="CoffeeApp">
+                        <input id="smtp-from-name" class="color-input" placeholder="Sistema POS">
                     </div>
                     <div class="form-group">
                         <label>Email remitente (si difiere del usuario)</label>
@@ -497,7 +497,7 @@
         <div class="form-group mb-md">
             <label>Sucursal</label>
             <select id="new-ep-branch" style="width:100%;background:rgba(255,255,255,.05);border:1px solid var(--color-border);color:var(--color-text);padding:.6rem;border-radius:8px">
-                <option value="1">Cafetería Central - YUQUI</option>
+                <option value="1">Sucursal Principal - POS</option>
             </select>
         </div>
         <div class="form-row">
@@ -992,9 +992,9 @@ function showToast(msg, isError = false) {
 init();
 
 function doLogout() {
-    const t = localStorage.getItem('coffee_token');
+    const t = localStorage.getItem('auth_token');
     if (t) fetch('/api/auth/logout', { method: 'POST', headers: { 'Authorization': `Bearer ${t}` } });
-    localStorage.removeItem('coffee_token');
+    localStorage.removeItem('auth_token');
     window.location.href = '/login';
 }
 </script>

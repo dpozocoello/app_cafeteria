@@ -61,7 +61,7 @@ class ReportService:
 
         # Pie de pagina
         c.setFont("Helvetica-Oblique", 9)
-        c.drawCentredString(width/2, 0.5*inch, "Documento de uso interno - Auditoria CoffeeApp")
+        c.drawCentredString(width/2, 0.5*inch, "Documento de uso interno - Auditoria Sistema POS")
 
         c.showPage()
         c.save()

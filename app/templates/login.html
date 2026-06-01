@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CoffeeApp - Iniciar Sesión</title>
+    <title>Sistema POS - Iniciar Sesión</title>
     <link rel="stylesheet" href="/static/fonts/fonts.css">
     <link rel="stylesheet" href="/static/app.css">
     <style>
@@ -57,7 +57,7 @@
     <div class="login-card">
         <div class="login-header">
             <img src="/static/logo.png" alt="Logo" onerror="this.style.display='none'">
-            <h1 id="brand-name">CoffeeApp</h1>
+            <h1 id="brand-name">Sistema POS</h1>
             <p>Sistema de Gestión · Acceso Seguro</p>
         </div>
 
@@ -119,8 +119,8 @@ async function doLogin(e) {
     const data = await res.json();
 
     if (res.ok) {
-        localStorage.setItem('coffee_token', data.access_token);
-        localStorage.setItem('coffee_user', JSON.stringify(data.user));
+        localStorage.setItem('auth_token', data.access_token);
+        localStorage.setItem('auth_user', JSON.stringify(data.user));
 
         if (data.user.must_change_password) {
             showWarn('⚠️ Debes cambiar tu contraseña antes de continuar.');

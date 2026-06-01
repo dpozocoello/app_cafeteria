@@ -25,7 +25,7 @@ MIGRATION_ORDER = [
 def build_url(config: dict) -> str:
     engine = config.get("engine", "sqlite").lower()
     if engine == "sqlite":
-        return f"sqlite:///{config.get('path', './coffee_app_v2.db')}"
+        return f"sqlite:///{config.get('path', './pos_app.db')}"
     elif engine == "postgresql":
         u, p = config["user"], config["password"]
         h, port, db = config["host"], config.get("port", 5432), config["database"]

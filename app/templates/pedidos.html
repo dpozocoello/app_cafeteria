@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CoffeeApp - Toma de Pedidos</title>
+    <title>Sistema POS - Toma de Pedidos</title>
     <link rel="stylesheet" href="/static/fonts/fonts.css">
     <style>
         :root{--bg:#020617;--sidebar:#0f172a;--card:rgba(30,41,59,.6);--accent:#fbbf24;--text:#f8fafc;--muted:#94a3b8;--border:rgba(255,255,255,.08);--success:#10b981;--danger:#ef4444;--info:#3b82f6;}
@@ -105,7 +105,7 @@
     <div class="sidebar-logo">
         <img src="/static/logo.png" alt="logo" onerror="this.style.display='none'">
         <div>
-            <div class="sidebar-brand" id="sidebar-brand">CoffeeApp</div>
+            <div class="sidebar-brand" id="sidebar-brand">Sistema POS</div>
             <div style="font-size:.68rem;color:var(--muted)">Sistema de Gestión</div>
         </div>
     </div>
@@ -461,9 +461,9 @@ function showToast(msg, isError=false) {
 }
 
 function doLogout() {
-    const tk = localStorage.getItem('coffee_token');
+    const tk = localStorage.getItem('auth_token');
     if(tk) fetch('/api/auth/logout',{method:'POST',headers:{'Authorization':`Bearer ${tk}`}});
-    localStorage.removeItem('coffee_token');
+    localStorage.removeItem('auth_token');
     window.location.href = '/login';
 }
 

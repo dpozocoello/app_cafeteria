@@ -26,7 +26,7 @@ class Company(Base):
     environment: Mapped[int] = mapped_column(default=1) # 1: Pruebas, 2: Producción
     logo_path: Mapped[Optional[str]] = mapped_column(String(255))
     
-    # Parámetros de Marca (YUQUI)
+    # Parámetros de Marca
     brand_personality: Mapped[Optional[str]] = mapped_column(String(255))
     brand_visuals: Mapped[Optional[str]] = mapped_column(String(255))
     brand_packaging: Mapped[Optional[str]] = mapped_column(String(255))

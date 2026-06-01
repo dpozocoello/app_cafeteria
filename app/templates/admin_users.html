@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CoffeeApp - Gestión de Usuarios</title>
+    <title>Sistema POS - Gestión de Usuarios</title>
     <link rel="stylesheet" href="/static/fonts/fonts.css">
     <link rel="stylesheet" href="/static/app.css">
     <style>
@@ -25,7 +25,7 @@
         <div class="sidebar-logo">
             <img src="/static/logo.png" alt="logo" onerror="this.style.display='none'">
             <div>
-                <div class="sidebar-brand" id="brand-name">CoffeeApp</div>
+                <div class="sidebar-brand" id="brand-name">Sistema POS</div>
                 <div class="sidebar-tagline">Sistema de Gestión</div>
             </div>
         </div>
@@ -212,7 +212,7 @@
 </div>
 
 <script>
-const TOKEN = localStorage.getItem('coffee_token');
+const TOKEN = localStorage.getItem('auth_token');
 const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` };
 
 let allUsers = [], roles = [], branches = [];
@@ -455,8 +455,8 @@ function switchTab(name, btn) {
 
 async function doLogout() {
     await fetch('/api/auth/logout', { method: 'POST', headers });
-    localStorage.removeItem('coffee_token');
-    localStorage.removeItem('coffee_user');
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_user');
     window.location.href = '/login';
 }
 

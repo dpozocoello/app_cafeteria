@@ -92,7 +92,7 @@ def _try_send_gdpr(customer_id: int, db_url: str, base_url: str):
             customer_name=customer.name,
             service_type=customer.customer_type,
             delivery_code=customer.delivery_code,
-            business_name=cfg.from_name or "CoffeeApp",
+            business_name=cfg.from_name or "Sistema POS",
             business_email=cfg.from_email or cfg.smtp_user,
             base_url=base_url,
         )
@@ -103,7 +103,7 @@ def _try_send_gdpr(customer_id: int, db_url: str, base_url: str):
             smtp_user=cfg.smtp_user,
             smtp_password=cfg.smtp_password,
             smtp_use_tls=cfg.smtp_use_tls,
-            from_name=cfg.from_name or "CoffeeApp",
+            from_name=cfg.from_name or "Sistema POS",
             from_email=cfg.from_email or cfg.smtp_user,
             to_email=customer.email,
             subject=cfg.gdpr_email_subject or "Autorización para el tratamiento de sus datos personales",

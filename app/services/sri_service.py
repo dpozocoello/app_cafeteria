@@ -87,9 +87,9 @@ class SRIService:
         # Obtener datos de la empresa y punto de emisión
         company = sale.company if sale.company else (branch.company if branch.company else None)
         ruc = company.ruc if company else "1790011001001"
-        razon_social = company.business_name if company else "YUQUI S.A."
-        commercial_name = company.commercial_name if company else "YUQUI - Piqueos & Cafeteria"
-        address = company.address if company else "Av. de los Shyris y Portugal, Quito"
+        razon_social = company.business_name if company else "Empresa Modelo S.A."
+        commercial_name = company.commercial_name if company else "Sistema POS"
+        address = company.address if company else "Av. Principal y Secundaria"
         obligado_contabilidad = "SI" if (company.obligado_contabilidad if company else True) else "NO"
         environment = str(company.environment if company else sale.environment)
         

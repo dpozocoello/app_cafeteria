@@ -1,13 +1,13 @@
-# Documentación Técnica - YUQUI v2.0
-## Sistema de Gestión de Cafetería y Facturación Electrónica (SRI Ecuador)
+# Documentación Técnica - POS v2.0
+## Sistema de Gestión de Sistema POS y Facturación Electrónica (SRI Ecuador)
 
-Esta documentación técnica sirve como guía de referencia central para ingenieros de software de cualquier nivel que necesiten leer, mantener o extender el código de **YUQUI**. Cubre la arquitectura, base de datos, flujos de negocio clave (SRI, Kárdex/Recetas) y lineamientos para desarrollo.
+Esta documentación técnica sirve como guía de referencia central para ingenieros de software de cualquier nivel que necesiten leer, mantener o extender el código de **POS**. Cubre la arquitectura, base de datos, flujos de negocio clave (SRI, Kárdex/Recetas) y lineamientos para desarrollo.
 
 ---
 
 ## 1. Arquitectura y Componentes del Sistema
 
-YUQUI está estructurado como una aplicación monolitica con diseño modular en capas utilizando **FastAPI** para la API web y servicios, y **SQLAlchemy** como el mapeador objeto-relacional (ORM) para interactuar de forma transparente con bases de datos SQL.
+POS está estructurado como una aplicación monolitica con diseño modular en capas utilizando **FastAPI** para la API web y servicios, y **SQLAlchemy** como el mapeador objeto-relacional (ORM) para interactuar de forma transparente con bases de datos SQL.
 
 ### 1.1 Diagrama de Componentes (Mermaid)
 
@@ -134,7 +134,7 @@ flowchart LR
     cajero((Cajero))
     cliente((Cliente))
     
-    subgraph YUQUI ["Casos de Uso - YUQUI"]
+    subgraph POS ["Casos de Uso - POS"]
         g_recetas["Gestionar Menús y Recetas BOM"]
         g_seguridad["Configurar Políticas de Seguridad ISO 27001"]
         v_auditoria["Ver Bitácora de Auditoría Inmutable"]
@@ -338,7 +338,7 @@ erDiagram
 ## 5. Reglas de Negocio Clave y Flujo del Código
 
 ### 5.1 Flujo de Facturación Electrónica SRI (Ecuador)
-Cuando se procesa una venta en `/sales/`, el sistema interactúa con [SRIService](file:///c:/applications/app_cafeteria/app/services/sri_service.py). El flujo técnico es:
+Cuando se procesa una venta en `/sales/`, el sistema interactúa con [SRIService](file:///c:/applications/app_pos/app/services/sri_service.py). El flujo técnico es:
 
 1. **Gestión Multiempresa (Multi-tenant) y Multipunto**:
    La cabecera de la venta (`Sale`) almacena la referencia a la empresa (`company_id`) y al punto de emisión (`emission_point_id`) seleccionados. Los datos fiscales (RUC, razón social, dirección matriz, ambiente) y la identidad de marca (personalidad, colores, logo) son recuperados dinámicamente del modelo `Company` almacenado en la base de datos, en lugar de estar fijos en variables `.env`.
@@ -360,7 +360,7 @@ Cuando se procesa una venta en `/sales/`, el sistema interactúa con [SRIService
    El método `sign_xml` provee la estructura inicial (Mock) para integrar firma mediante certificados electrónicos `.p12` cargados desde la base de datos de la empresa.
 
 ### 5.2 Descuento Automático de Inventario (BOM / Recetas)
-La función clave es [InventoryService.process_sale_inventory_deduction](file:///c:/applications/app_cafeteria/app/services/inventory_service.py#L65-L111):
+La función clave es [InventoryService.process_sale_inventory_deduction](file:///c:/applications/app_pos/app/services/inventory_service.py#L65-L111):
 - Para cada producto vendido, el sistema realiza una consulta a la tabla `recipes`.
 - Si se encuentra una receta (ej. Capuchino): el sistema itera sobre cada insumo (leche, café) y descuenta del Kárdex la cantidad proporcional calculada:
   $$\text{Cantidad a Descontar} = \text{Cantidad de Insumo por Unidad} \times \text{Cantidad de Producto Vendida}$$
@@ -368,7 +368,7 @@ La función clave es [InventoryService.process_sale_inventory_deduction](file://
 - Cada movimiento actualiza el campo de auditoría rápida `balance_after` calculando el saldo acumulado en tiempo real.
 
 ### 5.3 Control de Acceso y Trazabilidad (ISO 27001)
-El módulo de autenticación [auth_service.py](file:///c:/applications/app_cafeteria/app/services/auth_service.py) aplica rigurosos controles de ciberseguridad basados en la norma **ISO 27001 (Dominio A.9 y A.12)**:
+El módulo de autenticación [auth_service.py](file:///c:/applications/app_pos/app/services/auth_service.py) aplica rigurosos controles de ciberseguridad basados en la norma **ISO 27001 (Dominio A.9 y A.12)**:
 - **A.9.2.4**: Las contraseñas se cifran usando *bcrypt* con un costo computacional de factor 12.
 - **A.9.4.2**: Bloqueo temporal automático del usuario (duración configurable, por defecto 30 minutos) al acumular 5 intentos fallidos consecutivos de inicio de sesión.
 - **A.9.4.3**: Complejidad mínima exigida (mayúsculas, números, símbolos y longitud de caracteres) y memoria histórica para evitar reutilizar las últimas 5 contraseñas.
@@ -419,7 +419,7 @@ El sistema provee una gestión fiscal robusta adaptada al SRI de Ecuador:
    def list_promotions(db: Session = Depends(get_db)):
        return {"promos": []}
    ```
-2. Registra el router en [app/main.py](file:///c:/applications/app_cafeteria/app/main.py):
+2. Registra el router en [app/main.py](file:///c:/applications/app_pos/app/main.py):
    ```python
    from .routers import promotions as promotions_router
    # ...

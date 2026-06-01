@@ -8,7 +8,7 @@ from .core import Base
 class Menu(Base):
     """
     Agrupación de productos para diferentes momentos del día o tipo de servicio.
-    Ej: 'Desayunos', 'Cafetería Tarde', 'Menú Express'.
+    Ej: 'Desayunos', 'Almuerzos Tarde', 'Menú Express'.
     """
     __tablename__ = "menus"
 

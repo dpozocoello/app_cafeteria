@@ -164,7 +164,7 @@ def get_dynamic_css(db: Session = Depends(get_db)):
         "color_danger": company.color_danger if company else "#ef4444",
     }
     css = f"""
-/* CoffeeApp - CSS Dinámico generado desde /api/settings/css */
+/* Sistema POS - CSS Dinámico generado desde /api/settings/css */
 :root {{
     --color-bg:       {theme['color_bg']};
     --color-sidebar:  {theme['color_sidebar']};
@@ -189,14 +189,14 @@ def get_database_config():
     from ..config import _get
     return {
         "engine":      _get("DB_ENGINE", "sqlite"),
-        "sqlite_path": _get("SQLITE_PATH", "./coffee_app_v2.db"),
+        "sqlite_path": _get("SQLITE_PATH", "./pos_app.db"),
         "pg_host":     _get("PG_HOST", "localhost"),
         "pg_port":     _get("PG_PORT", "5432"),
-        "pg_database": _get("PG_DATABASE", "coffeeapp"),
+        "pg_database": _get("PG_DATABASE", "pos_app"),
         "pg_user":     _get("PG_USER", "postgres"),
         "my_host":     _get("MYSQL_HOST", "localhost"),
         "my_port":     _get("MYSQL_PORT", "3306"),
-        "my_database": _get("MYSQL_DATABASE", "coffeeapp"),
+        "my_database": _get("MYSQL_DATABASE", "pos_app"),
         "my_user":     _get("MYSQL_USER", "root"),
     }
 
@@ -230,7 +230,7 @@ def test_database_connection(data: DatabaseConfig):
         elif data.engine.lower() == "mysql":
             url = f"mysql+pymysql://{data.my_user}:{data.my_password}@{data.my_host}:{data.my_port}/{data.my_database}"
         else:
-            path = data.sqlite_path or "./coffee_app_v2.db"
+            path = data.sqlite_path or "./pos_app.db"
             url = f"sqlite:///{path}"
 
         test_engine = create_engine(url, connect_args={"check_same_thread": False} if "sqlite" in url else {})
@@ -350,7 +350,7 @@ def test_email_config(data: EmailConfigUpdate):
         user = data.smtp_user or (cfg.smtp_user if cfg else "")
         pwd  = data.smtp_password or (cfg.smtp_password if cfg else "")
         tls  = data.smtp_use_tls if data.smtp_use_tls is not None else (cfg.smtp_use_tls if cfg else True)
-        fname = data.from_name or (cfg.from_name if cfg else "CoffeeApp")
+        fname = data.from_name or (cfg.from_name if cfg else "Sistema POS")
         femail = data.from_email or (cfg.from_email if cfg else user)
 
         if not user or not pwd:
@@ -360,7 +360,7 @@ def test_email_config(data: EmailConfigUpdate):
             smtp_host=host, smtp_port=port, smtp_user=user, smtp_password=pwd,
             smtp_use_tls=tls, from_name=fname, from_email=femail,
             to_email=user,  # Enviar al mismo remitente como prueba
-            subject="[CoffeeApp] Prueba de conexión SMTP ✅",
+            subject="[Sistema POS] Prueba de conexión SMTP ✅",
             body_html=f"<h2>✅ Conexión SMTP funcionando correctamente</h2><p>Servidor: {host}:{port}<br>Usuario: {user}</p>",
         )
         if cfg:

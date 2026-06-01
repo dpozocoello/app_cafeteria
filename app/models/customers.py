@@ -57,7 +57,7 @@ class EmailConfig(Base):
     smtp_user: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
     smtp_password: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)  # app-password
     smtp_use_tls: Mapped[bool] = mapped_column(Boolean, default=True)
-    from_name: Mapped[Optional[str]] = mapped_column(String(100), default="CoffeeApp")
+    from_name: Mapped[Optional[str]] = mapped_column(String(100), default="Sistema POS")
     from_email: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
 
     # Configuración de correo GDPR

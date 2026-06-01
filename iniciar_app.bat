@@ -1,6 +1,6 @@
 @echo off
 echo ===================================================
-echo   Iniciando CoffeeApp - Sistema de Cafeteria
+echo   Iniciando Sistema POS - Facturacion y Ventas
 echo ===================================================
 
 :: Verificar si existe el entorno virtual (opcional)

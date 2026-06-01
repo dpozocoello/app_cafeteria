@@ -117,7 +117,7 @@ def main():
     title_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     title_p.paragraph_format.space_before = Pt(140)
     title_p.paragraph_format.space_after = Pt(12)
-    title_run = title_p.add_run("COFFEEAPP v2.0")
+    title_run = title_p.add_run("SISTEMA POS v2.0")
     title_run.font.size = Pt(32)
     title_run.bold = True
     title_run.font.color.rgb = RGBColor(15, 23, 42) # Slate-900 (#0F172A)

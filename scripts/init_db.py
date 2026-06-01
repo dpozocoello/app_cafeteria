@@ -29,14 +29,14 @@ def init_db():
             if not db.query(Role).filter_by(name=r.name).first():
                 db.add(r)
         
-        # 1.5 Crear Empresa YUQUI
+        # 1.5 Crear Empresa Modelo
         company = db.query(Company).filter_by(ruc="1790011001001").first()
         if not company:
             company = Company(
                 ruc="1790011001001",
-                business_name="YUQUI S.A.",
-                commercial_name="YUQUI - Piqueos & Cafeteria",
-                address="Av. de los Shyris y Portugal, Quito",
+                business_name="Empresa Modelo S.A.",
+                commercial_name="Sistema POS",
+                address="Av. Principal y Secundaria",
                 phone="+593 2 2999 999",
                 obligado_contabilidad=True,
                 environment=1,
@@ -62,8 +62,8 @@ def init_db():
         branch = db.query(Branch).filter_by(sri_establishment_code="001").first()
         if not branch:
             branch = Branch(
-                name="Cafetería Central - YUQUI",
-                address="Av. Amazonas y Naciones Unidas",
+                name="Sucursal Principal",
+                address="Av. Principal y Secundaria",
                 sri_establishment_code="001",
                 company_id=company.id
             )
@@ -76,7 +76,7 @@ def init_db():
             emission_point = EmissionPoint(
                 branch_id=branch.id,
                 code="001",
-                name="Caja Principal YUQUI",
+                name="Caja Principal",
                 invoice_sequential=1
             )
             db.add(emission_point)
@@ -103,7 +103,7 @@ def init_db():
             hashed = bcrypt.hashpw(raw_pass.encode(), bcrypt.gensalt(rounds=12)).decode()
             admin_user = User(
                 username="admin",
-                email="admin@coffeeapp.com",
+                email="admin@pos.com",
                 password_hash=hashed,
                 full_name="Administrador del Sistema",
                 phone="+593 99 999 9999",
@@ -180,7 +180,7 @@ def init_db():
         # Productos Finales
         capuchino = db.query(Product).filter_by(sku="FIN-001").first()
         if not capuchino:
-            capuchino = Product(sku="FIN-001", name="Capuchino Grande", unit="Unit", is_ready_to_sell=True, sale_price=3.50, menu_category="Cafetería", company_id=company.id)
+            capuchino = Product(sku="FIN-001", name="Producto Modelo", unit="Unit", is_ready_to_sell=True, sale_price=3.50, menu_category="Principal", company_id=company.id)
             db.add(capuchino)
         
         db.flush()
@@ -214,9 +214,9 @@ def init_db():
                 description="Servicio a domicilio - sector urbano"
             ))
 
-        # 10. Menú base de Cafetería
-        if not db.query(Menu).filter_by(name="Cafetería").first():
-            menu = Menu(name="Cafetería", description="Bebidas calientes y frías", is_active=True)
+        # 10. Menú base
+        if not db.query(Menu).filter_by(name="Principal").first():
+            menu = Menu(name="Principal", description="Platos y bebidas", is_active=True)
             db.add(menu)
 
         db.commit()

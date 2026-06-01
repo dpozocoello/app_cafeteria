@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CoffeeApp - Auditoría del Sistema</title>
+    <title>Sistema POS - Auditoría del Sistema</title>
     <link rel="stylesheet" href="/static/fonts/fonts.css">
     <link rel="stylesheet" href="/static/app.css">
 </head>
@@ -15,7 +15,7 @@
         <div class="sidebar-logo">
             <img src="/static/logo.png" alt="logo" onerror="this.style.display='none'">
             <div>
-                <div class="sidebar-brand" id="sidebar-brand">CoffeeApp</div>
+                <div class="sidebar-brand" id="sidebar-brand">Sistema POS</div>
                 <div class="sidebar-tagline">Sistema de Gestión</div>
             </div>
         </div>
@@ -119,9 +119,9 @@ function filterLogs(q) {
 }
 
 function doLogout() {
-    const token = localStorage.getItem('coffee_token');
+    const token = localStorage.getItem('auth_token');
     if (token) fetch('/api/auth/logout', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
-    localStorage.removeItem('coffee_token');
+    localStorage.removeItem('auth_token');
     window.location.href = '/login';
 }
 

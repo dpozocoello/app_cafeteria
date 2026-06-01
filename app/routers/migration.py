@@ -14,10 +14,10 @@ router = APIRouter(prefix="/api/migration", tags=["Migración de BD"])
 
 class DbConfig(BaseModel):
     engine: str = "sqlite"
-    path: Optional[str] = "./coffee_app_v2.db"      # SQLite
+    path: Optional[str] = "./pos_app.db"      # SQLite
     host: Optional[str] = "localhost"
     port: Optional[int] = None
-    database: Optional[str] = "coffeeapp"
+    database: Optional[str] = "pos_app"
     user: Optional[str] = None
     password: Optional[str] = None
 

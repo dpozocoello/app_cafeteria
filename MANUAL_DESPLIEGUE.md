@@ -1,4 +1,4 @@
-# Manual de Despliegue — YUQUI Sistema de Cafetería
+# Manual de Despliegue — POS Sistema de Sistema POS
 
 **Versión:** 2.0  
 **Plataforma:** Windows 10/11 · Ubuntu 20.04+
@@ -44,7 +44,7 @@
 
 1. Extrae `dist_package.zip` en la ubicación deseada, por ejemplo:
    ```
-   C:\aplicaciones\yuqui\
+   C:\aplicaciones\pos\
    ```
 2. Abre PowerShell en esa carpeta (clic derecho → *Abrir en Terminal*).
 
@@ -101,7 +101,7 @@ Si necesitas acceso desde otros equipos de la red local:
 
 ```powershell
 # Ejecutar como Administrador
-New-NetFirewallRule -DisplayName "YUQUI App" -Direction Inbound -Protocol TCP -LocalPort 8000 -Action Allow
+New-NetFirewallRule -DisplayName "POS App" -Direction Inbound -Protocol TCP -LocalPort 8000 -Action Allow
 ```
 
 Cambia el `APP_HOST` en `.env` de `127.0.0.1` a `0.0.0.0`.
@@ -120,9 +120,9 @@ sudo apt install -y python3.10 python3.10-venv python3-pip git unzip
 ### 3.2 Descomprimir el paquete
 
 ```bash
-mkdir -p /opt/yuqui
-unzip dist_package.zip -d /opt/yuqui
-cd /opt/yuqui
+mkdir -p /opt/pos
+unzip dist_package.zip -d /opt/pos
+cd /opt/pos
 ```
 
 ### 3.3 Crear entorno virtual e instalar dependencias
@@ -155,22 +155,22 @@ Accede desde el navegador a `http://<IP_DEL_SERVIDOR>:8000`.
 Crea el archivo de servicio:
 
 ```bash
-sudo nano /etc/systemd/system/coffeeapp.service
+sudo nano /etc/systemd/system/pos_app.service
 ```
 
 Contenido del archivo:
 
 ```ini
 [Unit]
-Description=YUQUI Cafeteria App
+Description=POS Cafeteria App
 After=network.target
 
 [Service]
 Type=simple
 User=www-data
-WorkingDirectory=/opt/yuqui
-EnvironmentFile=/opt/yuqui/.env
-ExecStart=/opt/yuqui/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
+WorkingDirectory=/opt/pos
+EnvironmentFile=/opt/pos/.env
+ExecStart=/opt/pos/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
 Restart=on-failure
 RestartSec=5
 StandardOutput=journal
@@ -184,15 +184,15 @@ Habilitar e iniciar el servicio:
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable coffeeapp
-sudo systemctl start coffeeapp
-sudo systemctl status coffeeapp
+sudo systemctl enable pos_app
+sudo systemctl start pos_app
+sudo systemctl status pos_app
 ```
 
 ### 3.7 Ver logs en tiempo real
 
 ```bash
-sudo journalctl -u coffeeapp -f
+sudo journalctl -u pos_app -f
 ```
 
 ### 3.8 Firewall (UFW)
@@ -206,7 +206,7 @@ sudo ufw reload
 
 ```bash
 sudo apt install -y nginx
-sudo nano /etc/nginx/sites-available/yuqui
+sudo nano /etc/nginx/sites-available/pos
 ```
 
 Contenido:
@@ -226,7 +226,7 @@ server {
 ```
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/yuqui /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/pos /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 ```
@@ -242,10 +242,10 @@ Copia `.env.example` como `.env` y ajusta las variables según tu entorno.
 ```dotenv
 # Base de datos
 DB_ENGINE=sqlite           # sqlite | postgresql | mysql
-SQLITE_PATH=./coffee_app_v2.db
+SQLITE_PATH=./pos_app_v2.db
 
 # Identidad gráfica
-BRAND_NAME=YUQUI - Piqueos & Cafeteria
+BRAND_NAME=POS - Piqueos & Cafeteria
 BRAND_TAGLINE=Ecuatoriano de verdad
 
 # Puerto de la aplicación
@@ -263,7 +263,7 @@ INSTALLATION_DATE=         # Se registra automáticamente en el primer arranque.
 ```dotenv
 PG_HOST=localhost
 PG_PORT=5432
-PG_DATABASE=coffeeapp
+PG_DATABASE=pos_app
 PG_USER=postgres
 PG_PASSWORD=TU_CONTRASEÑA_SEGURA
 ```
@@ -324,7 +324,7 @@ Reinicia la aplicación.
    ```dotenv
    DB_ENGINE=postgresql
    PG_HOST=localhost
-   PG_DATABASE=coffeeapp
+   PG_DATABASE=pos_app
    PG_USER=postgres
    PG_PASSWORD=secreto
    ```
@@ -334,12 +334,12 @@ Reinicia la aplicación.
 
 ```powershell
 # Windows
-copy coffee_app_v2.db "backup\coffee_app_v2_%date:~-4,4%%date:~-7,2%%date:~-10,2%.db"
+copy pos_app_v2.db "backup\pos_app_v2_%date:~-4,4%%date:~-7,2%%date:~-10,2%.db"
 ```
 
 ```bash
 # Linux
-cp coffee_app_v2.db "backup/coffee_app_v2_$(date +%Y%m%d).db"
+cp pos_app_v2.db "backup/pos_app_v2_$(date +%Y%m%d).db"
 ```
 
 ---
@@ -353,4 +353,4 @@ cp coffee_app_v2.db "backup/coffee_app_v2_$(date +%Y%m%d).db"
 | El sistema redirige siempre a `/activate` | `diedcomp` ausente y trial expirado | Ingresa la clave de licencia en `/activate` |
 | `OperationalError: no such table` | Base de datos no inicializada | Reinicia la app; las tablas se crean al arrancar |
 | Pantalla en blanco en el navegador | Archivos estáticos no encontrados | Verifica que la carpeta `app/static/` exista y que `APP_HOST` sea accesible |
-| Servicio systemd no inicia | Error en `.env` o permisos | Revisa `journalctl -u coffeeapp -n 50 --no-pager` |
+| Servicio systemd no inicia | Error en `.env` o permisos | Revisa `journalctl -u pos_app -n 50 --no-pager` |

@@ -1,11 +1,11 @@
 @echo off
-title CoffeeApp - Reiniciar Plataforma
+title Sistema POS - Reiniciar Plataforma
 color 0A
 cls
 
 echo.
 echo  ╔══════════════════════════════════════════════╗
-echo  ║         COFFEEAPP - REINICIO DEL SISTEMA     ║
+echo  ║         SISTEMA POS - REINICIO DEL SISTEMA     ║
 echo  ╚══════════════════════════════════════════════╝
 echo.
 
@@ -31,7 +31,7 @@ echo       Python OK.
 
 :: ── 3. Iniciar el servidor en segundo plano ────────────────────────────────
 echo.
-echo  [3/4] Iniciando servidor CoffeeApp...
+echo  [3/4] Iniciando servidor POS...
 cd /d "C:\applications\app_cafeteria"
 start "" /MIN python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 
@@ -54,7 +54,7 @@ start http://127.0.0.1:8000/
 
 echo.
 echo  ══════════════════════════════════════════════
-echo   CoffeeApp corriendo en: http://127.0.0.1:8000
+echo   Sistema POS corriendo en: http://127.0.0.1:8000
 echo   Para detener: cierre la ventana del servidor
 echo  ══════════════════════════════════════════════
 echo.

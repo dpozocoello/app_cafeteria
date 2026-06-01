@@ -3,7 +3,7 @@ Migración: Crear tablas customers, email_config y agregar customer_id a sales.
 """
 from sqlalchemy import create_engine, text
 
-engine = create_engine('sqlite:///coffee_app_v2.db', connect_args={'check_same_thread': False})
+engine = create_engine('sqlite:///pos_app.db', connect_args={'check_same_thread': False})
 
 SQL_STATEMENTS = [
     # Tabla customers
@@ -31,7 +31,7 @@ SQL_STATEMENTS = [
         smtp_user VARCHAR(120),
         smtp_password VARCHAR(255),
         smtp_use_tls BOOLEAN DEFAULT 1,
-        from_name VARCHAR(100) DEFAULT 'CoffeeApp',
+        from_name VARCHAR(100) DEFAULT 'Sistema POS',
         from_email VARCHAR(120),
         gdpr_enabled BOOLEAN DEFAULT 0,
         gdpr_email_subject VARCHAR(200) DEFAULT 'Autorización para el tratamiento de sus datos personales',
@@ -52,7 +52,7 @@ SQL_STATEMENTS = [
 # Insertar configuración inicial de email (solo si no existe)
 INSERT_DEFAULT_EMAIL_CONFIG = """
 INSERT OR IGNORE INTO email_config (id, smtp_host, smtp_port, smtp_use_tls, from_name, gdpr_enabled)
-VALUES (1, 'smtp.gmail.com', 587, 1, 'CoffeeApp', 0)
+VALUES (1, 'smtp.gmail.com', 587, 1, 'Sistema POS', 0)
 """
 
 with engine.connect() as conn:

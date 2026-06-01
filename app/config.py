@@ -1,5 +1,5 @@
 """
-Módulo de configuración central de CoffeeApp.
+Módulo de configuración central de Sistema POS.
 Lee el archivo .env y construye la URL de base de datos apropiada.
 """
 import os
@@ -37,16 +37,16 @@ def get_database_url() -> str:
         return (
             f"postgresql://{_get('PG_USER','postgres')}:{_get('PG_PASSWORD','secret')}"
             f"@{_get('PG_HOST','localhost')}:{_get('PG_PORT','5432')}"
-            f"/{_get('PG_DATABASE','coffeeapp')}"
+            f"/{_get('PG_DATABASE','pos_app')}"
         )
     elif engine == "mysql":
         return (
             f"mysql+pymysql://{_get('MYSQL_USER','root')}:{_get('MYSQL_PASSWORD','secret')}"
             f"@{_get('MYSQL_HOST','localhost')}:{_get('MYSQL_PORT','3306')}"
-            f"/{_get('MYSQL_DATABASE','coffeeapp')}"
+            f"/{_get('MYSQL_DATABASE','pos_app')}"
         )
     else:  # sqlite (default)
-        sqlite_path = _get("SQLITE_PATH", "./coffee_app_v2.db")
+        sqlite_path = _get("SQLITE_PATH", "./pos_app.db")
         return f"sqlite:///{sqlite_path}"
 
 
@@ -59,7 +59,7 @@ def get_engine_type() -> str:
 @lru_cache(maxsize=1)
 def get_theme() -> dict:
     return {
-        "brand_name":   _get("BRAND_NAME", "CoffeeApp"),
+        "brand_name":   _get("BRAND_NAME", "Sistema POS"),
         "brand_tagline": _get("BRAND_TAGLINE", "Sistema de Gestión"),
         "font_family":  _get("FONT_FAMILY", "Outfit"),
         "color_bg":     _get("COLOR_BG", "#020617"),

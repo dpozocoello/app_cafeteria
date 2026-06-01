@@ -1,6 +1,6 @@
-# CoffeeApp - Sistema de Gestión y Facturación Electrónica
+# Sistema POS - Sistema de Gestión y Facturación Electrónica
 
-CoffeeApp es un sistema moderno e intuitivo de punto de venta (POS) y facturación para cafeterías y restaurantes, integrado con los requerimientos tributarios del **Servicio de Rentas Internas (SRI) de Ecuador** (XML de comprobantes v1.1.0) y diseñado bajo altos estándares de seguridad (controles **ISO 27001**) y protección de datos (**LOPDP Ecuador / GDPR**).
+Sistema POS es un sistema moderno e intuitivo de punto de venta (POS) y facturación para negocios y restaurantes, integrado con los requerimientos tributarios del **Servicio de Rentas Internas (SRI) de Ecuador** (XML de comprobantes v1.1.0) y diseñado bajo altos estándares de seguridad (controles **ISO 27001**) y protección de datos (**LOPDP Ecuador / GDPR**).
 
 ## 🚀 Inicio Rápido
 

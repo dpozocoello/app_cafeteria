@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 from ..models.core import User, AuditLog, PasswordHistory, SecurityPolicy, Role
 
 # Clave secreta JWT (en producción: leer de .env / HSM)
-JWT_SECRET = "coffeeapp-jwt-secret-key-change-in-production"
+JWT_SECRET = "pos_app-jwt-secret-key-change-in-production"
 JWT_ALGORITHM = "HS256"
 
 

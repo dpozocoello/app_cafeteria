@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CoffeeApp - Gestión de Inventario</title>
+    <title>Sistema POS - Gestión de Inventario</title>
     <link rel="stylesheet" href="/static/fonts/fonts.css">
     <style>
         :root {
@@ -65,7 +65,7 @@
     <div class="sidebar-logo">
         <img src="/static/logo.png" alt="logo" onerror="this.style.display='none'">
         <div>
-            <div id="sidebar-brand" style="font-weight:700;color:var(--accent);font-size:.95rem;line-height:1.2">CoffeeApp</div>
+            <div id="sidebar-brand" style="font-weight:700;color:var(--accent);font-size:.95rem;line-height:1.2">Sistema POS</div>
             <div style="font-size:.7rem;color:var(--muted)">Sistema de Gestión</div>
         </div>
     </div>
@@ -265,9 +265,9 @@ async function deleteProduct(id, name) {
 loadProducts();
 
 function doLogout() {
-    const t = localStorage.getItem('coffee_token');
+    const t = localStorage.getItem('auth_token');
     if (t) fetch('/api/auth/logout', { method: 'POST', headers: { 'Authorization': `Bearer ${t}` } });
-    localStorage.removeItem('coffee_token');
+    localStorage.removeItem('auth_token');
     window.location.href = '/login';
 }
 fetch('/api/settings/theme').then(r => r.json()).then(t => {

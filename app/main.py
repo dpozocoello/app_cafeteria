@@ -33,7 +33,7 @@ import uuid
 from datetime import date
 import os
 
-app = FastAPI(title="CoffeeApp API - Ecuador SRI", version="2.0")
+app = FastAPI(title="Sistema POS API - Ecuador SRI", version="2.0")
 
 
 # ─── Sistema de Control de Licencias y Período de Prueba ──────────────────────
