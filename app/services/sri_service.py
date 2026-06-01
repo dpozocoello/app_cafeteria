@@ -16,12 +16,12 @@ class SRIService:
     """
 
     @staticmethod
-    def generate_access_key(sale: Sale, branch: Branch) -> str:
+    def generate_access_key(sale: Sale, branch: Branch, doc_type: str = "01", sequential: str = None) -> str:
         """
         Genera la clave de acceso oficial de 49 dígitos requerida por el SRI para comprobantes electrónicos.
         """
         fecha = sale.timestamp.strftime("%d%m%Y")
-        tipo_comprobante = "01" # 01 representa Factura en el catálogo del SRI
+        tipo_comprobante = doc_type # "01" representa Factura, "04" representa Nota de Crédito
         
         # Obtener RUC de la empresa asociada
         ruc = "1790011001001"
@@ -37,8 +37,10 @@ class SRIService:
         pto_emi = sale.emission_point.code if sale.emission_point else "001"
         serie = f"{estab}{pto_emi}"
         
-        # Secuencial: extraído del número de factura o sale.id
-        if sale.invoice_number and "-" in sale.invoice_number:
+        # Secuencial: extraído del número de comprobante
+        if sequential:
+            secuencial = sequential.split("-")[-1]
+        elif sale.invoice_number and "-" in sale.invoice_number:
             secuencial = sale.invoice_number.split("-")[-1]
         else:
             secuencial = str(sale.id).zfill(9)
@@ -51,6 +53,7 @@ class SRIService:
         
         verificador = SRIService._calculate_modulo11(clave_parcial)
         return f"{clave_parcial}{verificador}"
+
 
     @staticmethod
     def _calculate_modulo11(cadena: str) -> int:

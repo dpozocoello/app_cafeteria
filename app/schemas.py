@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import List, Optional
 from decimal import Decimal
+from datetime import datetime
 
 
 # ─── Inventario ───────────────────────────────────────────────────────────────
@@ -95,6 +96,10 @@ class SaleCreate(BaseModel):
     consumption_type: str = "MESA"   # MESA | LLEVAR | DOMICILIO
     table_id: Optional[int] = None
     delivery_address: Optional[str] = None
+    # Retenciones
+    withholding_number: Optional[str] = None
+    withholding_iva: Optional[Decimal] = Decimal(0)
+    withholding_renta: Optional[Decimal] = Decimal(0)
 
 
 class SaleResponse(BaseModel):
@@ -104,6 +109,24 @@ class SaleResponse(BaseModel):
     total: Decimal
     delivery_surcharge: Decimal
     sri_status: str
+
+    class Config:
+        from_attributes = True
+
+
+class CreditNoteCreate(BaseModel):
+    sale_id: int
+    reason: str
+    emission_point_id: int
+
+
+class CreditNoteResponse(BaseModel):
+    id: int
+    credit_note_number: str
+    access_key: str
+    reason: str
+    sri_status: str
+    created_at: datetime
 
     class Config:
         from_attributes = True

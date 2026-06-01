@@ -155,3 +155,32 @@ class InventoryService:
                 )
         
         db.commit()
+
+    @staticmethod
+    def process_sale_inventory_reversal(db: Session, sale: Sale):
+        """
+        Reversa la deducción automática de inventario (BOM / Recetas) al anular una venta.
+        Genera movimientos de entrada (IN) correspondientes a cada movimiento de salida (OUT)
+        generado por la venta.
+        """
+        movements = db.query(InventoryMovement).filter(
+            InventoryMovement.reference_id == sale.id,
+            InventoryMovement.reference_type == "Sale",
+            InventoryMovement.type == MovementType.OUT
+        ).all()
+        
+        for mov in movements:
+            qty_to_revert = abs(Decimal(mov.quantity))
+            InventoryService.register_movement(
+                db=db,
+                product_id=mov.product_id,
+                branch_id=mov.branch_id,
+                user_id=sale.user_id,
+                quantity=qty_to_revert,
+                type=MovementType.IN,
+                reference_id=sale.id,
+                reference_type="SaleCancellation",
+                notes=f"Reversión de stock por anulación de Factura {sale.invoice_number}"
+            )
+        db.commit()
+

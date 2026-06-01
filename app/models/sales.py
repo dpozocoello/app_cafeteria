@@ -60,6 +60,12 @@ class Sale(Base):
     sale_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     payment_method_id: Mapped[Optional[int]] = mapped_column(ForeignKey("payment_methods.id"), nullable=True)
  
+    # Retenciones recibidas (Ecuador)
+    withholding_number: Mapped[Optional[str]] = mapped_column(String(17), nullable=True) # ej: 001-001-000000123
+    withholding_iva: Mapped[float] = mapped_column(Numeric(12, 2), default=0.0)
+    withholding_renta: Mapped[float] = mapped_column(Numeric(12, 2), default=0.0)
+    withholding_date: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
     timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     
     # Relaciones
@@ -113,3 +119,26 @@ class SalePayment(Base):
     reference: Mapped[Optional[str]] = mapped_column(String(100)) # Voucher, Transfer ID
 
     sale: Mapped["Sale"] = relationship(back_populates="payments")
+
+
+class CreditNote(Base):
+    """
+    Nota de Crédito para anulación o devolución de facturas SRI.
+    """
+    __tablename__ = "credit_notes"
+    
+    id: Mapped[int] = mapped_column(primary_key=True)
+    sale_id: Mapped[int] = mapped_column(ForeignKey("sales.id"), nullable=False)
+    company_id: Mapped[int] = mapped_column(ForeignKey("companies.id"), nullable=False)
+    emission_point_id: Mapped[int] = mapped_column(ForeignKey("emission_points.id"), nullable=False)
+    
+    credit_note_number: Mapped[str] = mapped_column(String(17), nullable=False) # e.g. 001-001-000000001
+    access_key: Mapped[str] = mapped_column(String(49), unique=True, nullable=False)
+    reason: Mapped[str] = mapped_column(String(255), nullable=False)
+    sri_status: Mapped[str] = mapped_column(String(50), default="PENDIENTE") # PENDIENTE, RECIBIDO, AUTORIZADO, RECHAZADO
+    authorization_date: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    
+    sale: Mapped["Sale"] = relationship()
+    company: Mapped["Company"] = relationship()
+    emission_point: Mapped["EmissionPoint"] = relationship()

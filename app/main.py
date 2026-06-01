@@ -24,12 +24,52 @@ from .routers import profiles as profiles_router
 from .routers import migration as migration_router
 from .routers import orders as orders_router
 from .routers import customers as customers_router
+from .routers import billing_reports as billing_reports_router
 from decimal import Decimal
 import uuid
 from datetime import date
 import os
 
 app = FastAPI(title="CoffeeApp API - Ecuador SRI", version="2.0")
+
+@app.on_event("startup")
+def startup_db_migration():
+    """
+    Verifica que las columnas de retenciones y la tabla de notas de crédito existan.
+    Si no existen, las crea dinámicamente para evitar pérdida de datos históricos.
+    """
+    from sqlalchemy import inspect, text
+    from .database import engine
+    from .models.core import Base
+    
+    # 1. Crear tablas si no existen (como credit_notes)
+    Base.metadata.create_all(bind=engine)
+    
+    # 2. Agregar columnas a sales si no existen (SQLite ALTER TABLE)
+    inspector = inspect(engine)
+    columns = [col["name"] for col in inspector.get_columns("sales")]
+    
+    with engine.begin() as conn:
+        if "withholding_number" not in columns:
+            try:
+                conn.execute(text("ALTER TABLE sales ADD COLUMN withholding_number VARCHAR(17)"))
+            except Exception as e:
+                print(f"[MIGRACION] Error agregando withholding_number: {e}")
+        if "withholding_iva" not in columns:
+            try:
+                conn.execute(text("ALTER TABLE sales ADD COLUMN withholding_iva NUMERIC(12, 2) DEFAULT 0.0"))
+            except Exception as e:
+                print(f"[MIGRACION] Error agregando withholding_iva: {e}")
+        if "withholding_renta" not in columns:
+            try:
+                conn.execute(text("ALTER TABLE sales ADD COLUMN withholding_renta NUMERIC(12, 2) DEFAULT 0.0"))
+            except Exception as e:
+                print(f"[MIGRACION] Error agregando withholding_renta: {e}")
+        if "withholding_date" not in columns:
+            try:
+                conn.execute(text("ALTER TABLE sales ADD COLUMN withholding_date DATETIME"))
+            except Exception as e:
+                print(f"[MIGRACION] Error agregando withholding_date: {e}")
 
 # ─── Archivos estáticos ───────────────────────────────────────────────────────
 os.makedirs(os.path.join(os.path.dirname(__file__), "static"), exist_ok=True)
@@ -47,6 +87,7 @@ app.include_router(profiles_router.router)
 app.include_router(migration_router.router)
 app.include_router(orders_router.router)
 app.include_router(customers_router.router)
+app.include_router(billing_reports_router.router)
 
 @app.get("/api/branches")
 def list_branches(db=Depends(get_db)):
@@ -58,7 +99,15 @@ def list_branches(db=Depends(get_db)):
 def get_settings_ui():
     template_path = os.path.join(os.path.dirname(__file__), "templates", "admin_settings.html")
     with open(template_path, "r", encoding="utf-8") as f:
-        return f.read()
+        return HTMLResponse(f.read())
+
+
+@app.get("/admin/reports", response_class=HTMLResponse)
+def get_reports_ui():
+    template_path = os.path.join(os.path.dirname(__file__), "templates", "admin_reports.html")
+    with open(template_path, "r", encoding="utf-8") as f:
+        return HTMLResponse(f.read())
+
 
 @app.get("/pos", response_class=HTMLResponse)
 def get_pos_ui():
@@ -303,7 +352,11 @@ def create_sale(sale_data: SaleCreate, db: Session = Depends(get_db)):
         delivery_address=sale_data.delivery_address,
         invoice_number=invoice_number,
         environment=branch.company.environment if branch.company else 1,
-        sale_date=sale_date
+        sale_date=sale_date,
+        withholding_number=sale_data.withholding_number,
+        withholding_iva=sale_data.withholding_iva or Decimal(0),
+        withholding_renta=sale_data.withholding_renta or Decimal(0),
+        withholding_date=sale_date if sale_data.withholding_number else None
     )
     
     db.add(sale)
@@ -333,12 +386,32 @@ def create_sale(sale_data: SaleCreate, db: Session = Depends(get_db)):
     sale.total = total_subtotal + total_tax
 
     # 3. Registrar Pago
-    payment = SalePayment(
-        sale_id=sale.id,
-        payment_method_id=sale_data.payment_method_id,
-        amount=sale.total
-    )
-    db.add(payment)
+    withholding_total = Decimal(sale.withholding_iva or 0) + Decimal(sale.withholding_renta or 0)
+    net_payment_amount = sale.total - withholding_total
+    
+    if net_payment_amount > 0:
+        payment = SalePayment(
+            sale_id=sale.id,
+            payment_method_id=sale_data.payment_method_id,
+            amount=net_payment_amount
+        )
+        db.add(payment)
+        
+    if withholding_total > 0:
+        from .models.sales import PaymentMethod
+        pm_ret = db.query(PaymentMethod).filter(PaymentMethod.name.like("%Reten%")).first()
+        if not pm_ret:
+            pm_ret = PaymentMethod(name="Retención", sri_code="20")
+            db.add(pm_ret)
+            db.flush()
+        
+        ret_payment = SalePayment(
+            sale_id=sale.id,
+            payment_method_id=pm_ret.id,
+            amount=withholding_total,
+            reference=sale.withholding_number
+        )
+        db.add(ret_payment)
 
     # 4. Generar Clave SRI y XML
     sale.access_key = SRIService.generate_access_key(sale, branch)

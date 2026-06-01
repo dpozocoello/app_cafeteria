@@ -26,6 +26,7 @@ graph TD
             InvRouter["inventory.py<br/>(Inventario y Recetas)"]
             SettingsRouter["settings.py<br/>(Configuraciones y Temas)"]
             CustRouter["customers.py<br/>(Clientes y LOPDP)"]
+            BillRepRouter["billing_reports.py<br/>(Reportería y Notas de Crédito)"]
         end
         
         %% Capa de Lógica de Negocio
@@ -63,6 +64,8 @@ graph TD
     OrderRouter --> SRIService
     InvRouter --> InvService
     CustRouter --> EmailService
+    BillRepRouter --> InvService
+    BillRepRouter --> SRIService
 
     AuthService --> BaseModel
     SRIService --> SalesModel
@@ -174,10 +177,12 @@ erDiagram
     companies ||--o{ users : "asocia"
     companies ||--o{ products : "pertenece"
     companies ||--o{ sales : "registra"
+    companies ||--o{ credit_notes : "emite"
     branches ||--o{ emission_points : "tiene"
     branches ||--o{ users : "registra"
     branches ||--o{ sales : "emite"
     emission_points ||--o{ sales : "emite"
+    emission_points ||--o{ credit_notes : "registra"
     roles ||--o{ users : "asigna_a"
     users ||--o{ audit_logs : "genera"
     users ||--o{ password_history : "guarda"
@@ -188,6 +193,7 @@ erDiagram
     payment_methods ||--o{ sale_payments : "utiliza"
     sales ||--o{ sale_details : "contiene"
     sales ||--o{ sale_payments : "se_cancela_con"
+    sales ||--o| credit_notes : "anulada_por"
     
     products ||--o{ sale_details : "vendido_en"
     products ||--o{ batches : "tiene_lotes_de"
@@ -224,6 +230,7 @@ erDiagram
         string code "Código SRI (e.g. 001, 002)"
         string name "Nombre Caja / Terminal"
         int invoice_sequential "Secuencial autoincrementable de facturas"
+        int credit_note_sequential "Secuencial autoincrementable de Notas de Crédito"
         boolean is_active
     }
 
@@ -264,11 +271,27 @@ erDiagram
         int emission_point_id FK
         string access_key "Clave SRI 49 dígitos"
         string invoice_number "Nro. 001-001-000000001"
-        string status "PENDIENTE, FACTURADO, LISTO_FACTURAR"
+        string status "PENDIENTE, FACTURADO, LISTO_FACTURAR, ANULADA"
         string customer_name
         string customer_id_type "05:Cédula, 04:RUC, 07:CF"
         string customer_id
         decimal total
+        string withholding_number "Número de retención"
+        decimal withholding_iva "IVA retenido"
+        decimal withholding_renta "Renta retenida"
+        datetime withholding_date "Fecha de retención"
+    }
+
+    credit_notes {
+        int id PK
+        int sale_id FK
+        int company_id FK
+        int emission_point_id FK
+        string credit_note_number "Establecimiento-Caja-Secuencial"
+        string access_key "Clave SRI 49 dígitos"
+        string reason "Motivo de la Nota de Crédito"
+        string sri_status "PENDIENTE, AUTORIZADO, RECHAZADO"
+        datetime created_at
     }
 
     sale_details {
@@ -350,6 +373,13 @@ El módulo de autenticación [auth_service.py](file:///c:/applications/app_cafet
 - **A.9.4.2**: Bloqueo temporal automático del usuario (duración configurable, por defecto 30 minutos) al acumular 5 intentos fallidos consecutivos de inicio de sesión.
 - **A.9.4.3**: Complejidad mínima exigida (mayúsculas, números, símbolos y longitud de caracteres) y memoria histórica para evitar reutilizar las últimas 5 contraseñas.
 - **A.12.4.1**: Cada acción que altere el estado o requiera seguridad (login, fallos de login, inserción de facturas, etc.) genera una fila en `AuditLog` persistiendo los valores anteriores y nuevos para auditorías forenses inmutables.
+
+### 5.4 Gestión de Retenciones, Anulación y Reportería SRI
+El sistema provee una gestión fiscal robusta adaptada al SRI de Ecuador:
+- **Pagos con Retenciones**: Al registrar facturas, se capturan los detalles del comprobante físico de retención de IVA/Renta emitido por el cliente. El pago neto se calcula de forma automática deduciendo las retenciones, y se registra un pago contable compensatorio bajo el método "Retención" para asegurar el balance de la venta.
+- **Anulación con Notas de Crédito**: Para dar de baja facturas autorizadas, el sistema genera automáticamente un comprobante electrónico de Nota de Crédito (código "04"), consume un secuencial dedicado del punto de emisión y calcula su clave de acceso SRI correspondiente.
+- **Reversión Automática de Stock**: La anulación llama al servicio Kárdex para identificar los consumos originales por receta (BOM) o venta directa y emite movimientos de entrada (`IN`) compensatorios para reponer existencias en tiempo real.
+- **Reportes y Anexo ATS**: El módulo consolida bases gravables por tarifa de IVA, desglosa comprobantes de retención recibidos y agrupa métricas por tipos de identificación del cliente (Cédula, RUC, CF) y códigos de pago oficiales del SRI para facilitar la declaración contable.
 
 ---
 
