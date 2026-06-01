@@ -85,11 +85,12 @@ async def check_licensing_middleware(request: Request, call_next):
     """
     path = request.url.path
     if (
-        path.startswith("/static") or 
-        path.startswith("/api/auth") or 
-        path == "/login" or 
-        path == "/activate" or 
-        path == "/api/activate"
+        path.startswith("/static") or
+        path.startswith("/api/auth") or
+        path == "/login" or
+        path == "/activate" or
+        path == "/api/activate" or
+        path == "/api/license/status"
     ):
         return await call_next(request)
         
@@ -179,6 +180,23 @@ def get_reports_ui():
     template_path = os.path.join(os.path.dirname(__file__), "templates", "admin_reports.html")
     with open(template_path, "r", encoding="utf-8") as f:
         return HTMLResponse(f.read())
+
+
+@app.get("/api/license/status")
+def get_license_status():
+    """Estado actual del licenciamiento para la pantalla de activación."""
+    activated = is_system_activated()
+    inst_date = get_installation_date()
+    trial_days = get_trial_days()
+    days_elapsed = (date.today() - inst_date).days
+    days_remaining = max(0, trial_days - days_elapsed)
+    return {
+        "activated": activated,
+        "trial_active": not activated and days_elapsed <= trial_days,
+        "days_elapsed": days_elapsed,
+        "days_remaining": days_remaining,
+        "trial_days": trial_days,
+    }
 
 
 @app.get("/activate", response_class=HTMLResponse)
