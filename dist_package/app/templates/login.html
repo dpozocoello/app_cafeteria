@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema POS - Iniciar Sesión</title>
+    <link rel="stylesheet" href="/static/fonts/fonts.css">
+    <link rel="stylesheet" href="/static/app.css">
+    <style>
+        body { display: flex; align-items: center; justify-content: center; min-height: 100vh;
+               background: radial-gradient(ellipse at top left, #1e293b 0%, #020617 60%); }
+
+        .login-container { width: 100%; max-width: 420px; padding: var(--space-md); }
+
+        .login-card {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-xl);
+            padding: var(--space-xl) var(--space-xl);
+            backdrop-filter: blur(16px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .login-header { text-align: center; margin-bottom: var(--space-xl); }
+        .login-header img {
+            width: 120px;
+            height: auto;
+            object-fit: contain;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+            margin-bottom: var(--space-md);
+        }
+        .login-header h1 { font-size: var(--font-size-xl); color: var(--color-accent); }
+        .login-header p { color: var(--color-muted); font-size: var(--font-size-sm); }
+
+        .input-icon-wrap { position: relative; }
+        .input-icon-wrap span { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1rem; }
+        .input-icon-wrap input { padding-left: 2.5rem; }
+
+        .toggle-pass { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--color-muted); font-size: 1rem; background: none; border: none; }
+
+        .alert-box { padding: var(--space-sm) var(--space-md); border-radius: var(--radius-md);
+                     font-size: var(--font-size-sm); margin-bottom: var(--space-md); display: none; }
+        .alert-error   { background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.3); color: var(--color-danger); }
+        .alert-warning { background: rgba(251,191,36,.12); border: 1px solid rgba(251,191,36,.3); color: var(--color-accent); }
+
+        .security-note { text-align: center; color: var(--color-muted); font-size: var(--font-size-xs); margin-top: var(--space-lg); }
+        .attempts-bar { height: 4px; background: var(--color-border); border-radius: 2px; margin-top: var(--space-md); overflow: hidden; }
+        .attempts-fill { height: 100%; border-radius: 2px; transition: width 0.4s; }
+
+        @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+        .shake { animation: shake 0.4s ease-in-out; }
+    </style>
+</head>
+<body>
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <img src="/static/logo.png" alt="Logo" onerror="this.style.display='none'">
+            <h1 id="brand-name">Sistema POS</h1>
+            <p>Sistema de Gestión · Acceso Seguro</p>
+        </div>
+
+        <div class="alert-box alert-error" id="error-alert"></div>
+        <div class="alert-box alert-warning" id="warn-alert"></div>
+
+        <form id="login-form" onsubmit="doLogin(event)">
+            <div class="form-group">
+                <label>Usuario</label>
+                <div class="input-icon-wrap">
+                    <span>👤</span>
+                    <input type="text" id="username" placeholder="admin" autocomplete="username" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Contraseña</label>
+                <div class="input-icon-wrap">
+                    <span>🔒</span>
+                    <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required>
+                    <button type="button" class="toggle-pass" onclick="togglePass()">👁</button>
+                </div>
+            </div>
+
+            <div id="attempts-container" style="display:none">
+                <p class="text-sm text-muted">Intentos fallidos: <span id="attempts-text">0/5</span></p>
+                <div class="attempts-bar"><div class="attempts-fill" id="attempts-fill" style="width:0%;background:var(--color-danger)"></div></div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block btn-lg mt-lg" id="login-btn">Iniciar Sesión</button>
+        </form>
+
+        <div class="security-note">
+            🔒 Conexión cifrada · ISO 27001 · Todos los accesos son registrados
+        </div>
+    </div>
+</div>
+
+<script>
+let failedAttempts = 0;
+const MAX_ATTEMPTS = 5;
+
+async function doLogin(e) {
+    e.preventDefault();
+    const btn = document.getElementById('login-btn');
+    btn.disabled = true;
+    btn.innerText = 'Verificando...';
+    hideAlerts();
+
+    const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            username: document.getElementById('username').value,
+            password: document.getElementById('password').value
+        })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+        localStorage.setItem('auth_token', data.access_token);
+        localStorage.setItem('auth_user', JSON.stringify(data.user));
+
+        if (data.user.must_change_password) {
+            showWarn('⚠️ Debes cambiar tu contraseña antes de continuar.');
+            setTimeout(() => window.location.href = '/change-password', 2000);
+        } else {
+            window.location.href = '/';
+        }
+    } else {
+        failedAttempts++;
+        document.getElementById('login-form').classList.add('shake');
+        setTimeout(() => document.getElementById('login-form').classList.remove('shake'), 400);
+
+        showError(data.detail || 'Error de autenticación');
+
+        if (failedAttempts >= 2) {
+            document.getElementById('attempts-container').style.display = 'block';
+            const pct = Math.min((failedAttempts / MAX_ATTEMPTS) * 100, 100);
+            document.getElementById('attempts-fill').style.width = pct + '%';
+            document.getElementById('attempts-text').innerText = `${failedAttempts}/${MAX_ATTEMPTS}`;
+        }
+
+        btn.disabled = false;
+        btn.innerText = 'Iniciar Sesión';
+    }
+}
+
+function togglePass() {
+    const input = document.getElementById('password');
+    input.type = input.type === 'password' ? 'text' : 'password';
+}
+
+function showError(msg) { const el = document.getElementById('error-alert'); el.innerText = msg; el.style.display = 'block'; }
+function showWarn(msg)  { const el = document.getElementById('warn-alert');  el.innerText = msg; el.style.display = 'block'; }
+function hideAlerts()   { ['error-alert','warn-alert'].forEach(id => document.getElementById(id).style.display = 'none'); }
+
+// Cargar nombre de marca
+fetch('/api/settings/theme').then(r => r.json()).then(t => {
+    if (t.brand_name) document.getElementById('brand-name').innerText = t.brand_name;
+});
+</script>
+</body>
+</html>
+

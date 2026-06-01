@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema POS - Auditoría del Sistema</title>
+    <link rel="stylesheet" href="/static/fonts/fonts.css">
+    <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<div class="app-layout">
+
+    <!-- SIDEBAR UNIFICADO -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <img src="/static/logo.png" alt="logo" onerror="this.style.display='none'">
+            <div>
+                <div class="sidebar-brand" id="sidebar-brand">Sistema POS</div>
+                <div class="sidebar-tagline">Sistema de Gestión</div>
+            </div>
+        </div>
+        <span class="nav-section-label">Operación</span>
+        <a href="/" class="nav-item">📊 <span>Dashboard</span></a>
+        <a href="/pos" class="nav-item">🛒 <span>Punto de Venta</span></a>
+        <a href="/comandas" class="nav-item">📝 <span>Comandas</span></a>
+        <span class="nav-section-label">Administración</span>
+        <a href="/inventory" class="nav-item">📦 <span>Inventario</span></a>
+        <a href="/admin/recipes" class="nav-item">🧪 <span>Recetas</span></a>
+        <a href="/admin/menus" class="nav-item">📋 <span>Menús &amp; Mesas</span></a>
+        <span class="nav-section-label">Sistema</span>
+        <a href="/admin/users" class="nav-item">👥 <span>Usuarios</span></a>
+        <a href="/admin/settings" class="nav-item">⚙️ <span>Configuración</span></a>
+        <a href="/admin/reports" class="nav-item">🧾 <span>Reportería &amp; Anulación</span></a>
+        <a href="/audit" class="nav-item active">🔍 <span>Auditoría</span></a>
+        <div style="margin-top:auto">
+            <button class="btn btn-ghost btn-block" onclick="doLogout()">🚪 Cerrar Sesión</button>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">🔍 Bitácora de Auditoría</h1>
+                <p class="page-subtitle text-muted">Registro inmutable · ISO 27001 A.12.4.1</p>
+            </div>
+            <input id="filter-input" placeholder="Filtrar por usuario o acción..." style="max-width:280px" oninput="filterLogs(this.value)">
+        </div>
+
+        <div class="table-wrap animate-in">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha / Hora</th>
+                        <th>Usuario</th>
+                        <th>Acción</th>
+                        <th>Entidad</th>
+                        <th>ID</th>
+                        <th>IP</th>
+                        <th>Detalle</th>
+                    </tr>
+                </thead>
+                <tbody id="audit-body">
+                    <tr><td colspan="7" style="text-align:center;color:var(--color-muted);padding:2rem">Cargando registros...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+
+<script>
+let allLogs = [];
+
+const ACTION_STYLES = {
+    'LOGIN':           'badge-success',
+    'LOGOUT':          'badge-muted',
+    'LOGIN_FAILED':    'badge-danger',
+    'CREATE':          'badge-success',
+    'UPDATE':          'badge-info',
+    'DELETE':          'badge-danger',
+    'DEACTIVATE':      'badge-danger',
+    'PASSWORD_CHANGE': 'badge-warning',
+    'PASSWORD_RESET':  'badge-warning',
+};
+
+async function loadAudit() {
+    const res = await fetch('/audit/');
+    allLogs = await res.json();
+    renderLogs(allLogs);
+}
+
+function renderLogs(logs) {
+    const body = document.getElementById('audit-body');
+    if (!logs.length) {
+        body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--color-muted);padding:2rem">Sin registros</td></tr>';
+        return;
+    }
+    body.innerHTML = logs.map(log => {
+        const badgeClass = ACTION_STYLES[log.action] || 'badge-muted';
+        const detail = log.new_values ? JSON.stringify(log.new_values) : (log.old_values ? '—' : '—');
+        return `<tr>
+            <td class="text-sm">${new Date(log.timestamp).toLocaleString('es-EC')}</td>
+            <td><strong>${log.username_snapshot || log.username || 'Sistema'}</strong></td>
+            <td><span class="badge ${badgeClass}">${log.action}</span></td>
+            <td>${log.entity}</td>
+            <td class="text-muted text-sm">#${log.entity_id || '—'}</td>
+            <td class="text-muted text-xs">${log.ip_address || '—'}</td>
+            <td class="text-xs text-muted" style="max-width:200px;overflow:hidden;text-overflow:ellipsis" title="${detail}">${detail.substring(0, 60)}${detail.length > 60 ? '…' : ''}</td>
+        </tr>`;
+    }).join('');
+}
+
+function filterLogs(q) {
+    const f = q.toLowerCase();
+    renderLogs(allLogs.filter(l =>
+        (l.username_snapshot || '').toLowerCase().includes(f) ||
+        (l.action || '').toLowerCase().includes(f) ||
+        (l.entity || '').toLowerCase().includes(f)
+    ));
+}
+
+function doLogout() {
+    const token = localStorage.getItem('auth_token');
+    if (token) fetch('/api/auth/logout', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+    localStorage.removeItem('auth_token');
+    window.location.href = '/login';
+}
+
+fetch('/api/settings/theme').then(r => r.json()).then(t => {
+    if (t.brand_name) document.getElementById('sidebar-brand').innerText = t.brand_name;
+}).catch(() => {});
+
+loadAudit();
+</script>
+</body>
+</html>
+

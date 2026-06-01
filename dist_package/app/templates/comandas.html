@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema POS - Comandas KDS</title>
+    <link rel="stylesheet" href="/static/fonts/fonts.css">
+    <style>
+        :root {
+            --bg: #0f172a; --card: rgba(30,41,59,.8); --accent: #fbbf24;
+            --text: #f1f5f9; --muted: #94a3b8; --border: rgba(255,255,255,.1);
+            --success: #10b981; --danger: #ef4444; --info: #3b82f6;
+            --ready: #8b5cf6;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text);
+               padding: 1.2rem; background-image: radial-gradient(circle at top right, #1e293b, #0f172a); }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .header h1 { font-size: 1.4rem; color: var(--accent); }
+        .header-right { display: flex; align-items: center; gap: 1rem; }
+        .status-badge { background: rgba(251,191,36,.15); border: 1px solid var(--accent);
+                        color: var(--accent); padding: .4rem 1rem; border-radius: 8px; font-weight: 700; font-size: .9rem; }
+        .refresh-btn { background: rgba(255,255,255,.07); border: 1px solid var(--border);
+                       color: var(--muted); padding: .4rem 1rem; border-radius: 8px; cursor: pointer;
+                       font-size: .85rem; transition: all .2s; }
+        .refresh-btn:hover { color: var(--text); }
+
+        /* Tabs de estado */
+        .tabs { display: flex; gap: .5rem; margin-bottom: 1.5rem; }
+        .tab-btn { padding: .5rem 1.2rem; border-radius: 8px; border: 1px solid var(--border);
+                   background: transparent; color: var(--muted); cursor: pointer; font-weight: 600;
+                   font-size: .85rem; transition: all .2s; }
+        .tab-btn.active-pending  { background: rgba(251,191,36,.15); color: var(--accent); border-color: var(--accent); }
+        .tab-btn.active-done     { background: rgba(139,92,246,.15); color: var(--ready); border-color: var(--ready); }
+        .count-badge { display: inline-flex; align-items: center; justify-content: center;
+                       width: 20px; height: 20px; border-radius: 50%; font-size: .7rem;
+                       font-weight: 700; margin-left: .4rem; }
+        .cb-pending { background: var(--accent); color: #000; }
+        .cb-done    { background: var(--ready);  color: #fff; }
+
+        /* Grid comandas */
+        .comandas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.2rem; }
+
+        /* Tarjeta */
+        .comanda-card { background: var(--card); backdrop-filter: blur(10px); border-radius: 1.2rem;
+                        border: 2px solid var(--border); display: flex; flex-direction: column;
+                        animation: fadeIn .3s ease-out; transition: all .3s; }
+        .comanda-card.type-LLEVAR   { border-top: 4px solid var(--accent); }
+        .comanda-card.type-DOMICILIO { border-top: 4px solid var(--info); }
+        .comanda-card.type-MESA     { border-top: 4px solid var(--success); }
+        .comanda-card.delivered     { opacity: .5; transform: scale(.97); pointer-events: none; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .comanda-header { padding: .9rem 1rem; border-bottom: 1px solid var(--border);
+                          display: flex; justify-content: space-between; align-items: flex-start; }
+        .order-num { font-weight: 700; font-size: 1rem; }
+        .type-chip { font-size: .7rem; padding: .18rem .55rem; border-radius: 20px; font-weight: 700; margin-top: .2rem; }
+        .chip-MESA      { background: rgba(16,185,129,.2); color: var(--success); }
+        .chip-LLEVAR    { background: rgba(251,191,36,.2); color: var(--accent); }
+        .chip-DOMICILIO { background: rgba(59,130,246,.2); color: var(--info); }
+        .time-badge { background: rgba(255,255,255,.08); padding: .25rem .6rem; border-radius: 6px; font-size: .8rem; }
+
+        .comanda-body { padding: 1rem; flex: 1; }
+        .customer-info { margin-bottom: .7rem; }
+        .customer-name { color: var(--accent); font-weight: 600; font-size: .9rem; }
+        .delivery-code { color: var(--info); font-size: .78rem; font-weight: 600; margin-top: .15rem; }
+        .table-info { color: var(--success); font-size: .82rem; }
+        .notes-box { background: rgba(255,255,255,.04); border: 1px solid var(--border); border-radius: 7px;
+                     padding: .5rem .7rem; font-size: .8rem; color: var(--muted); margin-top: .5rem; }
+
+        .item-row { display: flex; justify-content: space-between; align-items: center;
+                    padding: .35rem 0; border-bottom: 1px solid rgba(255,255,255,.04); }
+        .item-row:last-child { border-bottom: none; }
+        .item-name { font-size: .92rem; }
+        .item-qty { background: var(--accent); color: #000; width: 26px; height: 26px; border-radius: 6px;
+                    display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .85rem; }
+
+        .comanda-footer { padding: .9rem 1rem; border-top: 1px solid var(--border); }
+        .total-line { display: flex; justify-content: space-between; font-size: .85rem;
+                      color: var(--muted); margin-bottom: .7rem; }
+        .total-line strong { color: var(--accent); font-size: 1rem; }
+
+        .btn-deliver { width: 100%; padding: .85rem; border: none; border-radius: 10px;
+                       background: linear-gradient(135deg, var(--success), #059669);
+                       color: white; font-weight: 700; font-size: 1rem; cursor: pointer; transition: all .2s; }
+        .btn-deliver:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(16,185,129,.4); }
+        .btn-deliver:active { transform: scale(.97); }
+        .btn-delivered { background: rgba(139,92,246,.25) !important; color: var(--ready) !important;
+                         cursor: default !important; transform: none !important; box-shadow: none !important; }
+
+        /* Empty state */
+        .empty-state { grid-column: 1/-1; text-align: center; padding: 4rem 2rem; color: var(--muted); }
+        .empty-state span { font-size: 3rem; display: block; margin-bottom: .5rem; }
+
+        /* Toast */
+        .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
+                 padding: .8rem 1.5rem; border-radius: 10px; font-weight: 600; z-index: 9999;
+                 background: #052e16; border: 1px solid var(--success); color: var(--success); }
+        .toast.error { background: #450a0a; border-color: var(--danger); color: var(--danger); }
+        .toast.info  { background: #1e1b4b; border-color: var(--ready); color: var(--ready); }
+    </style>
+</head>
+<body>
+<div class="header">
+    <div style="display:flex;align-items:center;gap:1rem">
+        <img src="/static/logo.png" alt="Logo" style="width:48px;height:auto;object-fit:contain;border-radius:8px;image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges" onerror="this.style.display='none'">
+        <h1>🍳 Comandas KDS</h1>
+    </div>
+    <div class="header-right">
+        <span id="status-summary" class="status-badge">⏳ Cargando...</span>
+        <button class="refresh-btn" onclick="loadComandas()">🔄 Actualizar</button>
+        <a href="/" style="color:var(--muted);text-decoration:none;font-size:.85rem">← Dashboard</a>
+    </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+    <button class="tab-btn active-pending" id="tab-pending" onclick="showTab('pending')">
+        ⏳ Pendientes <span class="count-badge cb-pending" id="cnt-pending">0</span>
+    </button>
+    <button class="tab-btn" id="tab-done" onclick="showTab('done')">
+        ✅ Listos para Facturar <span class="count-badge cb-done" id="cnt-done">0</span>
+    </button>
+</div>
+
+<div class="comandas-grid" id="comandas-container"></div>
+
+<script>
+let currentTab = 'pending';
+let pendingOrders = [];
+let doneOrders = [];
+
+function showTab(tab) {
+    currentTab = tab;
+    document.getElementById('tab-pending').className = 'tab-btn' + (tab === 'pending' ? ' active-pending' : '');
+    document.getElementById('tab-done').className = 'tab-btn' + (tab === 'done' ? ' active-done' : '');
+    renderOrders();
+}
+
+async function loadComandas() {
+    try {
+        const [pendRes, doneRes] = await Promise.all([
+            fetch('/api/orders/pending'),
+            fetch('/api/orders/ready-to-invoice')
+        ]);
+        pendingOrders = await pendRes.json();
+        doneOrders = await doneRes.json();
+
+        document.getElementById('cnt-pending').innerText = pendingOrders.length;
+        document.getElementById('cnt-done').innerText = doneOrders.length;
+        document.getElementById('status-summary').innerText =
+            `⏳ ${pendingOrders.length} pendiente${pendingOrders.length !== 1 ? 's' : ''} · ✅ ${doneOrders.length} listo${doneOrders.length !== 1 ? 's' : ''}`;
+
+        renderOrders();
+    } catch(e) {
+        showToast('Error al cargar comandas', true);
+    }
+}
+
+function renderOrders() {
+    const container = document.getElementById('comandas-container');
+    const orders = currentTab === 'pending' ? pendingOrders : doneOrders;
+
+    if (!orders.length) {
+        const msgs = {
+            pending: { icon: '🎉', text: 'No hay pedidos pendientes', sub: 'Todos los pedidos están al día' },
+            done:    { icon: '🧾', text: 'No hay pedidos listos para facturar', sub: 'Los pedidos entregados aparecerán aquí' }
+        };
+        const m = msgs[currentTab];
+        container.innerHTML = `<div class="empty-state"><span>${m.icon}</span><strong>${m.text}</strong><p style="margin-top:.5rem;font-size:.85rem">${m.sub}</p></div>`;
+        return;
+    }
+
+    container.innerHTML = orders.map(c => {
+        const typeClass = `type-${c.type}`;
+        const chipClass = `chip-${c.type}`;
+        const typeLabel = {MESA:'🪑 Mesa', LLEVAR:'🛍️ Llevar', DOMICILIO:'🛵 Domicilio'}[c.type] || c.type;
+        const isDone = currentTab === 'done';
+
+        const deliveryInfo = c.type === 'DOMICILIO'
+            ? `<div class="delivery-code">🔑 ${c.delivery_code || 'Sin código'} · 📍 ${c.delivery_address || 'Sin dirección'}</div>` : '';
+        const tableInfo = c.type === 'MESA' && c.table
+            ? `<div class="table-info">🪑 Mesa ${c.table}</div>` : '';
+        const notesHtml = c.notes
+            ? `<div class="notes-box">📝 ${c.notes}</div>` : '';
+        const itemsHtml = c.items.map(i =>
+            `<div class="item-row"><span class="item-name">${i.name}</span><span class="item-qty">${i.qty}</span></div>`
+        ).join('');
+
+        const btnHtml = isDone
+            ? `<button class="btn-deliver btn-delivered" disabled>✅ Listo para Facturar en POS</button>`
+            : `<button class="btn-deliver" id="btn-${c.id}" onclick="deliverOrder(${c.id},this)">✅ ENTREGAR PEDIDO → FACTURACIÓN</button>`;
+
+        return `
+        <div class="comanda-card ${typeClass}" id="comanda-${c.id}">
+            <div class="comanda-header">
+                <div>
+                    <div class="order-num">ORDEN #${c.invoice}</div>
+                    <div class="type-chip ${chipClass}">${typeLabel}</div>
+                </div>
+                <span class="time-badge">⏱ ${c.time}</span>
+            </div>
+            <div class="comanda-body">
+                <div class="customer-info">
+                    <div class="customer-name">👤 ${c.customer}</div>
+                    ${deliveryInfo}${tableInfo}
+                </div>
+                ${itemsHtml}
+                ${notesHtml}
+            </div>
+            <div class="comanda-footer">
+                <div class="total-line"><span>Total</span><strong>$${parseFloat(c.total).toFixed(2)}</strong></div>
+                ${btnHtml}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+async function deliverOrder(id, btn) {
+    btn.disabled = true;
+    btn.innerText = '⏳ Enviando a Facturación...';
+    try {
+        const res = await fetch(`/api/orders/${id}/ready-invoice`, { method: 'PUT' });
+        if (res.ok) {
+            const card = document.getElementById(`comanda-${id}`);
+            card.classList.add('delivered');
+            showToast('✅ Pedido enviado a Facturación', false, 'info');
+            setTimeout(() => loadComandas(), 1200);
+        } else {
+            const e = await res.json();
+            showToast(e.detail || 'Error al procesar', true);
+            btn.disabled = false;
+            btn.innerText = '✅ ENTREGAR PEDIDO → FACTURACIÓN';
+        }
+    } catch(e) {
+        showToast('Error de conexión', true);
+        btn.disabled = false;
+        btn.innerText = '✅ ENTREGAR PEDIDO → FACTURACIÓN';
+    }
+}
+
+function showToast(msg, isError = false, type = '') {
+    document.querySelectorAll('.toast').forEach(t => t.remove());
+    const t = document.createElement('div');
+    t.className = 'toast' + (isError ? ' error' : type === 'info' ? ' info' : '');
+    t.innerText = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 4000);
+}
+
+// Refrescar cada 15 segundos
+setInterval(loadComandas, 15000);
+loadComandas();
+</script>
+</body>
+</html>

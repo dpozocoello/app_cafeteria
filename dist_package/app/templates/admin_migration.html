@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema POS - Migración de Base de Datos</title>
+    <link rel="stylesheet" href="/static/fonts/fonts.css">
+    <style>
+        :root{--bg:#020617;--sidebar:#0f172a;--card:rgba(30,41,59,.5);--accent:#fbbf24;--text:#f8fafc;--muted:#94a3b8;--border:rgba(255,255,255,.07);--success:#10b981;--danger:#ef4444;--info:#3b82f6;--warning:#f59e0b;}
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+        body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;}
+        .sidebar{width:230px;background:var(--sidebar);border-right:1px solid var(--border);padding:1.2rem;display:flex;flex-direction:column;flex-shrink:0;}
+        .sidebar-logo{display:flex;align-items:center;gap:.6rem;margin-bottom:1.2rem;padding-bottom:1rem;border-bottom:1px solid var(--border);}
+        .sidebar-logo img{width:56px;height:auto;object-fit:contain;border-radius:8px;image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges;}
+        .nav-section{font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:.3rem .5rem;margin-top:.8rem;}
+        .nav-item{padding:.7rem .9rem;border-radius:9px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:9px;transition:all .15s;font-weight:500;font-size:.88rem;margin-bottom:.15rem;}
+        .nav-item:hover,.nav-item.active{background:rgba(251,191,36,.12);color:var(--accent);}
+        .sidebar-bottom{margin-top:auto;padding-top:1rem;}
+
+        .main{flex:1;padding:2rem;overflow-y:auto;max-width:1100px;}
+        .page-header{margin-bottom:2rem;}
+        h1{font-size:1.6rem;color:var(--accent);}
+        h2{font-size:1.1rem;margin-bottom:1rem;}
+
+        /* DB Config Panels */
+        .migration-layout{display:grid;grid-template-columns:1fr 60px 1fr;gap:1rem;align-items:start;margin-bottom:2rem;}
+        .db-panel{background:var(--card);border:1px solid var(--border);border-radius:1rem;padding:1.4rem;}
+        .db-panel-title{font-weight:700;font-size:1rem;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem;}
+        .engine-btns{display:flex;gap:.4rem;margin-bottom:1.2rem;}
+        .eng-btn{padding:.4rem .8rem;border:2px solid var(--border);border-radius:7px;background:transparent;color:var(--muted);cursor:pointer;font-size:.8rem;font-weight:600;transition:all .15s;}
+        .eng-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(251,191,36,.08);}
+        .form-group{display:flex;flex-direction:column;gap:.3rem;margin-bottom:.8rem;}
+        label{font-size:.78rem;color:var(--muted);}
+        input,select{background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--text);padding:.5rem .7rem;border-radius:7px;font-size:.88rem;width:100%;}
+        .arrow-col{display:flex;align-items:center;justify-content:center;padding-top:3rem;}
+        .arrow-icon{font-size:2rem;color:var(--accent);}
+
+        /* Status */
+        .test-btn{padding:.45rem 1rem;border:none;border-radius:7px;font-weight:600;cursor:pointer;font-size:.82rem;width:100%;margin-top:.5rem;transition:all .15s;}
+        .test-btn.idle{background:rgba(59,130,246,.2);color:var(--info);}
+        .test-btn.ok{background:rgba(16,185,129,.2);color:var(--success);}
+        .test-btn.fail{background:rgba(239,68,68,.2);color:var(--danger);}
+        .status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;}
+        .dot-idle{background:var(--muted);}
+        .dot-ok{background:var(--success);box-shadow:0 0 6px var(--success);}
+        .dot-fail{background:var(--danger);box-shadow:0 0 6px var(--danger);}
+
+        /* Warning */
+        .warning-box{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:1rem;padding:1rem 1.2rem;margin-bottom:1.5rem;font-size:.85rem;color:var(--warning);}
+
+        /* Progress */
+        .progress-panel{background:var(--card);border:1px solid var(--border);border-radius:1rem;padding:1.4rem;display:none;}
+        .progress-panel.active{display:block;}
+        .progress-bar-wrap{background:rgba(255,255,255,.06);border-radius:8px;height:10px;overflow:hidden;margin:1rem 0;}
+        .progress-bar{height:100%;background:var(--accent);border-radius:8px;transition:width .3s ease;width:0%;}
+        .tables-log{max-height:280px;overflow-y:auto;font-family:monospace;font-size:.8rem;color:var(--muted);background:rgba(0,0,0,.3);border-radius:8px;padding:.8rem;margin-top:.8rem;}
+        .log-ok{color:var(--success);}
+        .log-err{color:var(--danger);}
+        .log-skip{color:var(--muted);}
+
+        .btn{padding:.55rem 1.2rem;border:none;border-radius:9px;font-weight:700;cursor:pointer;font-size:.9rem;transition:all .18s;}
+        .btn-primary{background:var(--accent);color:#000;}
+        .btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+        .toast{position:fixed;bottom:1.5rem;right:1.5rem;padding:.8rem 1.3rem;border-radius:10px;font-weight:600;z-index:9999;background:#052e16;border:1px solid var(--success);color:var(--success);}
+        .toast.error{background:#450a0a;border-color:var(--danger);color:var(--danger);}
+    </style>
+</head>
+<body>
+<aside class="sidebar">
+    <div class="sidebar-logo">
+        <img src="/static/logo.png" alt="logo" onerror="this.style.display='none'">
+        <div>
+            <div id="sidebar-brand" style="font-weight:700;color:var(--accent);font-size:.9rem">Sistema POS</div>
+            <div style="font-size:.68rem;color:var(--muted)">Sistema de Gestión</div>
+        </div>
+    </div>
+    <div class="nav-section">Operación</div>
+    <a href="/" class="nav-item">📊 Dashboard</a>
+    <a href="/pos" class="nav-item">🛒 Punto de Venta</a>
+    <a href="/pedidos" class="nav-item">🍽️ Toma de Pedidos</a>
+    <a href="/comandas" class="nav-item">📝 Comandas KDS</a>
+    <div class="nav-section">Administración</div>
+    <a href="/inventory" class="nav-item">📦 Inventario</a>
+    <a href="/admin/recipes" class="nav-item">🧪 Recetas</a>
+    <a href="/admin/menus" class="nav-item">📋 Menús &amp; Mesas</a>
+    <div class="nav-section">Sistema</div>
+    <a href="/admin/profiles" class="nav-item">🎭 Perfiles</a>
+    <a href="/admin/users" class="nav-item">👥 Usuarios</a>
+    <a href="/admin/settings" class="nav-item">⚙️ Configuración</a>
+    <a href="/admin/reports" class="nav-item">🧾 Reportería &amp; Anulación</a>
+    <a href="/admin/migration" class="nav-item active">🔄 Migración BD</a>
+    <a href="/audit" class="nav-item">🔍 Auditoría</a>
+    <div class="sidebar-bottom">
+        <button class="btn" style="width:100%;background:rgba(255,255,255,.06);color:var(--muted);border:none;padding:.55rem;border-radius:8px;cursor:pointer;font-size:.82rem" onclick="doLogout()">🚪 Cerrar Sesión</button>
+    </div>
+</aside>
+
+<main class="main">
+    <div class="page-header">
+        <h1>🔄 Migración de Base de Datos</h1>
+        <p style="color:var(--muted);font-size:.88rem;margin-top:.3rem">Mueve todos los datos entre motores de base de datos con seguridad</p>
+    </div>
+
+    <div class="warning-box">
+        ⚠️ <strong>Advertencia:</strong> La migración reemplaza todos los datos del destino. Realiza un respaldo antes de continuar. El servidor se mantiene operativo durante la migración.
+    </div>
+
+    <!-- Configuración fuente/destino -->
+    <div class="migration-layout">
+        <!-- Fuente -->
+        <div class="db-panel" id="src-panel">
+            <div class="db-panel-title">📤 Base de Datos <strong>Fuente</strong></div>
+            <div class="engine-btns">
+                <button class="eng-btn active" onclick="setEngine('src','sqlite',this)">📄 SQLite</button>
+                <button class="eng-btn" onclick="setEngine('src','postgresql',this)">🐘 PostgreSQL</button>
+                <button class="eng-btn" onclick="setEngine('src','mysql',this)">🐬 MySQL</button>
+            </div>
+            <div id="src-fields"></div>
+            <button class="test-btn idle" id="src-test-btn" onclick="testConn('src')">🔌 Probar Conexión Fuente</button>
+            <div id="src-result" style="font-size:.78rem;margin-top:.4rem;color:var(--muted)"></div>
+        </div>
+
+        <div class="arrow-col"><div class="arrow-icon">→</div></div>
+
+        <!-- Destino -->
+        <div class="db-panel" id="dst-panel">
+            <div class="db-panel-title">📥 Base de Datos <strong>Destino</strong></div>
+            <div class="engine-btns">
+                <button class="eng-btn" onclick="setEngine('dst','sqlite',this)">📄 SQLite</button>
+                <button class="eng-btn active" onclick="setEngine('dst','postgresql',this)">🐘 PostgreSQL</button>
+                <button class="eng-btn" onclick="setEngine('dst','mysql',this)">🐬 MySQL</button>
+            </div>
+            <div id="dst-fields"></div>
+            <button class="test-btn idle" id="dst-test-btn" onclick="testConn('dst')">🔌 Probar Conexión Destino</button>
+            <div id="dst-result" style="font-size:.78rem;margin-top:.4rem;color:var(--muted)"></div>
+        </div>
+    </div>
+
+    <!-- Botón de iniciar -->
+    <div style="text-align:center;margin-bottom:2rem">
+        <button class="btn btn-primary" id="migrate-btn" onclick="startMigration()">
+            🚀 Iniciar Migración Completa
+        </button>
+    </div>
+
+    <!-- Panel de progreso -->
+    <div class="progress-panel" id="progress-panel">
+        <h2>Progreso de Migración</h2>
+        <div class="progress-bar-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+        <div id="progress-msg" style="color:var(--muted);font-size:.85rem">Iniciando...</div>
+        <div class="tables-log" id="tables-log"></div>
+        <div id="migration-summary" style="margin-top:1rem;font-size:.88rem"></div>
+    </div>
+</main>
+
+<script>
+let srcEngine = 'sqlite';
+let dstEngine = 'postgresql';
+let srcOk = false, dstOk = false;
+
+const FIELD_TEMPLATES = {
+    sqlite: `<div class="form-group"><label>Ruta del archivo .db</label><input id="{p}-path" value="./pos_app.db"></div>`,
+    postgresql: `
+        <div class="form-group"><label>Host</label><input id="{p}-host" value="localhost"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+            <div class="form-group"><label>Puerto</label><input id="{p}-port" type="number" value="5432"></div>
+            <div class="form-group"><label>Base de datos</label><input id="{p}-db" value="pos_app"></div>
+        </div>
+        <div class="form-group"><label>Usuario</label><input id="{p}-user" value="postgres"></div>
+        <div class="form-group"><label>Contraseña</label><input id="{p}-pass" type="password" placeholder="••••••••"></div>`,
+    mysql: `
+        <div class="form-group"><label>Host</label><input id="{p}-host" value="localhost"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+            <div class="form-group"><label>Puerto</label><input id="{p}-port" type="number" value="3306"></div>
+            <div class="form-group"><label>Base de datos</label><input id="{p}-db" value="pos_app"></div>
+        </div>
+        <div class="form-group"><label>Usuario</label><input id="{p}-user" value="root"></div>
+        <div class="form-group"><label>Contraseña</label><input id="{p}-pass" type="password" placeholder="••••••••"></div>`
+};
+
+function setEngine(side, engine, btn) {
+    if (side === 'src') srcEngine = engine;
+    else dstEngine = engine;
+    btn.closest('.db-panel').querySelectorAll('.eng-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    renderFields(side, engine);
+    resetTest(side);
+}
+
+function renderFields(side, engine) {
+    const p = side === 'src' ? 'src' : 'dst';
+    document.getElementById(`${p}-fields`).innerHTML = FIELD_TEMPLATES[engine].replaceAll('{p}', p);
+}
+
+function getConfig(side) {
+    const p = side === 'src' ? 'src' : 'dst';
+    const engine = side === 'src' ? srcEngine : dstEngine;
+    const cfg = { engine };
+    if (engine === 'sqlite') cfg.path = document.getElementById(`${p}-path`)?.value;
+    else {
+        cfg.host = document.getElementById(`${p}-host`)?.value;
+        cfg.port = parseInt(document.getElementById(`${p}-port`)?.value);
+        cfg.database = document.getElementById(`${p}-db`)?.value;
+        cfg.user = document.getElementById(`${p}-user`)?.value;
+        cfg.password = document.getElementById(`${p}-pass`)?.value;
+    }
+    return cfg;
+}
+
+function resetTest(side) {
+    const p = side === 'src' ? 'src' : 'dst';
+    if (side === 'src') srcOk = false; else dstOk = false;
+    const btn = document.getElementById(`${p}-test-btn`);
+    btn.className = 'test-btn idle';
+    btn.innerText = `🔌 Probar Conexión ${side==='src'?'Fuente':'Destino'}`;
+    document.getElementById(`${p}-result`).innerText = '';
+}
+
+async function testConn(side) {
+    const p = side === 'src' ? 'src' : 'dst';
+    const btn = document.getElementById(`${p}-test-btn`);
+    btn.innerText = '⏳ Probando...';
+    const res = await fetch(`/api/migration/test-${side === 'src' ? 'source' : 'destination'}`, {
+        method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(getConfig(side))
+    });
+    const data = await res.json();
+    const resultEl = document.getElementById(`${p}-result`);
+    if (data.ok) {
+        btn.className = 'test-btn ok';
+        btn.innerText = '✅ Conexión Exitosa';
+        resultEl.innerHTML = `<span style="color:var(--success)">Motor: ${data.engine} · Versión: ${data.version}</span>`;
+        if (side === 'src') srcOk = true; else dstOk = true;
+    } else {
+        btn.className = 'test-btn fail';
+        btn.innerText = '❌ Falló';
+        resultEl.innerHTML = `<span style="color:var(--danger)">${data.error}</span>`;
+    }
+}
+
+async function startMigration() {
+    if (!srcOk || !dstOk) {
+        showToast('Primero prueba ambas conexiones exitosamente', true);
+        return;
+    }
+    if (!confirm('¿Iniciar migración? Los datos del destino serán reemplazados.')) return;
+
+    const btn = document.getElementById('migrate-btn');
+    btn.disabled = true;
+    btn.innerText = '⏳ Migrando...';
+
+    const panel = document.getElementById('progress-panel');
+    panel.classList.add('active');
+    document.getElementById('tables-log').innerHTML = '';
+    setProgress(5, 'Conectando con bases de datos...');
+
+    try {
+        const res = await fetch('/api/migration/start', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ source: getConfig('src'), destination: getConfig('dst') })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+            showToast(data.detail || 'Error en migración', true);
+            setProgress(0, '❌ Error');
+        } else {
+            setProgress(100, '✅ Migración completada');
+            const log = document.getElementById('tables-log');
+            Object.entries(data.tables).forEach(([tbl, info]) => {
+                const cls = info.error ? 'log-err' : info.skipped ? 'log-skip' : 'log-ok';
+                const msg = info.error ? `Error: ${info.error}` : info.skipped ? `Omitida: ${info.reason}` : `${info.rows} filas`;
+                log.innerHTML += `<div class="${cls}">${info.error?'❌':info.skipped?'⤵':'✓'} ${tbl}: ${msg}</div>`;
+            });
+            document.getElementById('migration-summary').innerHTML = `
+                <div style="color:var(--success);font-weight:600">
+                    ✅ Migración exitosa · ${data.total_tables} tablas · ${data.total_rows} filas totales
+                    <br><span style="color:var(--muted);font-size:.8rem">Duración: ${new Date(data.finished_at) - new Date(data.started_at)}ms</span>
+                </div>
+                ${data.errors.length ? `<div style="color:var(--danger);margin-top:.5rem">⚠️ ${data.errors.length} tabla(s) con errores</div>` : ''}`;
+            showToast(`✅ Migración completada: ${data.total_rows} filas transferidas`);
+        }
+    } catch(e) {
+        showToast('Error de conexión: ' + e.message, true);
+    }
+    btn.disabled = false;
+    btn.innerText = '🚀 Iniciar Migración Completa';
+}
+
+function setProgress(pct, msg) {
+    document.getElementById('progress-bar').style.width = pct + '%';
+    document.getElementById('progress-msg').innerText = msg;
+}
+
+function showToast(msg, isError=false) {
+    document.querySelectorAll('.toast').forEach(t=>t.remove());
+    const t = document.createElement('div');
+    t.className='toast'+(isError?' error':'');
+    t.innerText=msg;
+    document.body.appendChild(t);
+    setTimeout(()=>t.remove(), 5000);
+}
+
+function doLogout() {
+    const tk=localStorage.getItem('auth_token');
+    if(tk) fetch('/api/auth/logout',{method:'POST',headers:{'Authorization':`Bearer ${tk}`}});
+    localStorage.removeItem('auth_token');
+    window.location.href='/login';
+}
+
+// Init
+renderFields('src', 'sqlite');
+renderFields('dst', 'postgresql');
+fetch('/api/settings/theme').then(r=>r.json()).then(t=>{
+    if(t.brand_name) document.getElementById('sidebar-brand').innerText=t.brand_name;
+}).catch(()=>{});
+</script>
+</body>
+</html>
+

@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema POS - Configuración del Sistema</title>
+    <link rel="stylesheet" href="/static/fonts/fonts.css">
+    <link rel="stylesheet" href="/static/app.css">
+    <style>
+        /* Estilos específicos del panel de admin */
+        .preview-box {
+            border: 2px dashed var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-xl);
+            background: var(--color-card);
+            transition: all 0.3s;
+        }
+
+        .color-swatch-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: var(--space-md);
+        }
+
+        .color-swatch {
+            background: var(--color-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-md);
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+        }
+
+        .swatch-preview {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-md);
+            border: 2px solid rgba(255,255,255,0.1);
+            flex-shrink: 0;
+        }
+
+        .db-status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+        .dot-ok   { background: var(--color-success); box-shadow: 0 0 8px var(--color-success); }
+        .dot-fail { background: var(--color-danger); box-shadow: 0 0 8px var(--color-danger); }
+        .dot-idle { background: var(--color-muted); }
+
+        .engine-card {
+            background: var(--color-card);
+            border: 2px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            cursor: pointer;
+            transition: all var(--transition);
+            text-align: center;
+        }
+        .engine-card:hover { border-color: var(--color-accent); }
+        .engine-card.selected { border-color: var(--color-accent); background: rgba(251,191,36,0.08); }
+        .engine-icon { font-size: 2.5rem; margin-bottom: var(--space-sm); }
+    </style>
+</head>
+<body>
+<div class="app-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <img id="sidebar-logo" src="/static/logo.png" alt="logo" onerror="this.style.display='none'">
+            <div>
+                <div class="sidebar-brand" id="sidebar-brand">Sistema POS</div>
+                <div class="sidebar-tagline" id="sidebar-tagline">Sistema de Gestión</div>
+            </div>
+        </div>
+        <span class="nav-section-label">Operación</span>
+        <a href="/" class="nav-item"><span>📊</span><span>Dashboard</span></a>
+        <a href="/pos" class="nav-item"><span>🛒</span><span>Punto de Venta</span></a>
+        <a href="/comandas" class="nav-item"><span>📝</span><span>Comandas</span></a>
+        <span class="nav-section-label">Administración</span>
+        <a href="/inventory" class="nav-item"><span>📦</span><span>Inventario</span></a>
+        <a href="/admin/recipes" class="nav-item"><span>🧪</span><span>Recetas</span></a>
+        <a href="/admin/menus" class="nav-item"><span>📋</span><span>Menús & Mesas</span></a>
+        <span class="nav-section-label">Sistema</span>
+        <a href="/admin/users" class="nav-item"><span>👥</span><span>Usuarios</span></a>
+        <a href="/admin/settings" class="nav-item active"><span>⚙️</span><span>Configuración</span></a>
+        <a href="/admin/reports" class="nav-item"><span>🧾</span><span>Reportería & Anulación</span></a>
+        <a href="/audit" class="nav-item"><span>🔍</span><span>Auditoría</span></a>
+        <div style="margin-top:auto">
+            <button class="btn btn-ghost btn-block" onclick="doLogout()">🚪 Cerrar Sesión</button>
+        </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main-content">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">⚙️ Configuración del Sistema</h1>
+                <p class="page-subtitle">Motor de base de datos e identidad gráfica</p>
+            </div>
+        </div>
+
+        <!-- TABS -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('appearance', this)">🎨 Identidad Visual</button>
+            <button class="tab" onclick="switchTab('database', this)">🗄️ Base de Datos</button>
+            <button class="tab" onclick="switchTab('brand', this)">🏢 Empresa y Marca</button>
+            <button class="tab" onclick="switchTab('emission-points', this)">🏪 Puntos de Emisión</button>
+            <button class="tab" onclick="switchTab('taxes', this)">⚖️ Impuestos (IVA)</button>
+            <button class="tab" onclick="switchTab('email', this)">📧 Correo SMTP</button>
+        </div>
+
+        <!-- ═══ TAB: APARIENCIA ═══════════════════════════════════════════ -->
+        <div class="tab-section active animate-in" id="tab-appearance">
+            <div class="flex-between mb-lg">
+                <h2>Paleta de Colores</h2>
+                <div class="flex gap-sm">
+                    <button class="btn btn-ghost" onclick="resetColors()">↩ Restaurar</button>
+                    <button class="btn btn-primary" onclick="saveAppearance()">💾 Guardar y Aplicar</button>
+                </div>
+            </div>
+
+            <div class="color-swatch-grid" id="color-swatches">
+                <!-- Generado por JS -->
+            </div>
+
+            <div class="card mt-lg">
+                <h3 class="mb-md">Tipografía</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Fuente Google Fonts</label>
+                        <select id="font-family" onchange="previewFont(this.value)">
+                            <option value="Outfit">Outfit (Actual)</option>
+                            <option value="Inter">Inter</option>
+                            <option value="Roboto">Roboto</option>
+                            <option value="Poppins">Poppins</option>
+                            <option value="Montserrat">Montserrat</option>
+                            <option value="Nunito">Nunito</option>
+                            <option value="Raleway">Raleway</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Vista Previa</label>
+                        <div id="font-preview" class="card card-sm" style="font-size:1.1rem;">
+                            El café perfecto requiere atención a cada detalle.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview en vivo -->
+            <div class="preview-box mt-lg">
+                <h3 class="mb-md text-muted" style="font-size:var(--font-size-xs);text-transform:uppercase;">Vista Previa en Vivo</h3>
+                <div class="flex-between mb-md">
+                    <span class="page-title" style="font-size:1.4rem;">Panel de Muestra</span>
+                    <button class="btn btn-primary">Acción Principal</button>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1rem">
+                    <div class="kpi-card"><div class="kpi-label">Ventas Hoy</div><div class="kpi-value text-accent">$248.50</div></div>
+                    <div class="kpi-card"><div class="kpi-label">Utilidad</div><div class="kpi-value text-success">$89.20</div></div>
+                    <div class="kpi-card"><div class="kpi-label">Pedidos</div><div class="kpi-value">34</div></div>
+                </div>
+                <div style="display:flex;gap:.5rem">
+                    <span class="badge badge-success">Activo</span>
+                    <span class="badge badge-warning">Pendiente</span>
+                    <span class="badge badge-danger">Error</span>
+                    <span class="badge badge-info">Info</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ TAB: BASE DE DATOS ════════════════════════════════════════ -->
+        <div class="tab-section" id="tab-database">
+            <div class="flex-between mb-lg">
+                <h2>Motor de Base de Datos</h2>
+                <button class="btn btn-primary" onclick="saveDatabase()">💾 Guardar Configuración</button>
+            </div>
+
+            <!-- Selector de motor -->
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:2rem" id="engine-selector">
+                <div class="engine-card selected" data-engine="sqlite" onclick="selectEngine('sqlite')">
+                    <div class="engine-icon">📄</div>
+                    <div class="font-bold">SQLite</div>
+                    <div class="text-muted text-sm">Archivo local · Desarrollo</div>
+                </div>
+                <div class="engine-card" data-engine="postgresql" onclick="selectEngine('postgresql')">
+                    <div class="engine-icon">🐘</div>
+                    <div class="font-bold">PostgreSQL</div>
+                    <div class="text-muted text-sm">Producción recomendada</div>
+                </div>
+                <div class="engine-card" data-engine="mysql" onclick="selectEngine('mysql')">
+                    <div class="engine-icon">🐬</div>
+                    <div class="font-bold">MySQL / MariaDB</div>
+                    <div class="text-muted text-sm">Alternativa robusta</div>
+                </div>
+            </div>
+
+            <!-- Config SQLite -->
+            <div class="card" id="config-sqlite">
+                <h3 class="mb-md">📄 Configuración SQLite</h3>
+                <div class="form-group">
+                    <label>Ruta del archivo .db</label>
+                    <input type="text" id="sqlite-path" value="./pos_app.db">
+                </div>
+                <p class="text-muted text-sm">SQLite es ideal para desarrollo y entornos de una sola instancia. No requiere instalación.</p>
+            </div>
+
+            <!-- Config PostgreSQL -->
+            <div class="card" id="config-postgresql" style="display:none">
+                <h3 class="mb-md">🐘 Configuración PostgreSQL</h3>
+                <div class="form-row">
+                    <div class="form-group"><label>Host</label><input id="pg-host" value="localhost"></div>
+                    <div class="form-group"><label>Puerto</label><input id="pg-port" value="5432" type="number"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Base de Datos</label><input id="pg-db" value="pos_app"></div>
+                    <div class="form-group"><label>Usuario</label><input id="pg-user" value="postgres"></div>
+                </div>
+                <div class="form-group"><label>Contraseña</label><input id="pg-pass" type="password" placeholder="••••••••"></div>
+            </div>
+
+            <!-- Config MySQL -->
+            <div class="card" id="config-mysql" style="display:none">
+                <h3 class="mb-md">🐬 Configuración MySQL / MariaDB</h3>
+                <div class="form-row">
+                    <div class="form-group"><label>Host</label><input id="my-host" value="localhost"></div>
+                    <div class="form-group"><label>Puerto</label><input id="my-port" value="3306" type="number"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Base de Datos</label><input id="my-db" value="pos_app"></div>
+                    <div class="form-group"><label>Usuario</label><input id="my-user" value="root"></div>
+                </div>
+                <div class="form-group"><label>Contraseña</label><input id="my-pass" type="password" placeholder="••••••••"></div>
+            </div>
+
+            <!-- Test de conexión -->
+            <div class="card mt-lg">
+                <div class="flex-between">
+                    <div>
+                        <strong>Estado de Conexión</strong>
+                        <div class="text-muted text-sm" id="db-status-msg">Sin verificar</div>
+                    </div>
+                    <button class="btn btn-info" onclick="testConnection()">🔌 Probar Conexión</button>
+                </div>
+                <div id="db-test-result" class="mt-md" style="display:none"></div>
+            </div>
+        </div>
+
+        <!-- ═══ TAB: EMPRESA Y MARCA ════════════════════════════════════════ -->
+        <div class="tab-section" id="tab-brand">
+            <div class="flex-between mb-lg">
+                <h2>🏢 Configuración de Empresa y Marca</h2>
+                <button class="btn btn-primary" onclick="saveBrand()">💾 Guardar Información</button>
+            </div>
+            
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
+                <!-- Columna 1: Datos Fiscales SRI -->
+                <div class="card">
+                    <h3 class="mb-md">🏢 Datos Fiscales SRI</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Razón Social (Oficial)</label>
+                            <input id="brand-business-name" placeholder="Empresa Modelo S.A." value="">
+                        </div>
+                        <div class="form-group">
+                            <label>RUC (13 dígitos)</label>
+                            <input id="brand-ruc" placeholder="1790011001001" value="" maxlength="13">
+                        </div>
+                    </div>
+                    <div class="form-row mt-md">
+                        <div class="form-group">
+                            <label>Dirección Matriz</label>
+                            <input id="brand-address" placeholder="Av. de los Shyris, Quito" value="">
+                        </div>
+                        <div class="form-group">
+                            <label>Teléfono</label>
+                            <input id="brand-phone" placeholder="+593 2 2999 999" value="">
+                        </div>
+                    </div>
+                    <div class="form-row mt-md">
+                        <div class="form-group">
+                            <label>Ambiente de Facturación</label>
+                            <select id="brand-environment">
+                                <option value="1">1 - Pruebas / Homologación</option>
+                                <option value="2">2 - Producción / Real</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label style="display:flex;align-items:center;gap:.5rem;margin-top:1.5rem">
+                                <input id="brand-obligado" type="checkbox" checked> Obligado a llevar contabilidad
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Columna 2: Identidad Comercial y Logo -->
+                <div class="card">
+                    <h3 class="mb-md">🏷️ Nombre Comercial & Logo</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nombre Comercial</label>
+                            <input id="brand-name" placeholder="Sistema POS" value="">
+                        </div>
+                        <div class="form-group">
+                            <label>Eslogan / Tagline</label>
+                            <input id="brand-tagline" placeholder="El pan de yuca como lo hacía la abuela." value="">
+                        </div>
+                    </div>
+                    
+                    <div style="display:flex;gap:1rem;align-items:center;margin-top:1rem;border-top:1px solid var(--color-border);padding-top:1rem">
+                        <div style="text-align:center;padding:.5rem;border:1px dashed var(--color-border);border-radius:var(--radius-lg);width:100px;background:rgba(0,0,0,0.2)">
+                            <img id="logo-preview" src="/static/logo.png" alt="logo" style="max-width:80px;max-height:80px;object-fit:contain;image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges" onerror="this.style.display='none'">
+                        </div>
+                        <div style="flex:1">
+                            <div class="form-group mb-sm">
+                                <label class="text-sm">Subir nuevo logo</label>
+                                <input type="file" id="logo-upload" accept="image/*" onchange="previewLogo(this)" style="font-size:.8rem">
+                            </div>
+                            <button class="btn btn-success btn-block" onclick="uploadLogo()">📤 Subir Logo</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-lg">
+                <h3 class="mb-md">💡 Características de Marca (Parámetros de Identidad)</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Personalidad de Marca</label>
+                        <textarea id="brand-personality" style="height: 80px; resize: vertical;" placeholder="Ej. Joven, orgulloso, directo, auténtico, viral"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Elementos Visuales</label>
+                        <textarea id="brand-visuals" style="height: 80px; resize: vertical;" placeholder="Ej. Icono estilizado pan de yuca, tipografía fuerte, fotografía de producto"></textarea>
+                    </div>
+                </div>
+                <div class="form-row mt-md">
+                    <div class="form-group">
+                        <label>Packaging / Empaque</label>
+                        <textarea id="brand-packaging" style="height: 80px; resize: vertical;" placeholder="Ej. Funda Ziploc con logo impreso, sticker circular negro/amarillo, QR de Instagram"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Tono de Voz</label>
+                        <textarea id="brand-tone" style="height: 80px; resize: vertical;" placeholder="Ej. Pan de yuca como lo hacía la abuela. Ahora con entrega a domicilio."></textarea>
+                    </div>
+                </div>
+                <div class="form-group mt-md">
+                    <label>Canales Recomendados</label>
+                    <textarea id="brand-channels" style="height: 60px; resize: vertical;" placeholder="Ej. Instagram, TikTok, apps de delivery, markets modernos, ferias gastronómicas"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ TAB: PUNTOS DE EMISIÓN ════════════════════════════════════ -->
+        <div class="tab-section" id="tab-emission-points">
+            <div class="flex-between mb-lg">
+                <h2>🏪 Puntos de Emisión / Cajas (SRI)</h2>
+                <button class="btn btn-primary" onclick="openNewEmissionPointModal()">➕ Registrar Nuevo Punto</button>
+            </div>
+            
+            <div class="card">
+                <table style="width:100%;border-collapse:collapse;text-align:left" id="tbl-emission-points">
+                    <thead>
+                        <tr style="border-bottom:2px solid var(--color-border);font-weight:700">
+                            <th style="padding:.8rem">Sucursal</th>
+                            <th style="padding:.8rem">Código SRI</th>
+                            <th style="padding:.8rem">Nombre Caja</th>
+                            <th style="padding:.8rem">Secuencial Factura</th>
+                            <th style="padding:.8rem">Estado</th>
+                            <th style="padding:.8rem;text-align:right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="list-emission-points">
+                        <!-- Generado por JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ═══ TAB: IMPUESTOS ════════════════════════════════════════════ -->
+        <div class="tab-section" id="tab-taxes">
+            <div class="flex-between mb-lg">
+                <h2>⚖️ Configuración de Impuestos (IVA por Periodo)</h2>
+                <button class="btn btn-primary" onclick="openNewTaxModal()">➕ Registrar Tarifa Temporal</button>
+            </div>
+            
+            <div class="card">
+                <h3 class="mb-md">Historial de Vigencia de IVA (Ecuador)</h3>
+                <table style="width:100%;border-collapse:collapse;text-align:left" id="tbl-taxes">
+                    <thead>
+                        <tr style="border-bottom:2px solid var(--color-border);font-weight:700">
+                            <th style="padding:.8rem">Nombre Tarifa</th>
+                            <th style="padding:.8rem">Porcentaje</th>
+                            <th style="padding:.8rem">Vigente Desde</th>
+                            <th style="padding:.8rem">Vigente Hasta</th>
+                            <th style="padding:.8rem">Estado</th>
+                            <th style="padding:.8rem;text-align:right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="list-taxes">
+                        <!-- Generado por JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ═══ TAB: CORREO SMTP ══════════════════════════════════════════════════ -->
+        <div class="tab-section" id="tab-email">
+            <div class="flex-between mb-lg">
+                <h2>📧 Configuración de Correo SMTP</h2>
+                <div class="flex gap-sm">
+                    <button class="btn btn-ghost" onclick="testEmail()">🧪 Probar Conexión</button>
+                    <button class="btn btn-primary" onclick="saveEmail()">💾 Guardar</button>
+                </div>
+            </div>
+
+            <div class="card mb-lg">
+                <h3 class="mb-md">Servidor SMTP</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Proveedor</label>
+                        <select id="smtp-preset" onchange="applySmtpPreset()" style="width:100%;background:rgba(255,255,255,.05);border:1px solid var(--glass-border);color:var(--color-text);padding:.6rem;border-radius:8px">
+                            <option value="">-- Personalizado --</option>
+                            <option value="gmail">📧 Gmail (smtp.gmail.com)</option>
+                            <option value="outlook">📨 Outlook / Office365</option>
+                            <option value="yahoo">📩 Yahoo Mail</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Host SMTP</label>
+                        <input id="smtp-host" class="color-input" value="smtp.gmail.com" placeholder="smtp.gmail.com">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Puerto</label>
+                        <input id="smtp-port" class="color-input" type="number" value="587">
+                    </div>
+                    <div class="form-group">
+                        <label style="display:flex;align-items:center;gap:.5rem;margin-top:1.5rem">
+                            <input id="smtp-tls" type="checkbox" checked> Usar TLS/STARTTLS
+                        </label>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Usuario (email remitente)</label>
+                        <input id="smtp-user" class="color-input" type="email" placeholder="micorreo@gmail.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Contraseña / App Password</label>
+                        <input id="smtp-password" class="color-input" type="password" placeholder="App password de Gmail/Outlook">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nombre del remitente</label>
+                        <input id="smtp-from-name" class="color-input" placeholder="Sistema POS">
+                    </div>
+                    <div class="form-group">
+                        <label>Email remitente (si difiere del usuario)</label>
+                        <input id="smtp-from-email" class="color-input" type="email" placeholder="noreply@micafe.com">
+                    </div>
+                </div>
+                <div id="test-result" style="margin-top:.8rem;display:none;padding:.8rem;border-radius:8px;font-size:.88rem"></div>
+            </div>
+
+            <div class="card">
+                <h3 class="mb-md">📜 Correo de Consentimiento GDPR / LOPDP</h3>
+                <p style="color:var(--color-muted);font-size:.85rem;margin-bottom:1rem">Se envía automáticamente al registrar un nuevo cliente con email en el Punto de Venta.</p>
+                <div class="form-group mb-md" style="display:flex;align-items:center;gap:.8rem">
+                    <input id="gdpr-enabled" type="checkbox" style="width:18px;height:18px">
+                    <label style="font-weight:600">Activar envío automático de correo GDPR</label>
+                </div>
+                <div class="form-group">
+                    <label>Asunto del correo</label>
+                    <input id="gdpr-subject" class="color-input" placeholder="Autorización para el tratamiento de sus datos personales">
+                </div>
+                <div class="form-group">
+                    <label>Cuerpo del correo (HTML) — Variables: <code style="color:var(--color-accent)">{{nombre}}</code>, <code style="color:var(--color-accent)">{{negocio}}</code>, <code style="color:var(--color-accent)">{{fecha}}</code>, <code style="color:var(--color-accent)">{{tipo_servicio}}</code></label>
+                    <textarea id="gdpr-body" style="width:100%;height:220px;background:rgba(255,255,255,.05);border:1px solid var(--glass-border);color:var(--color-text);padding:.8rem;border-radius:8px;font-family:monospace;font-size:.8rem;resize:vertical" placeholder="Deje vacío para usar la plantilla predeterminada"></textarea>
+                    <small style="color:var(--color-muted)">Deje vacío para usar la plantilla HTML predeterminada del sistema</small>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Modal Nuevo Punto de Emisión -->
+<div class="modal-overlay" id="modal-new-ep">
+    <div class="modal-box">
+        <h3>🏪 Nuevo Punto de Emisión</h3>
+        <div class="form-group mb-md">
+            <label>Sucursal</label>
+            <select id="new-ep-branch" style="width:100%;background:rgba(255,255,255,.05);border:1px solid var(--color-border);color:var(--color-text);padding:.6rem;border-radius:8px">
+                <option value="1">Sucursal Principal - POS</option>
+            </select>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Código SRI (3 dígitos)</label>
+                <input id="new-ep-code" placeholder="002" maxlength="3">
+            </div>
+            <div class="form-group">
+                <label>Nombre de la Caja / Terminal</label>
+                <input id="new-ep-name" placeholder="Caja Secundaria / POS Movil">
+            </div>
+        </div>
+        <div class="form-group mt-md">
+            <label>Secuencial Inicial Factura</label>
+            <input id="new-ep-seq" type="number" value="1">
+        </div>
+        <div style="display:flex;gap:.5rem;margin-top:1.5rem">
+            <button class="btn btn-ghost" style="flex:1" onclick="closeModal('ep')">Cancelar</button>
+            <button class="btn btn-primary" style="flex:1" onclick="saveNewEmissionPoint()">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nuevo Tramo Impuestos -->
+<div class="modal-overlay" id="modal-new-tax">
+    <div class="modal-box">
+        <h3>⚖️ Registrar Nueva Tarifa IVA</h3>
+        <div class="form-group mb-md">
+            <label>Nombre de la Tarifa</label>
+            <input id="new-tax-name" placeholder="IVA 15% - Temporal">
+        </div>
+        <div class="form-group mb-md">
+            <label>Porcentaje (%)</label>
+            <input id="new-tax-pct" type="number" step="0.01" placeholder="15.00">
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Vigente Desde (YYYY-MM-DD)</label>
+                <input id="new-tax-from" type="date">
+            </div>
+            <div class="form-group">
+                <label>Vigente Hasta (Opcional - YYYY-MM-DD)</label>
+                <input id="new-tax-until" type="date">
+            </div>
+        </div>
+        <div style="display:flex;gap:.5rem;margin-top:1.5rem">
+            <button class="btn btn-ghost" style="flex:1" onclick="closeModal('tax')">Cancelar</button>
+            <button class="btn btn-primary" style="flex:1" onclick="saveNewTax()">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ─── Design Tokens ────────────────────────────────────────────────────────────
+const COLOR_TOKENS = [
+    { key: "color_bg",      label: "Fondo Principal",    cssVar: "--color-bg" },
+    { key: "color_sidebar", label: "Fondo Sidebar",      cssVar: "--color-sidebar" },
+    { key: "color_accent",  label: "Color de Acento",    cssVar: "--color-accent" },
+    { key: "color_text",    label: "Texto Principal",    cssVar: "--color-text" },
+    { key: "color_muted",   label: "Texto Secundario",   cssVar: "--color-muted" },
+    { key: "color_success", label: "Color Éxito",        cssVar: "--color-success" },
+    { key: "color_danger",  label: "Color Peligro",      cssVar: "--color-danger" },
+    { key: "color_info",    label: "Color Info",         cssVar: "--color-info" },
+];
+
+const DEFAULT_COLORS = {
+    color_bg: "#020617", color_sidebar: "#0f172a", color_accent: "#fbbf24",
+    color_text: "#f8fafc", color_muted: "#94a3b8", color_success: "#10b981",
+    color_danger: "#ef4444", color_info: "#3b82f6"
+};
+
+let currentTheme = {};
+let currentEngine = "sqlite";
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+async function init() {
+    const res = await fetch('/api/settings/theme');
+    currentTheme = await res.json();
+    renderSwatches();
+    loadBrandUI();
+    loadEmissionPoints();
+    loadTaxes();
+    loadEmailConfig();
+
+    // Config DB
+    const dbRes = await fetch('/api/settings/database');
+    const dbConf = await dbRes.json();
+    currentEngine = dbConf.engine || 'sqlite';
+    selectEngine(currentEngine, false);
+    if (dbConf.sqlite_path) document.getElementById('sqlite-path').value = dbConf.sqlite_path;
+    if (dbConf.pg_host)     document.getElementById('pg-host').value = dbConf.pg_host;
+    if (dbConf.pg_port)     document.getElementById('pg-port').value = dbConf.pg_port;
+    if (dbConf.pg_database) document.getElementById('pg-db').value = dbConf.pg_database;
+    if (dbConf.pg_user)     document.getElementById('pg-user').value = dbConf.pg_user;
+    if (dbConf.my_host)     document.getElementById('my-host').value = dbConf.my_host;
+    if (dbConf.my_port)     document.getElementById('my-port').value = dbConf.my_port;
+    if (dbConf.my_database) document.getElementById('my-db').value = dbConf.my_database;
+    if (dbConf.my_user)     document.getElementById('my-user').value = dbConf.my_user;
+}
+
+// ─── Tabs ─────────────────────────────────────────────────────────────────────
+function switchTab(name, btn) {
+    document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(`tab-${name}`).classList.add('active');
+    btn.classList.add('active');
+}
+
+// ─── Apariencia ───────────────────────────────────────────────────────────────
+function renderSwatches() {
+    const container = document.getElementById('color-swatches');
+    container.innerHTML = COLOR_TOKENS.map(t => {
+        const val = currentTheme[t.key] || DEFAULT_COLORS[t.key] || '#ffffff';
+        return `
+        <div class="color-swatch">
+            <input type="color" class="swatch-preview" id="swatch-${t.key}"
+                value="${val}" onchange="applyColorLive('${t.cssVar}', this.value, '${t.key}')">
+            <div>
+                <div style="font-weight:600;font-size:.9rem">${t.label}</div>
+                <div class="text-muted text-xs" id="hex-${t.key}">${val}</div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function applyColorLive(cssVar, value, key) {
+    document.documentElement.style.setProperty(cssVar, value);
+    document.getElementById(`hex-${key}`).innerText = value;
+    currentTheme[key] = value;
+}
+
+function resetColors() {
+    Object.entries(DEFAULT_COLORS).forEach(([k, v]) => {
+        currentTheme[k] = v;
+        const token = COLOR_TOKENS.find(t => t.key === k);
+        if (token) document.documentElement.style.setProperty(token.cssVar, v);
+    });
+    renderSwatches();
+}
+
+function previewFont(font) {
+    const link = document.getElementById('google-font-link');
+    link.href = `https://fonts.googleapis.com/css2?family=${font.replace(/ /g,'+')}:wght@300;400;600;700&display=swap`;
+    document.documentElement.style.setProperty('--font-family', `'${font}', sans-serif`);
+    document.getElementById('font-preview').style.fontFamily = `'${font}', sans-serif`;
+}
+
+async function saveAppearance() {
+    const font = document.getElementById('font-family').value;
+    const payload = { ...currentTheme, font_family: font };
+    const res = await fetch('/api/settings/theme', {
+        method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload)
+    });
+    if (res.ok) showToast('✅ Identidad visual guardada. Recarga para ver los cambios.');
+    else showToast('❌ Error al guardar', true);
+}
+
+// ─── Base de Datos ────────────────────────────────────────────────────────────
+function selectEngine(engine, updateUI = true) {
+    currentEngine = engine;
+    document.querySelectorAll('.engine-card').forEach(c => c.classList.remove('selected'));
+    document.querySelector(`[data-engine="${engine}"]`)?.classList.add('selected');
+    ['sqlite','postgresql','mysql'].forEach(e => {
+        const el = document.getElementById(`config-${e}`);
+        if (el) el.style.display = (e === engine) ? 'block' : 'none';
+    });
+}
+
+async function testConnection() {
+    const payload = buildDbPayload();
+    const res = await fetch('/api/settings/database/test', {
+        method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    const resultEl = document.getElementById('db-test-result');
+    resultEl.style.display = 'block';
+    if (data.ok) {
+        resultEl.innerHTML = `<div style="color:var(--color-success)">✅ Conexión exitosa · Motor: <strong>${data.engine}</strong> · Versión: ${data.version}</div>`;
+    } else {
+        resultEl.innerHTML = `<div style="color:var(--color-danger)">❌ Error: ${data.error}</div>`;
+    }
+}
+
+function buildDbPayload() {
+    return {
+        engine: currentEngine,
+        sqlite_path:  document.getElementById('sqlite-path')?.value,
+        pg_host:      document.getElementById('pg-host')?.value,
+        pg_port:      document.getElementById('pg-port')?.value,
+        pg_database:  document.getElementById('pg-db')?.value,
+        pg_user:      document.getElementById('pg-user')?.value,
+        pg_password:  document.getElementById('pg-pass')?.value,
+        my_host:      document.getElementById('my-host')?.value,
+        my_port:      document.getElementById('my-port')?.value,
+        my_database:  document.getElementById('my-db')?.value,
+        my_user:      document.getElementById('my-user')?.value,
+        my_password:  document.getElementById('my-pass')?.value,
+    };
+}
+
+async function saveDatabase() {
+    const payload = buildDbPayload();
+    const res = await fetch('/api/settings/database', {
+        method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload)
+    });
+    if (res.ok) showToast('✅ Configuración de BD guardada. Reinicia el servidor para aplicar cambios.');
+    else showToast('❌ Error al guardar', true);
+}
+
+// ─── Marca ────────────────────────────────────────────────────────────────────
+function loadBrandUI() {
+    document.getElementById('brand-business-name').value = currentTheme.business_name || '';
+    document.getElementById('brand-ruc').value = currentTheme.ruc || '';
+    document.getElementById('brand-address').value = currentTheme.address || '';
+    document.getElementById('brand-phone').value = currentTheme.phone || '';
+    document.getElementById('brand-environment').value = currentTheme.environment || '1';
+    document.getElementById('brand-obligado').checked = currentTheme.obligado_contabilidad !== false;
+    
+    document.getElementById('brand-name').value = currentTheme.brand_name || '';
+    document.getElementById('brand-tagline').value = currentTheme.brand_tagline || '';
+    
+    document.getElementById('brand-personality').value = currentTheme.brand_personality || '';
+    document.getElementById('brand-visuals').value = currentTheme.brand_visuals || '';
+    document.getElementById('brand-packaging').value = currentTheme.brand_packaging || '';
+    document.getElementById('brand-tone').value = currentTheme.brand_tone || '';
+    document.getElementById('brand-channels').value = currentTheme.brand_channels || '';
+}
+
+async function saveBrand() {
+    const payload = {
+        business_name: document.getElementById('brand-business-name').value,
+        ruc: document.getElementById('brand-ruc').value,
+        address: document.getElementById('brand-address').value,
+        phone: document.getElementById('brand-phone').value,
+        environment: parseInt(document.getElementById('brand-environment').value),
+        obligado_contabilidad: document.getElementById('brand-obligado').checked,
+        
+        brand_name: document.getElementById('brand-name').value,
+        brand_tagline: document.getElementById('brand-tagline').value,
+        brand_personality: document.getElementById('brand-personality').value,
+        brand_visuals: document.getElementById('brand-visuals').value,
+        brand_packaging: document.getElementById('brand-packaging').value,
+        brand_tone: document.getElementById('brand-tone').value,
+        brand_channels: document.getElementById('brand-channels').value,
+    };
+    const res = await fetch('/api/settings/theme', {
+        method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+        document.getElementById('sidebar-brand').innerText = payload.brand_name;
+        document.getElementById('sidebar-tagline').innerText = payload.brand_tagline;
+        currentTheme = { ...currentTheme, ...payload };
+        showToast('✅ Información de empresa y marca guardada correctamente.');
+    } else {
+        showToast('❌ Error al guardar', true);
+    }
+}
+
+async function loadEmissionPoints() {
+    const res = await fetch('/api/settings/emission-points');
+    if (!res.ok) return;
+    const points = await res.json();
+    const tbody = document.getElementById('list-emission-points');
+    tbody.innerHTML = points.map(ep => `
+        <tr style="border-bottom:1px solid var(--color-border)">
+            <td style="padding:.8rem">${ep.branch_name}</td>
+            <td style="padding:.8rem"><span class="badge badge-info">${ep.code}</span></td>
+            <td style="padding:.8rem">${ep.name}</td>
+            <td style="padding:.8rem;font-family:monospace">${ep.invoice_sequential}</td>
+            <td style="padding:.8rem">
+                <span class="badge ${ep.is_active ? 'badge-success' : 'badge-danger'}">
+                    ${ep.is_active ? 'Activo' : 'Inactivo'}
+                </span>
+            </td>
+            <td style="padding:.8rem;text-align:right">
+                <button class="btn btn-ghost btn-xs" onclick="toggleEmissionPoint(${ep.id}, ${!ep.is_active})">
+                    ${ep.is_active ? 'Desactivar' : 'Activar'}
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function toggleEmissionPoint(id, active) {
+    const res = await fetch(`/api/settings/emission-points/${id}`, {
+        method: 'PUT',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ is_active: active })
+    });
+    if (res.ok) {
+        showToast('✅ Punto de emisión actualizado.');
+        loadEmissionPoints();
+    }
+}
+
+function openNewEmissionPointModal() {
+    document.getElementById('modal-new-ep').classList.add('open');
+}
+function closeModal(id) {
+    document.getElementById(`modal-new-${id}`).classList.remove('open');
+}
+
+async function saveNewEmissionPoint() {
+    const payload = {
+        branch_id: parseInt(document.getElementById('new-ep-branch').value),
+        code: document.getElementById('new-ep-code').value.trim(),
+        name: document.getElementById('new-ep-name').value.trim(),
+        invoice_sequential: parseInt(document.getElementById('new-ep-seq').value) || 1
+    };
+    if (!payload.code || !payload.name) return alert('Por favor complete todos los campos');
+    const res = await fetch('/api/settings/emission-points', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+        closeModal('ep');
+        showToast('✅ Punto de emisión registrado.');
+        loadEmissionPoints();
+    } else {
+        const e = await res.json();
+        alert(e.detail || 'Error al guardar');
+    }
+}
+
+async function loadTaxes() {
+    const res = await fetch('/api/settings/taxes/periods');
+    if (!res.ok) return;
+    const taxes = await res.json();
+    const tbody = document.getElementById('list-taxes');
+    tbody.innerHTML = taxes.map(t => `
+        <tr style="border-bottom:1px solid var(--color-border)">
+            <td style="padding:.8rem">${t.name}</td>
+            <td style="padding:.8rem;font-weight:700">${t.percentage.toFixed(2)}%</td>
+            <td style="padding:.8rem">${t.valid_from}</td>
+            <td style="padding:.8rem">${t.valid_until || 'Indefinido'}</td>
+            <td style="padding:.8rem">
+                <span class="badge ${t.is_active ? 'badge-success' : 'badge-danger'}">
+                    ${t.is_active ? 'Activo' : 'Inactivo'}
+                </span>
+            </td>
+            <td style="padding:.8rem;text-align:right">
+                <button class="btn btn-ghost btn-xs" onclick="toggleTaxPeriod(${t.id}, ${!t.is_active})">
+                    ${t.is_active ? 'Desactivar' : 'Activar'}
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function toggleTaxPeriod(id, active) {
+    const res = await fetch(`/api/settings/taxes/${id}?is_active=${active}`, {
+        method: 'PUT'
+    });
+    if (res.ok) {
+        showToast('✅ Tarifa de IVA actualizada.');
+        loadTaxes();
+    }
+}
+
+function openNewTaxModal() {
+    document.getElementById('modal-new-tax').classList.add('open');
+}
+
+async function saveNewTax() {
+    const payload = {
+        name: document.getElementById('new-tax-name').value.trim(),
+        percentage: parseFloat(document.getElementById('new-tax-pct').value),
+        valid_from: document.getElementById('new-tax-from').value,
+        valid_until: document.getElementById('new-tax-until').value || null
+    };
+    if (!payload.name || isNaN(payload.percentage) || !payload.valid_from) return alert('Por favor complete todos los campos');
+    const res = await fetch('/api/settings/taxes', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+        closeModal('tax');
+        showToast('✅ Tarifa de IVA registrada.');
+        loadTaxes();
+    } else {
+        const e = await res.json();
+        alert(e.detail || 'Error al guardar');
+    }
+}
+
+function previewLogo(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => { document.getElementById('logo-preview').src = e.target.result; };
+    reader.readAsDataURL(file);
+}
+
+async function uploadLogo() {
+    const fileInput = document.getElementById('logo-upload');
+    if (!fileInput.files[0]) return alert('Selecciona una imagen primero');
+    const form = new FormData();
+    form.append('file', fileInput.files[0]);
+    const res = await fetch('/api/settings/logo', { method: 'POST', body: form });
+    if (res.ok) showToast('✅ Logo actualizado correctamente.');
+    else showToast('❌ Error al subir el logo', true);
+}
+
+// ─── Email SMTP ───────────────────────────────────────────────────────────────
+function applySmtpPreset() {
+    const preset = document.getElementById('smtp-preset').value;
+    const presets = {
+        gmail:   {host:'smtp.gmail.com',   port:587, tls:true},
+        outlook: {host:'smtp.office365.com', port:587, tls:true},
+        yahoo:   {host:'smtp.mail.yahoo.com', port:465, tls:false},
+    };
+    if (presets[preset]) {
+        document.getElementById('smtp-host').value = presets[preset].host;
+        document.getElementById('smtp-port').value = presets[preset].port;
+        document.getElementById('smtp-tls').checked = presets[preset].tls;
+    }
+}
+
+async function loadEmailConfig() {
+    try {
+        const res = await fetch('/api/settings/email');
+        const d = await res.json();
+        if (d.smtp_host)   document.getElementById('smtp-host').value = d.smtp_host;
+        if (d.smtp_port)   document.getElementById('smtp-port').value = d.smtp_port;
+        if (d.smtp_user)   document.getElementById('smtp-user').value = d.smtp_user;
+        if (d.smtp_use_tls !== undefined) document.getElementById('smtp-tls').checked = d.smtp_use_tls;
+        if (d.from_name)   document.getElementById('smtp-from-name').value = d.from_name;
+        if (d.from_email)  document.getElementById('smtp-from-email').value = d.from_email;
+        if (d.gdpr_enabled !== undefined) document.getElementById('gdpr-enabled').checked = d.gdpr_enabled;
+        if (d.gdpr_email_subject) document.getElementById('gdpr-subject').value = d.gdpr_email_subject;
+        if (d.gdpr_email_body_html) document.getElementById('gdpr-body').value = d.gdpr_email_body_html;
+        if (d.smtp_password_set) document.getElementById('smtp-password').placeholder = '(contraseña guardada - dejar vacío para no cambiar)';
+    } catch(e) {
+        console.error(e);
+    }
+}
+
+async function saveEmail() {
+    const pwd = document.getElementById('smtp-password').value;
+    const payload = {
+        smtp_host:      document.getElementById('smtp-host').value,
+        smtp_port:      parseInt(document.getElementById('smtp-port').value) || 587,
+        smtp_user:      document.getElementById('smtp-user').value,
+        smtp_use_tls:   document.getElementById('smtp-tls').checked,
+        from_name:      document.getElementById('smtp-from-name').value,
+        from_email:     document.getElementById('smtp-from-email').value || null,
+        gdpr_enabled:   document.getElementById('gdpr-enabled').checked,
+        gdpr_email_subject: document.getElementById('gdpr-subject').value || null,
+        gdpr_email_body_html: document.getElementById('gdpr-body').value || null,
+    };
+    if (pwd) payload.smtp_password = pwd;
+    const res = await fetch('/api/settings/email', {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+    const d = await res.json();
+    showToast(d.ok ? '✅ Configuración de correo guardada' : d.message, !d.ok);
+}
+
+async function testEmail() {
+    const resultEl = document.getElementById('test-result');
+    resultEl.style.display = 'block';
+    resultEl.style.background = 'rgba(255,255,255,.04)';
+    resultEl.style.border = '1px solid var(--glass-border)';
+    resultEl.innerText = '⏳ Enviando correo de prueba...';
+    const payload = {
+        smtp_host:    document.getElementById('smtp-host').value,
+        smtp_port:    parseInt(document.getElementById('smtp-port').value) || 587,
+        smtp_user:    document.getElementById('smtp-user').value,
+        smtp_password: document.getElementById('smtp-password').value || undefined,
+        smtp_use_tls: document.getElementById('smtp-tls').checked,
+        from_name:    document.getElementById('smtp-from-name').value,
+        from_email:   document.getElementById('smtp-from-email').value || null,
+    };
+    const res = await fetch('/api/settings/email/test', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+    const d = await res.json();
+    resultEl.style.background = d.ok ? 'rgba(16,185,129,.1)' : 'rgba(239,68,68,.1)';
+    resultEl.style.border = `1px solid ${d.ok ? 'var(--color-success)' : 'var(--color-danger)'}`;
+    resultEl.style.color = d.ok ? 'var(--color-success)' : 'var(--color-danger)';
+    resultEl.innerText = d.ok ? (d.message || '✅ Conexión exitosa') : ('❌ ' + (d.error || 'Error'));
+}
+
+
+// Toast
+function showToast(msg, isError = false) {
+    const toast = document.createElement('div');
+    toast.style.cssText = `position:fixed;bottom:2rem;right:2rem;padding:1rem 1.5rem;border-radius:12px;background:${isError?'#450a0a':'#052e16'};border:1px solid ${isError?'var(--color-danger)':'var(--color-success)'};color:${isError?'var(--color-danger)':'var(--color-success)'};z-index:9999;font-weight:600;animation:slideUp 0.3s ease`;
+    toast.innerText = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+}
+
+init();
+
+function doLogout() {
+    const t = localStorage.getItem('auth_token');
+    if (t) fetch('/api/auth/logout', { method: 'POST', headers: { 'Authorization': `Bearer ${t}` } });
+    localStorage.removeItem('auth_token');
+    window.location.href = '/login';
+}
+</script>
+</body>
+</html>
+

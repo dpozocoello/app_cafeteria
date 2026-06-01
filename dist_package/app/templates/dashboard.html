@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema POS - Dashboard de Rendimiento</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="/static/fonts/fonts.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #020617;
+            --sidebar-bg: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.4);
+            --accent-color: #fbbf24;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --success: #10b981;
+            --danger: #ef4444;
+            --glass-border: rgba(255, 255, 255, 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            display: flex;
+            min-height: 100vh;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* Sidebar UX */
+        .sidebar {
+            width: 260px;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .nav-item {
+            padding: 1rem;
+            border-radius: 12px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: rgba(251, 191, 36, 0.1);
+            color: var(--accent-color);
+        }
+
+        .main-content {
+            flex-grow: 1;
+            padding: 2.5rem;
+            overflow-y: auto;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #fbbf24, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .branch-badge {
+            background: var(--card-bg);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            font-size: 0.9rem;
+        }
+
+        /* Grid de KPIs */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .kpi-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            padding: 1.5rem;
+            border-radius: 1.5rem;
+            border: 1px solid var(--glass-border);
+            transition: transform 0.3s ease;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-color);
+        }
+
+        .kpi-label {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .kpi-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .kpi-trend {
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+        }
+
+        .trend-up { color: var(--success); }
+        .trend-down { color: var(--danger); }
+
+        /* Area de Graficas */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .chart-container {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 1.5rem;
+            border: 1px solid var(--glass-border);
+        }
+
+        h2 {
+            font-size: 1.2rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+        }
+
+        /* Lista de Productos */
+        .top-products-list {
+            list-style: none;
+        }
+
+        .product-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .product-item:last-child {
+            border-bottom: none;
+        }
+
+        .product-name {
+            font-weight: 600;
+        }
+
+        .product-qty {
+            color: var(--accent-color);
+            font-weight: 700;
+        }
+
+        /* Boton de Refresco */
+        .refresh-btn {
+            background: var(--accent-color);
+            color: #000;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .refresh-btn:hover {
+            opacity: 0.9;
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div style="display:flex;align-items:center;gap:.7rem;margin-bottom:1.5rem;padding-bottom:1.2rem;border-bottom:1px solid rgba(255,255,255,.07)">
+            <img src="/static/logo.png" alt="Logo" style="width:56px;height:auto;object-fit:contain;border-radius:10px;image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges" onerror="this.style.display='none'">
+            <div>
+                <div id="sidebar-brand" style="font-weight:700;color:var(--accent-color);font-size:1rem;line-height:1.2">Sistema POS</div>
+                <div style="font-size:.72rem;color:var(--text-secondary)">Sistema de Gestión</div>
+            </div>
+        </div>
+
+        <div style="font-size:.7rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;padding:.3rem .5rem;margin-top:.5rem">Operación</div>
+        <a href="/" class="nav-item active">📊 <span>Dashboard</span></a>
+        <a href="/pos" class="nav-item">🛒 <span>Punto de Venta</span></a>
+        <a href="/comandas" class="nav-item">📝 <span>Comandas</span></a>
+        <a href="/pedidos" class="nav-item">🍽️ <span>Toma de Pedidos</span></a>
+
+        <div style="font-size:.7rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;padding:.3rem .5rem;margin-top:1rem">Administración</div>
+        <a href="/inventory" class="nav-item">📦 <span>Inventario</span></a>
+        <a href="/admin/recipes" class="nav-item">🧪 <span>Recetas</span></a>
+        <a href="/admin/menus" class="nav-item">📋 <span>Menús &amp; Mesas</span></a>
+
+        <div style="font-size:.7rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;padding:.3rem .5rem;margin-top:1rem">Sistema</div>
+        <a href="/admin/profiles" class="nav-item">🎭 <span>Perfiles</span></a>
+        <a href="/admin/users" class="nav-item">👥 <span>Usuarios</span></a>
+        <a href="/admin/settings" class="nav-item">⚙️ <span>Configuración</span></a>
+        <a href="/admin/reports" class="nav-item">🧾 <span>Reportería &amp; Anulación</span></a>
+        <a href="/admin/migration" class="nav-item">🔄 <span>Migración BD</span></a>
+        <a href="/audit" class="nav-item">🔍 <span>Auditoría</span></a>
+
+        <div style="margin-top:auto;padding-top:1rem;display:flex;flex-direction:column;gap:.5rem">
+            <button class="refresh-btn" style="width:100%;background:var(--success);" onclick="downloadPDF()">📥 Descargar Cierre</button>
+            <button class="refresh-btn" style="width:100%;background:rgba(255,255,255,.07);color:var(--text-secondary)" onclick="doLogout()">🚪 Cerrar Sesión</button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="container">
+            <header>
+                <div>
+                    <h1>Panel de Analytics</h1>
+                    <p style="color: var(--text-secondary)">Vista general del negocio</p>
+                </div>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <span class="branch-badge">Quito Central (001)</span>
+                    <button class="refresh-btn" onclick="loadDashboard()">Actualizar</button>
+                </div>
+            </header>
+
+        <!-- KPIs -->
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-label">Ventas Brutas</div>
+                <div class="kpi-value" id="kpi-brute">$0.00</div>
+                <div class="kpi-trend trend-up">↑ Hoy</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">IVA Recaudado (SRI)</div>
+                <div class="kpi-value" id="kpi-tax">$0.00</div>
+                <div class="kpi-trend">SRI Ecuador</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Costo Insumos (COGS)</div>
+                <div class="kpi-value" id="kpi-cogs" style="color: var(--danger)">$0.00</div>
+                <div class="kpi-trend">Basado en Recetas</div>
+            </div>
+            <div class="kpi-card" style="border-left: 4px solid var(--success)">
+                <div class="kpi-label">Utilidad Estimada</div>
+                <div class="kpi-value" id="kpi-profit" style="color: var(--success)">$0.00</div>
+                <div class="kpi-trend">Neto del Día</div>
+            </div>
+        </div>
+
+        <!-- Graficas -->
+        <div class="charts-grid">
+            <div class="chart-container">
+                <h2>Ventas vs Costos (Resumen Mensual Proyectado)</h2>
+                <canvas id="salesChart" height="200"></canvas>
+            </div>
+            <div class="chart-container">
+                <h2>Top 5 Productos Vendidos</h2>
+                <ul class="top-products-list" id="top-products">
+                    <!-- Dinamico -->
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function downloadPDF() {
+            window.location.href = '/reports/daily-close?branch_id=1';
+        }
+
+        async function loadDashboard() {
+            try {
+                const response = await fetch('/dashboard/daily?branch_id=1');
+                const data = await response.json();
+                
+                const m = data.metrics;
+                document.getElementById('kpi-brute').innerText = `$${m.brute_sales.toFixed(2)}`;
+                document.getElementById('kpi-tax').innerText = `$${m.tax_collected.toFixed(2)}`;
+                document.getElementById('kpi-cogs').innerText = `$${m.cogs.toFixed(2)}`;
+                document.getElementById('kpi-profit').innerText = `$${m.estimated_profit.toFixed(2)}`;
+
+                // Cargar Top Productos
+                const topList = document.getElementById('top-products');
+                topList.innerHTML = '';
+                data.top_products.forEach(p => {
+                    topList.innerHTML += `
+                        <li class="product-item">
+                            <span class="product-name">${p.name}</span>
+                            <span class="product-qty">${p.quantity} uds</span>
+                        </li>
+                    `;
+                });
+
+                updateChart(m);
+            } catch (error) {
+                console.error('Error cargando dashboard:', error);
+            }
+        }
+
+        let salesChart;
+        function updateChart(metrics) {
+            const ctx = document.getElementById('salesChart').getContext('2d');
+            if (salesChart) salesChart.destroy();
+
+            salesChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Ventas Brutas', 'Ventas Netas', 'Costos (COGS)', 'IVA'],
+                    datasets: [{
+                        label: 'Valores en USD',
+                        data: [metrics.brute_sales, metrics.net_sales, metrics.cogs, metrics.tax_collected],
+                        backgroundColor: [
+                            'rgba(251, 191, 36, 0.8)',
+                            'rgba(16, 185, 129, 0.8)',
+                            'rgba(239, 68, 68, 0.8)',
+                            'rgba(148, 163, 184, 0.8)'
+                        ],
+                        borderRadius: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#94a3b8' } },
+                        x: { ticks: { color: '#94a3b8' } }
+                    }
+                }
+            });
+        }
+
+        // Carga inicial
+        loadDashboard();
+
+        // Cargar nombre de marca
+        fetch('/api/settings/theme').then(r => r.json()).then(t => {
+            if (t.brand_name) document.getElementById('sidebar-brand').innerText = t.brand_name;
+        }).catch(() => {});
+
+        async function doLogout() {
+            const token = localStorage.getItem('auth_token');
+            if (token) {
+                await fetch('/api/auth/logout', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } }).catch(() => {});
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('auth_user');
+            }
+            window.location.href = '/login';
+        }
+    </script>
+</body>
+</html>
+
+

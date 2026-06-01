@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema POS - Gestión de Usuarios</title>
+    <link rel="stylesheet" href="/static/fonts/fonts.css">
+    <link rel="stylesheet" href="/static/app.css">
+    <style>
+        .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--color-accent); color: #000; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .9rem; flex-shrink: 0; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .dot-active   { background: var(--color-success); box-shadow: 0 0 6px var(--color-success); }
+        .dot-inactive { background: var(--color-muted); }
+        .dot-locked   { background: var(--color-danger); box-shadow: 0 0 6px var(--color-danger); }
+        .policy-section { background: var(--color-card); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: var(--space-lg); margin-bottom: var(--space-md); }
+        .policy-section h3 { margin-bottom: var(--space-md); color: var(--color-accent); font-size: 1rem; }
+        .strength-bar { height: 4px; border-radius: 2px; margin-top: 4px; transition: all .3s; }
+    </style>
+</head>
+<body>
+<div class="app-layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <img src="/static/logo.png" alt="logo" onerror="this.style.display='none'">
+            <div>
+                <div class="sidebar-brand" id="brand-name">Sistema POS</div>
+                <div class="sidebar-tagline">Sistema de Gestión</div>
+            </div>
+        </div>
+        <span class="nav-section-label">Operación</span>
+        <a href="/" class="nav-item">📊 Dashboard</a>
+        <a href="/pos" class="nav-item">🛒 Punto de Venta</a>
+        <a href="/comandas" class="nav-item">📝 Comandas</a>
+        <span class="nav-section-label">Administración</span>
+        <a href="/inventory" class="nav-item">📦 Inventario</a>
+        <a href="/admin/recipes" class="nav-item">🧪 Recetas</a>
+        <a href="/admin/menus" class="nav-item">📋 Menús & Mesas</a>
+        <span class="nav-section-label">Sistema</span>
+        <a href="/admin/users" class="nav-item active">👥 Usuarios</a>
+        <a href="/admin/settings" class="nav-item">⚙️ Configuración</a>
+        <a href="/admin/reports" class="nav-item">🧾 Reportería & Anulación</a>
+        <a href="/audit" class="nav-item">🔍 Auditoría</a>
+        <div style="margin-top:auto">
+            <button class="btn btn-ghost btn-block" onclick="doLogout()">🚪 Cerrar Sesión</button>
+        </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main-content">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">👥 Gestión de Usuarios</h1>
+                <p class="page-subtitle text-muted">Control de acceso · ISO 27001 A.9</p>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('users', this)">👤 Usuarios</button>
+            <button class="tab" onclick="switchTab('policy', this)">🔐 Política de Seguridad</button>
+            <button class="tab" onclick="switchTab('audit', this)">📋 Auditoría de Accesos</button>
+        </div>
+
+        <!-- ═══ USUARIOS ═════════════════════════════════════════════════════ -->
+        <div class="tab-section active" id="tab-users">
+            <div class="flex-between mb-lg">
+                <div class="flex gap-md">
+                    <input placeholder="Buscar usuario..." style="max-width:260px" oninput="filterUsers(this.value)">
+                </div>
+                <button class="btn btn-primary" onclick="openUserModal()">+ Nuevo Usuario</button>
+            </div>
+            <div class="table-wrap animate-in">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Usuario</th><th>Nombre</th><th>Rol</th><th>Sucursal</th>
+                            <th>Estado</th><th>Último Acceso</th><th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ═══ POLÍTICA DE SEGURIDAD ════════════════════════════════════════ -->
+        <div class="tab-section" id="tab-policy">
+            <div class="flex-between mb-lg">
+                <h2>Política de Contraseñas y Acceso</h2>
+                <button class="btn btn-primary" onclick="savePolicy()">💾 Guardar Política</button>
+            </div>
+
+            <div class="policy-section">
+                <h3>🔑 Requisitos de Contraseña (A.9.4.3)</h3>
+                <div class="form-row">
+                    <div class="form-group"><label>Longitud mínima</label><input type="number" id="p-min-len" min="6" max="32"></div>
+                    <div class="form-group"><label>Expiración (días · 0=sin expirar)</label><input type="number" id="p-expiry"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group" style="flex-direction:row;align-items:center;gap:.7rem">
+                        <input type="checkbox" id="p-upper" style="width:auto">
+                        <label style="text-transform:none">Requiere mayúsculas</label>
+                    </div>
+                    <div class="form-group" style="flex-direction:row;align-items:center;gap:.7rem">
+                        <input type="checkbox" id="p-number" style="width:auto">
+                        <label style="text-transform:none">Requiere números</label>
+                    </div>
+                    <div class="form-group" style="flex-direction:row;align-items:center;gap:.7rem">
+                        <input type="checkbox" id="p-symbol" style="width:auto">
+                        <label style="text-transform:none">Requiere símbolos (!@#$)</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Historial de contraseñas (no reutilizar las últimas N)</label>
+                    <input type="number" id="p-history" min="0" max="24" style="max-width:120px">
+                </div>
+            </div>
+
+            <div class="policy-section">
+                <h3>🔒 Bloqueo de Cuenta (A.9.4.2)</h3>
+                <div class="form-row">
+                    <div class="form-group"><label>Máx. intentos fallidos</label><input type="number" id="p-max-fail" min="1" max="20"></div>
+                    <div class="form-group"><label>Duración del bloqueo (minutos)</label><input type="number" id="p-lockout" min="1"></div>
+                </div>
+            </div>
+
+            <div class="policy-section">
+                <h3>⏱️ Sesión y JWT</h3>
+                <div class="form-row">
+                    <div class="form-group"><label>Tiempo de sesión (minutos)</label><input type="number" id="p-session"></div>
+                    <div class="form-group"><label>Expiración JWT (minutos)</label><input type="number" id="p-jwt"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ AUDITORÍA DE ACCESOS ══════════════════════════════════════════ -->
+        <div class="tab-section" id="tab-audit">
+            <h2 class="mb-lg">Registro de Eventos de Acceso</h2>
+            <div class="table-wrap animate-in">
+                <table>
+                    <thead><tr><th>Fecha/Hora</th><th>Usuario</th><th>Evento</th><th>IP</th><th>Detalle</th></tr></thead>
+                    <tbody id="access-audit-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- ══ MODAL USUARIO ══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="user-modal">
+    <div class="modal" style="max-width:600px">
+        <div class="modal-header">
+            <h2 id="modal-title">Nuevo Usuario</h2>
+            <button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button>
+        </div>
+        <input type="hidden" id="edit-id">
+        <div class="form-row">
+            <div class="form-group"><label>Username *</label><input id="f-username" placeholder="jperez"></div>
+            <div class="form-group"><label>Nombre Completo *</label><input id="f-fullname" placeholder="Juan Pérez"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>Email *</label><input type="email" id="f-email" placeholder="juan@empresa.com"></div>
+            <div class="form-group"><label>Teléfono</label><input id="f-phone" placeholder="+593..."></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>Rol *</label><select id="f-role"></select></div>
+            <div class="form-group"><label>Sucursal *</label><select id="f-branch"></select></div>
+        </div>
+        <div id="password-section">
+            <div class="form-group">
+                <label>Contraseña *</label>
+                <div class="input-icon-wrap">
+                    <input type="password" id="f-password" placeholder="Mín. 8 chars, mayúscula, número, símbolo"
+                           oninput="checkStrength(this.value)">
+                </div>
+                <div class="strength-bar" id="strength-bar" style="width:0;background:var(--color-danger)"></div>
+                <span class="text-xs text-muted" id="strength-label"></span>
+            </div>
+            <div class="form-group" style="flex-direction:row;align-items:center;gap:.7rem">
+                <input type="checkbox" id="f-must-change" checked style="width:auto">
+                <label style="text-transform:none">El usuario debe cambiar la contraseña al primer acceso</label>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+            <button class="btn btn-primary" onclick="saveUser()">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══ MODAL RESET CONTRASEÑA ════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="reset-modal">
+    <div class="modal" style="max-width:420px">
+        <div class="modal-header">
+            <h2>Restablecer Contraseña</h2>
+            <button class="btn btn-ghost btn-sm" onclick="document.getElementById('reset-modal').classList.remove('open')">✕</button>
+        </div>
+        <input type="hidden" id="reset-user-id">
+        <div class="form-group">
+            <label>Nueva Contraseña</label>
+            <input type="password" id="reset-pass" placeholder="Nueva contraseña segura">
+        </div>
+        <div class="form-group" style="flex-direction:row;align-items:center;gap:.7rem">
+            <input type="checkbox" id="reset-must-change" checked style="width:auto">
+            <label style="text-transform:none">Forzar cambio en el próximo acceso</label>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="document.getElementById('reset-modal').classList.remove('open')">Cancelar</button>
+            <button class="btn btn-danger" onclick="doReset()">Restablecer</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const TOKEN = localStorage.getItem('auth_token');
+const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` };
+
+let allUsers = [], roles = [], branches = [];
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+async function init() {
+    [roles, branches] = await Promise.all([
+        fetch('/api/roles', { headers }).then(r => r.json()),
+        fetch('/api/tables', { headers }).then(r => r.json()).catch(() => [])  // Fallback si falla
+    ]);
+
+    // Cargar sucursales desde el init
+    try {
+        const bRes = await fetch('/api/branches', { headers });
+        if (bRes.ok) branches = await bRes.json();
+    } catch (_) {}
+
+    await loadUsers();
+    await loadPolicy();
+    await loadAccessAudit();
+
+    const t = await fetch('/api/settings/theme').then(r => r.json());
+    if (t.brand_name) document.getElementById('brand-name').innerText = t.brand_name;
+}
+
+// ─── Usuarios ─────────────────────────────────────────────────────────────────
+async function loadUsers() {
+    const res = await fetch('/api/users', { headers });
+    if (res.status === 401) { window.location.href = '/login'; return; }
+    allUsers = await res.json();
+    renderUsers(allUsers);
+}
+
+function renderUsers(users) {
+    const tbody = document.getElementById('users-tbody');
+    tbody.innerHTML = users.map(u => {
+        const initials = u.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        const statusDot = u.is_locked ? 'dot-locked' : (u.is_active ? 'dot-active' : 'dot-inactive');
+        const statusLabel = u.is_locked ? 'Bloqueado' : (u.is_active ? 'Activo' : 'Inactivo');
+        const lastLogin = u.last_login ? new Date(u.last_login).toLocaleString() : 'Nunca';
+        return `<tr>
+            <td><div class="flex-center gap-sm">
+                <div class="user-avatar">${initials}</div>
+                <div><strong>${u.username}</strong>${u.must_change_password ? ' <span class="badge badge-warning" title="Debe cambiar contraseña">⚠️</span>' : ''}</div>
+            </div></td>
+            <td>${u.full_name}<br><span class="text-xs text-muted">${u.email}</span></td>
+            <td><span class="badge badge-info">${u.role || '—'}</span></td>
+            <td>${u.branch || '—'}</td>
+            <td><span class="status-dot ${statusDot}"></span> ${statusLabel}
+                ${u.failed_login_attempts > 0 ? `<br><span class="text-xs text-muted">${u.failed_login_attempts} fallos</span>` : ''}
+            </td>
+            <td class="text-sm text-muted">${lastLogin}</td>
+            <td>
+                <div class="flex gap-sm">
+                    <button class="btn btn-info btn-sm" onclick="editUser(${u.id})">Editar</button>
+                    <button class="btn btn-ghost btn-sm" onclick="openReset(${u.id})">🔑</button>
+                    ${u.is_locked ? `<button class="btn btn-success btn-sm" onclick="unlockUser(${u.id})">Desbloquear</button>` : ''}
+                    ${u.is_active ? `<button class="btn btn-danger btn-sm" onclick="deactivateUser(${u.id})">Desactivar</button>` : ''}
+                </div>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function filterUsers(q) {
+    const filtered = allUsers.filter(u =>
+        u.username.includes(q) || u.full_name.toLowerCase().includes(q.toLowerCase()) || (u.email || '').includes(q)
+    );
+    renderUsers(filtered);
+}
+
+// ─── Modal Crear/Editar ───────────────────────────────────────────────────────
+function populateSelects() {
+    const roleEl = document.getElementById('f-role');
+    const branchEl = document.getElementById('f-branch');
+    roleEl.innerHTML = roles.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+    branchEl.innerHTML = branches.length
+        ? branches.map(b => `<option value="${b.id}">${b.name || 'Sucursal ' + b.id}</option>`).join('')
+        : '<option value="1">Sucursal Principal</option>';
+}
+
+function openUserModal() {
+    document.getElementById('modal-title').innerText = 'Nuevo Usuario';
+    document.getElementById('edit-id').value = '';
+    document.getElementById('password-section').style.display = 'block';
+    ['f-username','f-fullname','f-email','f-phone','f-password'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('f-must-change').checked = true;
+    populateSelects();
+    document.getElementById('user-modal').classList.add('open');
+}
+
+async function editUser(id) {
+    const u = allUsers.find(u => u.id === id);
+    document.getElementById('modal-title').innerText = 'Editar Usuario';
+    document.getElementById('edit-id').value = id;
+    document.getElementById('f-username').value = u.username;
+    document.getElementById('f-username').disabled = true;
+    document.getElementById('f-fullname').value = u.full_name;
+    document.getElementById('f-email').value = u.email;
+    document.getElementById('f-phone').value = u.phone || '';
+    document.getElementById('password-section').style.display = 'none';
+    populateSelects();
+    document.getElementById('f-role').value = u.role_id;
+    document.getElementById('f-branch').value = u.branch_id;
+    document.getElementById('user-modal').classList.add('open');
+}
+
+function closeModal() {
+    document.getElementById('user-modal').classList.remove('open');
+    document.getElementById('f-username').disabled = false;
+}
+
+async function saveUser() {
+    const id = document.getElementById('edit-id').value;
+    if (id) {
+        const payload = {
+            email: document.getElementById('f-email').value,
+            full_name: document.getElementById('f-fullname').value,
+            phone: document.getElementById('f-phone').value || null,
+            role_id: parseInt(document.getElementById('f-role').value),
+            branch_id: parseInt(document.getElementById('f-branch').value),
+        };
+        const res = await fetch(`/api/users/${id}`, { method: 'PUT', headers, body: JSON.stringify(payload) });
+        if (res.ok) { closeModal(); loadUsers(); } else { const e = await res.json(); alert('Error: ' + e.detail); }
+    } else {
+        const payload = {
+            username: document.getElementById('f-username').value,
+            email: document.getElementById('f-email').value,
+            full_name: document.getElementById('f-fullname').value,
+            phone: document.getElementById('f-phone').value || null,
+            role_id: parseInt(document.getElementById('f-role').value),
+            branch_id: parseInt(document.getElementById('f-branch').value),
+            password: document.getElementById('f-password').value,
+            must_change_password: document.getElementById('f-must-change').checked,
+        };
+        const res = await fetch('/api/users', { method: 'POST', headers, body: JSON.stringify(payload) });
+        if (res.ok) { closeModal(); loadUsers(); } else { const e = await res.json(); alert('Error: ' + e.detail); }
+    }
+}
+
+// ─── Acciones ─────────────────────────────────────────────────────────────────
+async function unlockUser(id) {
+    await fetch(`/api/users/${id}/unlock`, { method: 'POST', headers });
+    loadUsers();
+}
+async function deactivateUser(id) {
+    if (!confirm('¿Desactivar este usuario? No se eliminará, solo se bloqueará el acceso.')) return;
+    await fetch(`/api/users/${id}`, { method: 'DELETE', headers });
+    loadUsers();
+}
+
+function openReset(id) {
+    document.getElementById('reset-user-id').value = id;
+    document.getElementById('reset-pass').value = '';
+    document.getElementById('reset-modal').classList.add('open');
+}
+async function doReset() {
+    const id = document.getElementById('reset-user-id').value;
+    const payload = { new_password: document.getElementById('reset-pass').value, must_change_on_next_login: document.getElementById('reset-must-change').checked };
+    const res = await fetch(`/api/users/${id}/reset-password`, { method: 'POST', headers, body: JSON.stringify(payload) });
+    if (res.ok) { document.getElementById('reset-modal').classList.remove('open'); alert('✅ Contraseña restablecida'); }
+    else { const e = await res.json(); alert('Error: ' + e.detail); }
+}
+
+// ─── Fortaleza de contraseña ──────────────────────────────────────────────────
+function checkStrength(val) {
+    let score = 0;
+    if (val.length >= 8) score++;
+    if (/[A-Z]/.test(val)) score++;
+    if (/\d/.test(val)) score++;
+    if (/[^A-Za-z0-9]/.test(val)) score++;
+    if (val.length >= 12) score++;
+    const pct = (score / 5) * 100;
+    const color = score <= 1 ? 'var(--color-danger)' : score <= 3 ? 'var(--color-accent)' : 'var(--color-success)';
+    const label = score <= 1 ? 'Muy débil' : score <= 2 ? 'Débil' : score <= 3 ? 'Aceptable' : score <= 4 ? 'Fuerte' : 'Muy fuerte';
+    document.getElementById('strength-bar').style.cssText = `width:${pct}%;background:${color}`;
+    document.getElementById('strength-label').innerText = label;
+    document.getElementById('strength-label').style.color = color;
+}
+
+// ─── Política ─────────────────────────────────────────────────────────────────
+async function loadPolicy() {
+    const res = await fetch('/api/security/policy', { headers });
+    const p = await res.json();
+    document.getElementById('p-min-len').value = p.min_password_length;
+    document.getElementById('p-expiry').value = p.password_expiry_days;
+    document.getElementById('p-upper').checked = p.require_uppercase;
+    document.getElementById('p-number').checked = p.require_numbers;
+    document.getElementById('p-symbol').checked = p.require_symbols;
+    document.getElementById('p-history').value = p.password_history_count;
+    document.getElementById('p-max-fail').value = p.max_failed_attempts;
+    document.getElementById('p-lockout').value = p.lockout_duration_minutes;
+    document.getElementById('p-session').value = p.session_timeout_minutes;
+    document.getElementById('p-jwt').value = p.jwt_expiry_minutes;
+}
+
+async function savePolicy() {
+    const payload = {
+        min_password_length: parseInt(document.getElementById('p-min-len').value),
+        password_expiry_days: parseInt(document.getElementById('p-expiry').value),
+        require_uppercase: document.getElementById('p-upper').checked,
+        require_numbers: document.getElementById('p-number').checked,
+        require_symbols: document.getElementById('p-symbol').checked,
+        password_history_count: parseInt(document.getElementById('p-history').value),
+        max_failed_attempts: parseInt(document.getElementById('p-max-fail').value),
+        lockout_duration_minutes: parseInt(document.getElementById('p-lockout').value),
+        session_timeout_minutes: parseInt(document.getElementById('p-session').value),
+        jwt_expiry_minutes: parseInt(document.getElementById('p-jwt').value),
+    };
+    const res = await fetch('/api/security/policy', { method: 'PUT', headers, body: JSON.stringify(payload) });
+    if (res.ok) alert('✅ Política de seguridad guardada correctamente.');
+    else alert('❌ Error al guardar la política');
+}
+
+// ─── Auditoría de Accesos ─────────────────────────────────────────────────────
+async function loadAccessAudit() {
+    const res = await fetch('/audit/', { headers });
+    const logs = await res.json();
+    const tbody = document.getElementById('access-audit-tbody');
+    const accessLogs = logs.filter(l => ['LOGIN','LOGIN_FAILED','LOGOUT','PASSWORD_CHANGE','PASSWORD_RESET'].includes(l.action));
+    tbody.innerHTML = accessLogs.map(l => {
+        const isFailure = l.action.includes('FAIL');
+        const color = isFailure ? 'var(--color-danger)' : l.action === 'LOGIN' ? 'var(--color-success)' : 'var(--color-muted)';
+        return `<tr>
+            <td class="text-sm">${new Date(l.timestamp).toLocaleString()}</td>
+            <td><strong>${l.username || '—'}</strong></td>
+            <td style="color:${color}"><strong>${l.action}</strong></td>
+            <td class="text-muted text-sm">${l.ip_address || '—'}</td>
+            <td class="text-xs text-muted">${JSON.stringify(l.new_values || {})}</td>
+        </tr>`;
+    }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--color-muted)">Sin registros de acceso</td></tr>';
+}
+
+function switchTab(name, btn) {
+    document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(`tab-${name}`).classList.add('active');
+    btn.classList.add('active');
+}
+
+async function doLogout() {
+    await fetch('/api/auth/logout', { method: 'POST', headers });
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_user');
+    window.location.href = '/login';
+}
+
+init();
+</script>
+</body>
+</html>
+

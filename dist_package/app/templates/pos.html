@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema POS - Punto de Venta</title>
+<link rel="stylesheet" href="/static/fonts/fonts.css">
+<style>
+:root{--bg:#0f172a;--card:rgba(30,41,59,.7);--accent:#fbbf24;--text:#f1f5f9;--muted:#94a3b8;--border:rgba(255,255,255,.1);--success:#10b981;--danger:#ef4444;--info:#3b82f6;--ready:#8b5cf6;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);display:grid;grid-template-columns:1fr 400px;height:100vh;overflow:hidden;}
+/* Panel izquierdo */
+.left-panel{display:flex;flex-direction:column;overflow:hidden;}
+.left-header{padding:1rem 1.5rem;background:rgba(15,23,42,.9);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:1rem;flex-wrap:wrap;}
+.left-header h1{font-size:1.15rem;color:var(--accent);}
+/* Cola de pedidos */
+.queue-section{background:rgba(139,92,246,.06);border-bottom:2px solid rgba(139,92,246,.3);padding:.8rem 1.2rem;flex-shrink:0;}
+.queue-title{font-size:.82rem;font-weight:700;color:var(--ready);text-transform:uppercase;letter-spacing:1px;margin-bottom:.6rem;display:flex;align-items:center;gap:.5rem;}
+.queue-count{background:var(--ready);color:#fff;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;}
+.queue-scroll{display:flex;gap:.7rem;overflow-x:auto;padding-bottom:.4rem;}
+.queue-card{background:rgba(139,92,246,.12);border:1.5px solid rgba(139,92,246,.4);border-radius:.9rem;padding:.7rem 1rem;min-width:200px;cursor:pointer;transition:all .2s;flex-shrink:0;}
+.queue-card:hover{border-color:var(--ready);background:rgba(139,92,246,.25);transform:translateY(-2px);}
+.queue-card-num{font-weight:700;font-size:.9rem;color:var(--ready);}
+.queue-card-type{font-size:.72rem;color:var(--muted);margin:.15rem 0;}
+.queue-card-total{font-size:1rem;font-weight:700;color:var(--accent);}
+.queue-card-btn{margin-top:.5rem;width:100%;padding:.35rem;border:none;border-radius:6px;background:var(--ready);color:#fff;font-size:.75rem;font-weight:700;cursor:pointer;}
+/* Catalogo */
+.catalog{flex:1;overflow-y:auto;padding:1rem 1.5rem;}
+.product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.9rem;}
+.product-card{background:var(--card);border:1.5px solid var(--border);border-radius:1rem;cursor:pointer;transition:all .18s;overflow:hidden;}
+.product-card:hover{border-color:var(--accent);transform:translateY(-3px);}
+.prod-img{width:100%;height:100px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;font-size:2rem;}
+.prod-img img{width:100%;height:100%;object-fit:cover;}
+.prod-info{padding:.65rem;}
+.prod-name{font-size:.88rem;font-weight:600;}
+.prod-cat{font-size:.72rem;color:var(--muted);}
+.prod-price{font-size:1rem;font-weight:700;color:var(--accent);margin-top:.3rem;}
+/* Panel derecho - Carrito */
+.cart-section{background:rgba(15,23,42,.9);border-left:1px solid var(--border);display:flex;flex-direction:column;padding:1.2rem;}
+.cart-header h2{font-size:1.05rem;color:var(--accent);}
+.cart-items{flex:1;overflow-y:auto;margin:.8rem 0;}
+.cart-item{display:flex;justify-content:space-between;align-items:center;padding:.55rem 0;border-bottom:1px solid var(--border);}
+.cart-item-name{font-size:.87rem;font-weight:600;}
+.qty-ctrl{display:flex;align-items:center;gap:.3rem;}
+.qty-btn{width:24px;height:24px;border-radius:5px;border:1px solid var(--border);background:rgba(255,255,255,.08);color:var(--text);cursor:pointer;font-size:.9rem;}
+.qty-num{width:22px;text-align:center;font-weight:700;font-size:.85rem;}
+.cart-price{color:var(--accent);font-weight:600;font-size:.87rem;}
+.cart-totals{border-top:2px solid var(--accent);padding-top:.8rem;}
+.total-row{display:flex;justify-content:space-between;font-size:.85rem;color:var(--muted);margin-bottom:.3rem;}
+.total-final{font-size:1.4rem;font-weight:700;color:var(--accent);}
+.btn-pay{width:100%;padding:.9rem;border:none;border-radius:10px;background:var(--accent);color:#000;font-weight:700;font-size:1rem;cursor:pointer;margin-top:.8rem;transition:all .18s;}
+.btn-pay:hover{box-shadow:0 0 20px rgba(251,191,36,.4);}
+.btn-clear{width:100%;padding:.6rem;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;font-size:.85rem;margin-top:.4rem;}
+/* Fields */
+.field-group{margin-bottom:.6rem;}
+.field-group label{font-size:.75rem;color:var(--muted);display:block;margin-bottom:.25rem;}
+.field-group input,.field-group select{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--text);padding:.5rem .7rem;border-radius:7px;font-size:.85rem;}
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:#1e293b;border:1px solid var(--border);border-radius:1.2rem;padding:1.8rem;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;}
+.modal-box h3{color:var(--accent);margin-bottom:1.2rem;}
+.modal-section{background:rgba(255,255,255,.04);border-radius:8px;padding:.8rem;margin-bottom:.8rem;font-size:.82rem;color:var(--muted);}
+.modal-section strong{color:var(--text);display:block;margin-bottom:.3rem;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;}
+.gdpr-note{background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.3);border-radius:8px;padding:.7rem;font-size:.78rem;color:#93c5fd;margin-top:.8rem;}
+.modal-footer{display:flex;gap:.8rem;margin-top:1.2rem;}
+.btn-confirm{flex:1;padding:.8rem;border:none;border-radius:9px;background:var(--accent);color:#000;font-weight:700;cursor:pointer;}
+.btn-cancel-m{flex:1;padding:.8rem;border:1px solid var(--border);border-radius:9px;background:transparent;color:var(--muted);cursor:pointer;}
+/* Toast */
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);padding:.8rem 1.5rem;border-radius:10px;font-weight:600;z-index:9999;background:#052e16;border:1px solid var(--success);color:var(--success);}
+.toast.error{background:#450a0a;border-color:var(--danger);color:var(--danger);}
+.empty-cart{text-align:center;padding:2rem;color:var(--muted);}
+</style>
+</head>
+<body>
+<!-- Panel izquierdo -->
+<div class="left-panel">
+  <div class="left-header">
+    <img src="/static/logo.png" style="width:48px;height:auto;object-fit:contain;border-radius:7px;image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges" onerror="this.style.display='none'">
+    <h1>🛒 Punto de Venta</h1>
+    <a href="/comandas" style="margin-left:auto;font-size:.8rem;color:var(--muted);text-decoration:none">🍳 KDS</a>
+    <a href="/" style="font-size:.8rem;color:var(--muted);text-decoration:none">← Dashboard</a>
+  </div>
+
+  <!-- Cola de pedidos listos para facturar -->
+  <div class="queue-section" id="queue-section" style="display:none">
+    <div class="queue-title">🧾 Listos para Facturar <span class="queue-count" id="queue-count">0</span></div>
+    <div class="queue-scroll" id="queue-scroll"></div>
+  </div>
+
+  <!-- Catálogo -->
+  <div class="catalog">
+    <div class="product-grid" id="product-grid">
+      <div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted)">Cargando productos...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Panel derecho - Carrito / Facturación -->
+<div class="cart-section">
+  <div class="cart-header">
+    <h2>🧾 Facturación</h2>
+    <div style="margin-top:.8rem">
+      <div class="field-group">
+        <label>Tipo de Servicio</label>
+        <select id="consumption-type" onchange="updateServiceUI()">
+          <option value="MESA">🪑 Consumo en Mesa</option>
+          <option value="LLEVAR">🛍️ Para Llevar</option>
+          <option value="DOMICILIO">🛵 Delivery</option>
+        </select>
+      </div>
+      <div class="field-group" id="emission-point-group" style="display:none">
+        <label>Caja / Punto de Emisión</label>
+        <select id="pos-emission-point"></select>
+      </div>
+      <div class="field-group">
+        <label>Cliente / Nombre</label>
+        <input id="cust-name" placeholder="Consumidor Final">
+      </div>
+      <div class="field-group">
+        <label>Cédula / RUC</label>
+        <input id="cust-id" placeholder="9999999999999">
+      </div>
+    </div>
+  </div>
+
+  <div class="cart-items" id="cart-items">
+    <div class="empty-cart"><span style="font-size:2.5rem">🛒</span><br>Carrito vacío</div>
+  </div>
+
+  <div class="cart-totals">
+    <div class="total-row"><span>Subtotal</span><span id="total-sub">$0.00</span></div>
+    <div class="total-row"><span>IVA (15%)</span><span id="total-tax">$0.00</span></div>
+    <div class="total-row" style="margin-top:.4rem;padding-top:.4rem;border-top:1px solid var(--border)">
+      <span style="font-weight:700">TOTAL</span>
+      <span class="total-final" id="total-all">$0.00</span>
+    </div>
+    <button class="btn-pay" onclick="openInvoiceModal()">✅ Procesar Factura</button>
+    <button class="btn-clear" onclick="clearCart()">🗑️ Limpiar carrito</button>
+  </div>
+</div>
+
+<!-- Modal: Datos del cliente para facturación -->
+<div class="modal-overlay" id="invoice-modal">
+  <div class="modal-box">
+    <h3>🧾 Datos para Facturación</h3>
+
+    <!-- Resumen del pedido -->
+    <div class="modal-section">
+      <strong>📋 Resumen del Pedido</strong>
+      <div id="modal-order-summary"></div>
+    </div>
+
+    <!-- Tipo de servicio (informativo) -->
+    <div class="modal-section" id="modal-service-info"></div>
+
+    <!-- Campos del cliente -->
+    <div class="field-group">
+      <label>Nombre completo del cliente *</label>
+      <input id="m-cust-name" placeholder="Nombre del cliente" required>
+    </div>
+    <div class="form-row">
+      <div class="field-group">
+        <label>Cédula / RUC</label>
+        <input id="m-cust-id" placeholder="9999999999999">
+      </div>
+      <div class="field-group">
+        <label>Teléfono</label>
+        <input id="m-phone" placeholder="0999999999">
+      </div>
+    </div>
+    <div class="field-group">
+      <label>Email (para GDPR / recibo)</label>
+      <input id="m-email" type="email" placeholder="cliente@email.com (opcional)">
+    </div>
+
+    <!-- Campos condicionales por tipo -->
+    <div id="m-delivery-fields" style="display:none">
+      <div class="field-group">
+        <label>Dirección de entrega *</label>
+        <input id="m-address" placeholder="Calle, número, referencia">
+      </div>
+      <div class="field-group">
+        <label>Hora estimada de entrega</label>
+        <input id="m-delivery-time" type="time">
+      </div>
+      <div class="modal-section" style="background:rgba(59,130,246,.08);border-color:rgba(59,130,246,.3)">
+        <strong style="color:var(--info)">🔑 Código Delivery</strong>
+        <span id="m-delivery-code" style="color:var(--accent);font-weight:700;font-size:1rem"></span>
+        <span style="font-size:.75rem"> (auto-generado)</span>
+      </div>
+    </div>
+    <div id="m-mesa-fields" style="display:none">
+      <div class="field-group">
+        <label>Mesa</label>
+        <input id="m-mesa" placeholder="Número de mesa" readonly style="background:rgba(16,185,129,.08)">
+      </div>
+    </div>
+
+    <div class="gdpr-note">
+      🔒 <strong>Protección de Datos (LOPDP Ecuador):</strong> Si proporciona un email,
+      recibirá un correo solicitando autorización para el tratamiento de sus datos personales.
+      El registro se almacena de forma segura.
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel-m" onclick="closeInvoiceModal()">Cancelar</button>
+      <button class="btn-confirm" onclick="processInvoice()">💳 Facturar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let cart = [];
+let pendingOrderId = null;  // ID del pedido desde la cola KDS
+let activeTaxRate = 0.15;
+let activeTaxName = "IVA 15%";
+let emissionPoints = [];
+
+// ─── Inicialización ───────────────────────────────────────────────────────────
+async function init() {
+    await Promise.all([loadProducts(), loadQueue(), loadActiveTax(), loadEmissionPoints()]);
+}
+
+async function loadActiveTax() {
+    try {
+        const res = await fetch('/api/settings/taxes/active');
+        if (res.ok) {
+            const data = await res.json();
+            activeTaxRate = parseFloat(data.rate) / 100.0;
+            activeTaxName = data.name;
+            
+            // Actualizar etiqueta
+            const labels = document.querySelectorAll('.total-row span');
+            for (let label of labels) {
+                if (label.innerText.includes('IVA')) {
+                    label.innerText = activeTaxName;
+                }
+            }
+        }
+    } catch(e) {
+        console.error("Error cargando IVA activo:", e);
+    }
+}
+
+async function loadEmissionPoints() {
+    try {
+        const res = await fetch('/api/settings/emission-points');
+        if (res.ok) {
+            emissionPoints = await res.json();
+            const activePoints = emissionPoints.filter(ep => ep.is_active && ep.branch_id === 1);
+            const select = document.getElementById('pos-emission-point');
+            const group = document.getElementById('emission-point-group');
+            
+            if (activePoints.length > 0) {
+                select.innerHTML = activePoints.map(ep => `<option value="${ep.id}">${ep.code} - ${ep.name}</option>`).join('');
+                if (activePoints.length > 1) {
+                    group.style.display = 'block';
+                } else {
+                    group.style.display = 'none';
+                }
+            } else {
+                group.style.display = 'none';
+            }
+        }
+    } catch(e) {
+        console.error("Error al cargar puntos de emisión:", e);
+    }
+}
+
+async function loadProducts() {
+    const res = await fetch('/api/products/');
+    const prods = await res.json();
+    const sellable = prods.filter(p => p.is_ready_to_sell && !p.is_ingredient);
+    const grid = document.getElementById('product-grid');
+    if (!sellable.length) { grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted)">Sin productos disponibles</div>'; return; }
+    grid.innerHTML = sellable.map(p => `
+        <div class="product-card" onclick="addToCart(${p.id},'${esc(p.name)}',${p.sale_price},'${p.image_url||''}')">
+            <div class="prod-img">${p.image_url ? `<img src="${p.image_url}" onerror="this.parentNode.innerHTML='☕'">` : '☕'}</div>
+            <div class="prod-info">
+                <div class="prod-name">${esc(p.name)}</div>
+                <div class="prod-cat">${p.menu_category||''}</div>
+                <div class="prod-price">$${parseFloat(p.sale_price).toFixed(2)}</div>
+            </div>
+        </div>`).join('');
+}
+
+async function loadQueue() {
+    try {
+        const res = await fetch('/api/orders/ready-to-invoice');
+        const orders = await res.json();
+        const section = document.getElementById('queue-section');
+        const scroll = document.getElementById('queue-scroll');
+        document.getElementById('queue-count').innerText = orders.length;
+        if (!orders.length) { section.style.display = 'none'; return; }
+        section.style.display = 'block';
+        const typeLabel = {MESA:'🪑 Mesa', LLEVAR:'🛍️ Llevar', DOMICILIO:'🛵 Delivery'};
+        scroll.innerHTML = orders.map(o => `
+            <div class="queue-card">
+                <div class="queue-card-num">#${o.invoice}</div>
+                <div class="queue-card-type">${typeLabel[o.type]||o.type} · ${o.table ? 'Mesa '+o.table : o.customer}</div>
+                <div class="queue-card-total">$${parseFloat(o.total).toFixed(2)}</div>
+                <button class="queue-card-btn" onclick="loadOrderToCart(${JSON.stringify(o).replace(/"/g,'&quot;')})">
+                    📥 Cargar en POS
+                </button>
+            </div>`).join('');
+    } catch(e) {}
+}
+
+function loadOrderToCart(order) {
+    pendingOrderId = order.id;
+    cart = order.items.map(i => ({id: i.product_id||0, name: i.name, price: i.unit_price||0, qty: i.qty, image_url:''}));
+    document.getElementById('consumption-type').value = order.type || 'MESA';
+    updateServiceUI(order.table, order.delivery_address);
+    if (order.customer && order.customer !== 'CONSUMIDOR FINAL') {
+        document.getElementById('cust-name').value = order.customer;
+    }
+    renderCart();
+    showToast(`📥 Pedido #${order.invoice} cargado`);
+}
+
+// ─── Carrito ──────────────────────────────────────────────────────────────────
+function addToCart(id, name, price, imageUrl) {
+    const ex = cart.find(i => i.id === id);
+    if (ex) ex.qty++;
+    else cart.push({id, name, price: parseFloat(price)||0, qty:1, image_url: imageUrl||''});
+    renderCart();
+}
+
+function changeQty(id, delta) {
+    const item = cart.find(i => i.id === id);
+    if (!item) return;
+    item.qty += delta;
+    if (item.qty <= 0) cart = cart.filter(i => i.id !== id);
+    renderCart();
+}
+
+function clearCart() { cart = []; pendingOrderId = null; renderCart(); loadQueue(); }
+
+function renderCart() {
+    const el = document.getElementById('cart-items');
+    if (!cart.length) { el.innerHTML = '<div class="empty-cart"><span style="font-size:2.5rem">🛒</span><br>Carrito vacío</div>'; updateTotals(0); return; }
+    el.innerHTML = cart.map(i => `
+        <div class="cart-item">
+            <div>
+                <div class="cart-item-name">${esc(i.name)}</div>
+                <small style="color:var(--muted)">$${parseFloat(i.price).toFixed(2)} c/u</small>
+            </div>
+            <div style="display:flex;align-items:center;gap:.6rem">
+                <div class="qty-ctrl">
+                    <button class="qty-btn" onclick="changeQty(${i.id},-1)">−</button>
+                    <span class="qty-num">${i.qty}</span>
+                    <button class="qty-btn" onclick="changeQty(${i.id},1)">+</button>
+                </div>
+                <span class="cart-price">$${(parseFloat(i.price)*i.qty).toFixed(2)}</span>
+            </div>
+        </div>`).join('');
+    const sub = cart.reduce((s,i) => s + parseFloat(i.price)*i.qty, 0);
+    updateTotals(sub);
+}
+
+function updateTotals(sub) {
+    const tax = sub * activeTaxRate;
+    document.getElementById('total-sub').innerText = `$${sub.toFixed(2)}`;
+    document.getElementById('total-tax').innerText = `$${tax.toFixed(2)}`;
+    document.getElementById('total-all').innerText = `$${(sub+tax).toFixed(2)}`;
+}
+
+// ─── Tipo de servicio ─────────────────────────────────────────────────────────
+function updateServiceUI(mesa='', address='') {
+    const type = document.getElementById('consumption-type').value;
+    document.getElementById('m-delivery-fields').style.display = type === 'DOMICILIO' ? 'block' : 'none';
+    document.getElementById('m-mesa-fields').style.display = type === 'MESA' ? 'block' : 'none';
+    if (mesa) document.getElementById('m-mesa').value = mesa;
+    if (address) document.getElementById('m-address').value = address;
+}
+
+// ─── Modal Facturación ────────────────────────────────────────────────────────
+function openInvoiceModal() {
+    if (!cart.length) { showToast('Carrito vacío', true); return; }
+    const type = document.getElementById('consumption-type').value;
+    const sub = cart.reduce((s,i) => s + parseFloat(i.price)*i.qty, 0);
+    const total = sub * (1 + activeTaxRate);
+    document.getElementById('modal-order-summary').innerHTML =
+        cart.map(i => `<div style="display:flex;justify-content:space-between;margin:.2rem 0"><span>${i.qty}x ${i.name}</span><span style="color:var(--accent)">$${(i.price*i.qty).toFixed(2)}</span></div>`).join('') +
+        `<div style="border-top:1px solid var(--border);margin-top:.5rem;padding-top:.5rem;font-weight:700;display:flex;justify-content:space-between"><span>TOTAL</span><span style="color:var(--accent)">$${total.toFixed(2)}</span></div>`;
+    const typeLabel = {MESA:'🪑 Consumo en Mesa', LLEVAR:'🛍️ Para Llevar', DOMICILIO:'🛵 Delivery a Domicilio'};
+    document.getElementById('modal-service-info').innerHTML =
+        `<strong>${typeLabel[type]||type}</strong><span style="font-size:.8rem">Tipo de servicio seleccionado</span>`;
+    // Prellenar nombre si existe
+    const custName = document.getElementById('cust-name').value;
+    if (custName) document.getElementById('m-cust-name').value = custName;
+    const custId = document.getElementById('cust-id').value;
+    if (custId) document.getElementById('m-cust-id').value = custId;
+    document.getElementById('m-delivery-fields').style.display = type === 'DOMICILIO' ? 'block' : 'none';
+    document.getElementById('m-mesa-fields').style.display = type === 'MESA' ? 'block' : 'none';
+    // Generar preview del código delivery
+    if (type === 'DOMICILIO') {
+        const now = new Date();
+        const code = `DEL-${String(now.getFullYear()-2000).padStart(2,'0')}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}-???`;
+        document.getElementById('m-delivery-code').innerText = code;
+    }
+    document.getElementById('invoice-modal').classList.add('open');
+}
+
+function closeInvoiceModal() { document.getElementById('invoice-modal').classList.remove('open'); }
+
+async function processInvoice() {
+    const custName = document.getElementById('m-cust-name').value.trim();
+    const custId   = document.getElementById('m-cust-id').value.trim() || '9999999999999';
+    const email    = document.getElementById('m-email').value.trim();
+    const phone    = document.getElementById('m-phone').value.trim();
+    const type     = document.getElementById('consumption-type').value;
+    const address  = document.getElementById('m-address')?.value?.trim() || null;
+
+    if (!custName) { showToast('Ingrese el nombre del cliente', true); return; }
+    if (type === 'DOMICILIO' && !address) { showToast('Ingrese la dirección de entrega', true); return; }
+
+    // 1. Registrar/actualizar cliente si es LLEVAR o DOMICILIO
+    let customerId = null;
+    if (type !== 'MESA') {
+        try {
+            const custRes = await fetch('/api/customers/', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({name: custName, email: email||null, phone: phone||null,
+                                      customer_type: type, address: address})
+            });
+            if (custRes.ok) {
+                const cust = await custRes.json();
+                customerId = cust.id;
+                if (type === 'DOMICILIO' && cust.delivery_code) {
+                    document.getElementById('m-delivery-code').innerText = cust.delivery_code;
+                }
+            }
+        } catch(e) {}
+    }
+
+    // 2. Procesar la venta
+    const epSelect = document.getElementById('pos-emission-point');
+    const epId = epSelect && epSelect.value ? parseInt(epSelect.value) : null;
+
+    const payload = {
+        customer_name: custName || 'CONSUMIDOR FINAL',
+        customer_id: custId,
+        customer_id_type: custId.length === 13 ? '04' : '05',
+        branch_id: 1, user_id: 1, payment_method_id: 1,
+        emission_point_id: epId,
+        consumption_type: type,
+        delivery_address: address,
+        details: cart.map(i => ({product_id: i.id, quantity: i.qty, unit_price: i.price}))
+    };
+
+    try {
+        const res = await fetch('/sales/', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+        if (res.ok) {
+            const result = await res.json();
+            // 3. Si viene de la cola KDS, marcarlo como FACTURADO
+            if (pendingOrderId) {
+                await fetch(`/api/orders/${pendingOrderId}/complete`, {method:'PUT'});
+            }
+            closeInvoiceModal();
+            showToast(`✅ Factura ${result.invoice_number || result.id} generada`);
+            clearCart();
+            await loadQueue();
+        } else {
+            const e = await res.json();
+            showToast(e.detail || 'Error al facturar', true);
+        }
+    } catch(e) { showToast('Error de conexión', true); }
+}
+
+function showToast(msg, isError=false) {
+    document.querySelectorAll('.toast').forEach(t=>t.remove());
+    const t = document.createElement('div');
+    t.className = 'toast' + (isError ? ' error' : '');
+    t.innerText = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 4000);
+}
+
+function esc(s) { return String(s||'').replace(/[<>&"']/g, c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// Refrescar cola cada 20s
+setInterval(loadQueue, 20000);
+init();
+</script>
+</body>
+</html>

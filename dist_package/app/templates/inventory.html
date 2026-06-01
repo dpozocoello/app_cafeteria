@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema POS - Gestión de Inventario</title>
+    <link rel="stylesheet" href="/static/fonts/fonts.css">
+    <style>
+        :root {
+            --bg: #020617; --sidebar: #0f172a; --card: rgba(30,41,59,0.5);
+            --accent: #fbbf24; --text: #f8fafc; --muted: #94a3b8;
+            --border: rgba(255,255,255,0.07); --success: #10b981; --danger: #ef4444;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); display: flex; min-height: 100vh; }
+
+        /* Sidebar */
+        .sidebar { width: 240px; background: var(--sidebar); border-right: 1px solid var(--border); padding: 1.5rem; display: flex; flex-direction: column; flex-shrink: 0; }
+        .sidebar-logo { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 2rem; }
+        .sidebar-logo img { width: 56px; height: auto; object-fit: contain; border-radius: 8px; image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges; }
+        .nav-item { padding: 0.8rem 1rem; border-radius: 10px; color: var(--muted); text-decoration: none; display: flex; align-items: center; gap: 10px; margin-bottom: 0.3rem; transition: all .2s; font-weight: 500; }
+        .nav-item:hover, .nav-item.active { background: rgba(251,191,36,.12); color: var(--accent); }
+
+        /* Content */
+        .main { flex: 1; padding: 2rem; overflow-y: auto; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        h1 { font-size: 1.6rem; }
+
+        /* Tabla */
+        .table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 1rem; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
+        th { padding: 1rem; text-align: left; color: var(--muted); font-size: 0.8rem; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+        td { padding: 0.9rem 1rem; border-bottom: 1px solid var(--border); font-size: 0.95rem; }
+        tr:last-child td { border-bottom: none; }
+
+        /* Badge */
+        .badge { padding: 0.25rem 0.6rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+        .badge-venta { background: rgba(16,185,129,.15); color: var(--success); }
+        .badge-insumo { background: rgba(251,191,36,.15); color: var(--accent); }
+
+        /* Botones */
+        .btn { padding: 0.5rem 1rem; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: opacity .2s; font-size: 0.9rem; }
+        .btn:hover { opacity: 0.85; }
+        .btn-primary { background: var(--accent); color: #000; }
+        .btn-edit { background: rgba(59,130,246,.2); color: #60a5fa; }
+        .btn-delete { background: rgba(239,68,68,.2); color: var(--danger); }
+        .btn-sm { padding: 0.3rem 0.7rem; font-size: 0.8rem; }
+
+        /* Modal */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; }
+        .modal-overlay.open { display: flex; }
+        .modal { background: #1e293b; border: 1px solid var(--border); border-radius: 1.2rem; padding: 2rem; width: 100%; max-width: 520px; }
+        .modal h2 { margin-bottom: 1.5rem; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+        .form-group { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1rem; }
+        label { font-size: 0.85rem; color: var(--muted); }
+        input, select, textarea { background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text); padding: 0.6rem 0.8rem; border-radius: 8px; font-size: 0.95rem; width: 100%; }
+        input:focus, select:focus { outline: none; border-color: var(--accent); }
+        .modal-footer { display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem; }
+        .btn-cancel { background: rgba(255,255,255,.07); color: var(--muted); }
+    </style>
+</head>
+<body>
+<div class="sidebar">
+    <div class="sidebar-logo">
+        <img src="/static/logo.png" alt="logo" onerror="this.style.display='none'">
+        <div>
+            <div id="sidebar-brand" style="font-weight:700;color:var(--accent);font-size:.95rem;line-height:1.2">Sistema POS</div>
+            <div style="font-size:.7rem;color:var(--muted)">Sistema de Gestión</div>
+        </div>
+    </div>
+    <div style="font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:.3rem .5rem;margin-top:.3rem">Operación</div>
+    <a href="/" class="nav-item">📊 Dashboard</a>
+    <a href="/pos" class="nav-item">🛒 Punto de Venta</a>
+    <a href="/comandas" class="nav-item">📝 Comandas</a>
+    <a href="/pedidos" class="nav-item">🍽️ Toma de Pedidos</a>
+    <div style="font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:.3rem .5rem;margin-top:.8rem">Administración</div>
+    <a href="/inventory" class="nav-item active">📦 Inventario</a>
+    <a href="/admin/recipes" class="nav-item">🧪 Recetas</a>
+    <a href="/admin/menus" class="nav-item">📋 Menús &amp; Mesas</a>
+    <div style="font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:.3rem .5rem;margin-top:.8rem">Sistema</div>
+    <a href="/admin/profiles" class="nav-item">🎭 Perfiles</a>
+    <a href="/admin/users" class="nav-item">👥 Usuarios</a>
+    <a href="/admin/settings" class="nav-item">⚙️ Configuración</a>
+    <a href="/admin/reports" class="nav-item">🧾 Reportería &amp; Anulación</a>
+    <a href="/admin/migration" class="nav-item">🔄 Migración BD</a>
+    <a href="/audit" class="nav-item">🔍 Auditoría</a>
+    <div style="margin-top:auto;padding-top:1rem">
+        <button class="btn" style="width:100%;background:rgba(255,255,255,.06);color:var(--muted);border:none;padding:.6rem;border-radius:8px;cursor:pointer;font-size:.85rem" onclick="doLogout()">🚪 Cerrar Sesión</button>
+    </div>
+</div>
+
+<div class="main">
+    <div class="page-header">
+        <h1>📦 Gestión de Inventario</h1>
+        <button class="btn btn-primary" onclick="openModal()">+ Nuevo Producto</button>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>SKU</th><th>Nombre</th><th>Categoría</th><th>Tipo</th>
+                    <th>Stock</th><th>Precio Venta</th><th>Costo</th><th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="products-body"></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Crear/Editar -->
+<div class="modal-overlay" id="modal">
+    <div class="modal">
+        <h2 id="modal-title">Nuevo Producto</h2>
+        <input type="hidden" id="edit-id">
+        <div class="form-row">
+            <div class="form-group">
+                <label>SKU *</label>
+                <input id="f-sku" placeholder="PROD-001">
+            </div>
+            <div class="form-group">
+                <label>Unidad *</label>
+                <select id="f-unit">
+                    <option>Unit</option><option>gr</option><option>ml</option>
+                    <option>Kg</option><option>L</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Nombre *</label>
+            <input id="f-name" placeholder="Capuchino Grande">
+        </div>
+        <div class="form-group">
+            <label>Descripción</label>
+            <input id="f-description" placeholder="Descripción opcional">
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Categoría de Menú</label>
+                <select id="f-category">
+                    <option value="">Sin categoría</option>
+                    <option>Cafetería</option><option>Desayunos</option>
+                    <option>Bebidas Frías</option><option>Snacks</option>
+                    <option>Insumos</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Tipo</label>
+                <select id="f-type">
+                    <option value="venta">Producto de Venta</option>
+                    <option value="insumo">Insumo</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Precio Venta ($)</label>
+                <input id="f-sale-price" type="number" step="0.01" value="0.00">
+            </div>
+            <div class="form-group">
+                <label>Costo Unitario ($)</label>
+                <input id="f-cost-price" type="number" step="0.001" value="0.000">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Stock Mínimo</label>
+            <input id="f-min-stock" type="number" step="0.01" value="0">
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-cancel" onclick="closeModal()">Cancelar</button>
+            <button class="btn btn-primary" onclick="saveProduct()">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+let editingId = null;
+
+async function loadProducts() {
+    const [productsRes, stockRes] = await Promise.all([
+        fetch('/api/products/'), fetch('/inventory/data')
+    ]);
+    const products = await productsRes.json();
+    const stocks = await stockRes.json();
+    const stockMap = {};
+    stocks.forEach(s => stockMap[s.sku] = s.stock);
+
+    const tbody = document.getElementById('products-body');
+    tbody.innerHTML = '';
+    products.forEach(p => {
+        const stock = stockMap[p.sku] ?? 0;
+        const stockColor = stock <= p.min_stock ? 'color:var(--danger)' : 'color:var(--success)';
+        tbody.innerHTML += `<tr>
+            <td><code>${p.sku}</code></td>
+            <td><strong>${p.name}</strong></td>
+            <td>${p.menu_category || '—'}</td>
+            <td><span class="badge ${p.is_ingredient ? 'badge-insumo' : 'badge-venta'}">${p.is_ingredient ? 'Insumo' : 'Venta'}</span></td>
+            <td style="${stockColor}">${stock} ${p.unit}</td>
+            <td>$${parseFloat(p.sale_price||0).toFixed(2)}</td>
+            <td>$${parseFloat(p.cost_price||0).toFixed(4)}</td>
+            <td>
+                <button class="btn btn-edit btn-sm" onclick="editProduct(${p.id})">Editar</button>
+                <button class="btn btn-delete btn-sm" onclick="deleteProduct(${p.id}, '${p.name}')">Eliminar</button>
+            </td>
+        </tr>`;
+    });
+}
+
+function openModal(id = null) {
+    editingId = id;
+    document.getElementById('modal-title').innerText = id ? 'Editar Producto' : 'Nuevo Producto';
+    document.getElementById('modal').classList.add('open');
+}
+function closeModal() {
+    document.getElementById('modal').classList.remove('open');
+    document.getElementById('edit-id').value = '';
+    editingId = null;
+    ['f-sku','f-name','f-description'].forEach(id => document.getElementById(id).value = '');
+}
+
+async function editProduct(id) {
+    const res = await fetch(`/api/products/${id}`);
+    const p = await res.json();
+    editingId = id;
+    document.getElementById('f-sku').value = p.sku;
+    document.getElementById('f-name').value = p.name;
+    document.getElementById('f-description').value = p.description || '';
+    document.getElementById('f-unit').value = p.unit;
+    document.getElementById('f-category').value = p.menu_category || '';
+    document.getElementById('f-type').value = p.is_ingredient ? 'insumo' : 'venta';
+    document.getElementById('f-sale-price').value = p.sale_price;
+    document.getElementById('f-cost-price').value = p.cost_price;
+    document.getElementById('f-min-stock').value = p.min_stock;
+    openModal(id);
+}
+
+async function saveProduct() {
+    const isInsumo = document.getElementById('f-type').value === 'insumo';
+    const payload = {
+        sku: document.getElementById('f-sku').value,
+        name: document.getElementById('f-name').value,
+        description: document.getElementById('f-description').value,
+        unit: document.getElementById('f-unit').value,
+        menu_category: document.getElementById('f-category').value || null,
+        is_ready_to_sell: !isInsumo,
+        is_ingredient: isInsumo,
+        sale_price: parseFloat(document.getElementById('f-sale-price').value) || 0,
+        cost_price: parseFloat(document.getElementById('f-cost-price').value) || 0,
+        min_stock: parseFloat(document.getElementById('f-min-stock').value) || 0
+    };
+    const url = editingId ? `/api/products/${editingId}` : '/api/products/';
+    const method = editingId ? 'PUT' : 'POST';
+    const res = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    if (res.ok) { closeModal(); loadProducts(); }
+    else { const err = await res.json(); alert('Error: ' + (err.detail || JSON.stringify(err))); }
+}
+
+async function deleteProduct(id, name) {
+    if (!confirm(`¿Eliminar "${name}"? Esta acción no se puede deshacer.`)) return;
+    await fetch(`/api/products/${id}`, { method: 'DELETE' });
+    loadProducts();
+}
+
+loadProducts();
+
+function doLogout() {
+    const t = localStorage.getItem('auth_token');
+    if (t) fetch('/api/auth/logout', { method: 'POST', headers: { 'Authorization': `Bearer ${t}` } });
+    localStorage.removeItem('auth_token');
+    window.location.href = '/login';
+}
+fetch('/api/settings/theme').then(r => r.json()).then(t => {
+    if (t.brand_name) document.getElementById('sidebar-brand').innerText = t.brand_name;
+}).catch(() => {});
+</script>
+</body>
+</html>
+
+

@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema POS - Reportería & Facturación SRI</title>
+    <link rel="stylesheet" href="/static/fonts/fonts.css">
+    <link rel="stylesheet" href="/static/app.css">
+    <style>
+        .report-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--space-md);
+            margin-bottom: var(--space-lg);
+        }
+
+        .report-card {
+            background: var(--color-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.2s;
+        }
+
+        .report-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .report-card-title {
+            color: var(--color-muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: var(--space-xs);
+        }
+
+        .report-card-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--color-accent);
+        }
+
+        .filter-bar {
+            background: var(--color-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-md);
+            margin-bottom: var(--space-lg);
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-md);
+            align-items: flex-end;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .filter-group label {
+            font-size: 0.8rem;
+            color: var(--color-muted);
+        }
+
+        .filter-group input, .filter-group select {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--color-border);
+            color: var(--color-text);
+            padding: var(--space-sm);
+            border-radius: var(--radius-md);
+            font-family: inherit;
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .status-autorizado {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--color-success);
+        }
+        .status-pendiente {
+            background: rgba(251, 191, 36, 0.15);
+            color: var(--color-accent);
+        }
+        .status-anulada {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--color-danger);
+        }
+    </style>
+</head>
+<body>
+<div class="app-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <img id="sidebar-logo" src="/static/logo.png" alt="logo" onerror="this.style.display='none'">
+            <div>
+                <div class="sidebar-brand" id="sidebar-brand">Sistema POS</div>
+                <div class="sidebar-tagline" id="sidebar-tagline">Sistema de Gestión</div>
+            </div>
+        </div>
+        <span class="nav-section-label">Operación</span>
+        <a href="/" class="nav-item"><span>📊</span><span>Dashboard</span></a>
+        <a href="/pos" class="nav-item"><span>🛒</span><span>Punto de Venta</span></a>
+        <a href="/comandas" class="nav-item"><span>KDS</span><span>Comandas</span></a>
+        <a href="/pedidos" class="nav-item"><span>📝</span><span>Toma de Pedidos</span></a>
+        <span class="nav-section-label">Administración</span>
+        <a href="/inventory" class="nav-item"><span>📦</span><span>Inventario</span></a>
+        <a href="/admin/recipes" class="nav-item"><span>🧪</span><span>Recetas</span></a>
+        <a href="/admin/menus" class="nav-item"><span>📋</span><span>Menús & Mesas</span></a>
+        <span class="nav-section-label">Sistema</span>
+        <a href="/admin/users" class="nav-item"><span>👥</span><span>Usuarios</span></a>
+        <a href="/admin/settings" class="nav-item"><span>⚙️</span><span>Configuración</span></a>
+        <a href="/admin/reports" class="nav-item active"><span>🧾</span><span>Reportería & Anulación</span></a>
+        <a href="/audit" class="nav-item"><span>🔍</span><span>Auditoría</span></a>
+        <div style="margin-top:auto">
+            <button class="btn btn-ghost btn-block" onclick="doLogout()">🚪 Cerrar Sesión</button>
+        </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main-content">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">🧾 Reportería & Facturación SRI</h1>
+                <p class="page-subtitle">Reportes impositivos ecuatorianos y anulación de comprobantes</p>
+            </div>
+        </div>
+
+        <!-- FILTROS GLOBALES -->
+        <div class="filter-bar">
+            <div class="filter-group">
+                <label>Desde</label>
+                <input type="date" id="filter-start-date">
+            </div>
+            <div class="filter-group">
+                <label>Hasta</label>
+                <input type="date" id="filter-end-date">
+            </div>
+            <div class="filter-group">
+                <label>Sucursal</label>
+                <select id="filter-branch">
+                    <option value="">Todas las Sucursales</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" onclick="loadAllReports()">🔍 Filtrar</button>
+        </div>
+
+        <!-- TABS -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('taxes', this)">📊 Resumen Impuestos</button>
+            <button class="tab" onclick="switchTab('withholdings', this)">🏦 Retenciones Recibidas</button>
+            <button class="tab" onclick="switchTab('ats', this)">📋 Anexo ATS</button>
+            <button class="tab" onclick="switchTab('history', this)">🔍 Historial & Anulación</button>
+        </div>
+
+        <!-- ═══ TAB: IMPUESTOS ═══════════════════════════════════════════ -->
+        <div class="tab-section active animate-in" id="tab-taxes">
+            <div class="report-grid">
+                <div class="report-card">
+                    <div class="report-card-title">Facturas Emitidas</div>
+                    <div class="report-card-value" id="tax-count">0</div>
+                </div>
+                <div class="report-card">
+                    <div class="report-card-title">Subtotal IVA 0%</div>
+                    <div class="report-card-value" id="tax-subtotal-0">$0.00</div>
+                </div>
+                <div class="report-card">
+                    <div class="report-card-title">Subtotal IVA Gravado</div>
+                    <div class="report-card-value" id="tax-subtotal-tax">$0.00</div>
+                </div>
+                <div class="report-card">
+                    <div class="report-card-title">Total IVA Recaudado</div>
+                    <div class="report-card-value" id="tax-amount-collected">$0.00</div>
+                </div>
+                <div class="report-card">
+                    <div class="report-card-title">Total General</div>
+                    <div class="report-card-value" id="tax-total">$0.00</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ TAB: RETENCIONES ══════════════════════════════════════════ -->
+        <div class="tab-section" id="tab-withholdings">
+            <div class="report-grid">
+                <div class="report-card">
+                    <div class="report-card-title">Comprobantes Recibidos</div>
+                    <div class="report-card-value" id="ret-count">0</div>
+                </div>
+                <div class="report-card">
+                    <div class="report-card-title">Total Retenido IVA</div>
+                    <div class="report-card-value" id="ret-iva">$0.00</div>
+                </div>
+                <div class="report-card">
+                    <div class="report-card-title">Total Retenido Renta</div>
+                    <div class="report-card-value" id="ret-renta">$0.00</div>
+                </div>
+            </div>
+            
+            <div class="card mt-lg">
+                <h3 class="mb-md">Detalle de Retenciones Recibidas</h3>
+                <table style="width:100%;border-collapse:collapse;text-align:left">
+                    <thead>
+                        <tr style="border-bottom:2px solid var(--color-border);font-weight:700">
+                            <th style="padding:.8rem">Fecha Factura</th>
+                            <th style="padding:.8rem">Factura</th>
+                            <th style="padding:.8rem">Cliente</th>
+                            <th style="padding:.8rem">No. Retención</th>
+                            <th style="padding:.8rem">Ret. IVA</th>
+                            <th style="padding:.8rem">Ret. Renta</th>
+                            <th style="padding:.8rem">Monto Factura</th>
+                        </tr>
+                    </thead>
+                    <tbody id="list-withholdings">
+                        <!-- Generado por JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ═══ TAB: ANEXO ATS ════════════════════════════════════════════ -->
+        <div class="tab-section" id="tab-ats">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
+                <div class="card">
+                    <h3 class="mb-md">Resumen por Tipo de Identificación (Ventas ATS)</h3>
+                    <table style="width:100%;border-collapse:collapse;text-align:left">
+                        <thead>
+                            <tr style="border-bottom:2px solid var(--color-border);font-weight:700">
+                                <th style="padding:.8rem">Identificación</th>
+                                <th style="padding:.8rem">Cantidad</th>
+                                <th style="padding:.8rem">Total Neto</th>
+                                <th style="padding:.8rem">IVA</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ats-client-types">
+                            <!-- Generado por JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card">
+                    <h3 class="mb-md">Resumen por Formas de Pago SRI</h3>
+                    <table style="width:100%;border-collapse:collapse;text-align:left">
+                        <thead>
+                            <tr style="border-bottom:2px solid var(--color-border);font-weight:700">
+                                <th style="padding:.8rem">Forma de Pago</th>
+                                <th style="padding:.8rem">Código</th>
+                                <th style="padding:.8rem">Cantidad</th>
+                                <th style="padding:.8rem">Total Cobrado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ats-payment-methods">
+                            <!-- Generado por JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ TAB: HISTORIAL & ANULACION ════════════════════════════════ -->
+        <div class="tab-section" id="tab-history">
+            <div class="card">
+                <div class="flex-between mb-md">
+                    <h3>Auditoría de Comprobantes de Venta</h3>
+                    <div style="display:flex;gap:.5rem">
+                        <input id="txt-search-invoice" placeholder="Buscar por factura o cliente..." style="background:rgba(255,255,255,0.05);border:1px solid var(--color-border);color:var(--color-text);padding:.5rem;border-radius:8px" oninput="loadInvoiceHistory()">
+                    </div>
+                </div>
+                <table style="width:100%;border-collapse:collapse;text-align:left">
+                    <thead>
+                        <tr style="border-bottom:2px solid var(--color-border);font-weight:700">
+                            <th style="padding:.8rem">Fecha</th>
+                            <th style="padding:.8rem">No. Factura</th>
+                            <th style="padding:.8rem">Cliente</th>
+                            <th style="padding:.8rem">RUC/Cédula</th>
+                            <th style="padding:.8rem">Monto</th>
+                            <th style="padding:.8rem">Estado SRI</th>
+                            <th style="padding:.8rem;text-align:right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="list-invoice-history">
+                        <!-- Generado por JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<!-- Modal de Anulación -->
+<div class="modal-overlay" id="modal-annul">
+    <div class="modal-box">
+        <h3>🧾 Anular Factura & Emitir Nota de Crédito</h3>
+        <p style="color:var(--color-muted);font-size:.9rem;margin-bottom:1rem">Esta acción dará de baja la factura seleccionada ante el SRI en el sistema e incrementará automáticamente el inventario (Kárdex).</p>
+        
+        <div class="form-group mb-md">
+            <label>Factura a Anular</label>
+            <input id="annul-invoice-number" type="text" readonly style="width:100%;background:rgba(0,0,0,0.2);color:var(--color-muted);border:1px solid var(--color-border);padding:.6rem;border-radius:8px">
+            <input id="annul-sale-id" type="hidden">
+        </div>
+        <div class="form-group mb-md">
+            <label>Punto de Emisión (Para Nota de Crédito)</label>
+            <select id="annul-emission-point" style="width:100%;background:rgba(255,255,255,.05);border:1px solid var(--color-border);color:var(--color-text);padding:.6rem;border-radius:8px">
+                <!-- Cargado por JS -->
+            </select>
+        </div>
+        <div class="form-group mb-lg">
+            <label>Motivo de la Anulación</label>
+            <select id="annul-reason" style="width:100%;background:rgba(255,255,255,.05);border:1px solid var(--color-border);color:var(--color-text);padding:.6rem;border-radius:8px">
+                <option value="Error en digitacion de datos del cliente">Error en digitación de datos del cliente</option>
+                <option value="Devolucion parcial o total de mercaderia">Devolución parcial o total de mercadería</option>
+                <option value="Descuento omitido o error de calculo">Descuento omitido o error de cálculo</option>
+                <option value="Anulacion total de la transaccion comercial">Anulación total de la transacción comercial</option>
+            </select>
+        </div>
+        
+        <div class="flex gap-sm justify-end">
+            <button class="btn btn-ghost" onclick="closeAnnulModal()">Cancelar</button>
+            <button class="btn btn-danger" onclick="submitAnnul()">Confirmar Anulación</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Configurar fechas por defecto (Mes actual)
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    
+    document.getElementById('filter-start-date').value = firstDay.toISOString().split('T')[0];
+    document.getElementById('filter-end-date').value = today.toISOString().split('T')[0];
+
+    // Cargar Tema Visual
+    async function loadTheme() {
+        const res = await fetch('/api/settings/theme');
+        const theme = await res.json();
+        if(theme.brand_name) {
+            document.getElementById('sidebar-brand').innerText = theme.brand_name;
+            document.getElementById('sidebar-tagline').innerText = theme.brand_tagline;
+            if(theme.logo_path) {
+                document.getElementById('sidebar-logo').src = theme.logo_path;
+                document.getElementById('sidebar-logo').style.display = 'block';
+            }
+        }
+    }
+
+    // Navegación de Tabs
+    function switchTab(tabId, tabBtn) {
+        document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
+        
+        tabBtn.classList.add('active');
+        document.getElementById(`tab-${tabId}`).classList.add('active');
+    }
+
+    // Obtener Sucursales y Puntos de Emisión para los filtros y modales
+    async function loadMetadata() {
+        // Sucursales
+        const bRes = await fetch('/api/branches');
+        const branches = await bRes.json();
+        const branchSelect = document.getElementById('filter-branch');
+        branches.forEach(b => {
+            const opt = document.createElement('option');
+            opt.value = b.id;
+            opt.innerText = b.name;
+            branchSelect.appendChild(opt);
+        });
+
+        // Puntos de Emisión
+        const epRes = await fetch('/api/settings/emission-points');
+        const eps = await epRes.json();
+        const epSelect = document.getElementById('annul-emission-point');
+        eps.forEach(ep => {
+            if(ep.is_active) {
+                const opt = document.createElement('option');
+                opt.value = ep.id;
+                opt.innerText = `${ep.branch_name} - ${ep.name} (${ep.code})`;
+                epSelect.appendChild(opt);
+            }
+        });
+    }
+
+    // Cargar Reportería
+    async function loadAllReports() {
+        const start = document.getElementById('filter-start-date').value;
+        const end = document.getElementById('filter-end-date').value;
+        const branch = document.getElementById('filter-branch').value;
+        
+        let urlParams = `start_date=${start}&end_date=${end}`;
+        if(branch) urlParams += `&branch_id=${branch}`;
+
+        // 1. IVA y Totales
+        const taxRes = await fetch(`/api/billing-reports/reports/sales-by-tax?${urlParams}`);
+        const taxData = await taxRes.json();
+        document.getElementById('tax-count').innerText = taxData.count;
+        document.getElementById('tax-subtotal-0').innerText = `$${taxData.subtotal_0.toFixed(2)}`;
+        document.getElementById('tax-subtotal-tax').innerText = `$${taxData.subtotal_tax.toFixed(2)}`;
+        document.getElementById('tax-amount-collected').innerText = `$${taxData.tax_amount.toFixed(2)}`;
+        document.getElementById('tax-total').innerText = `$${taxData.total.toFixed(2)}`;
+
+        // 2. Retenciones
+        const retRes = await fetch(`/api/billing-reports/reports/withholdings?${urlParams}`);
+        const retData = await retRes.json();
+        document.getElementById('ret-count').innerText = retData.count;
+        document.getElementById('ret-iva').innerText = `$${retData.total_withholding_iva.toFixed(2)}`;
+        document.getElementById('ret-renta').innerText = `$${retData.total_withholding_renta.toFixed(2)}`;
+
+        const retBody = document.getElementById('list-withholdings');
+        retBody.innerHTML = '';
+        retData.items.forEach(item => {
+            retBody.innerHTML += `
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.05)">
+                    <td style="padding:.8rem">${item.sale_date}</td>
+                    <td style="padding:.8rem">${item.invoice_number}</td>
+                    <td style="padding:.8rem">${item.customer_name}</td>
+                    <td style="padding:.8rem">${item.withholding_number}</td>
+                    <td style="padding:.8rem;color:var(--color-success)">+$${item.withholding_iva.toFixed(2)}</td>
+                    <td style="padding:.8rem;color:var(--color-accent)">+$${item.withholding_renta.toFixed(2)}</td>
+                    <td style="padding:.8rem">$${item.total_invoice.toFixed(2)}</td>
+                </tr>
+            `;
+        });
+
+        // 3. ATS
+        const atsRes = await fetch(`/api/billing-reports/reports/ats-summary?${urlParams}`);
+        const atsData = await atsRes.json();
+        
+        const clientBody = document.getElementById('ats-client-types');
+        clientBody.innerHTML = '';
+        atsData.by_client_type.forEach(g => {
+            clientBody.innerHTML += `
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.05)">
+                    <td style="padding:.8rem">${g.label} (${g.code})</td>
+                    <td style="padding:.8rem">${g.count}</td>
+                    <td style="padding:.8rem">$${g.subtotal_tax.toFixed(2)}</td>
+                    <td style="padding:.8rem">$${g.tax_amount.toFixed(2)}</td>
+                </tr>
+            `;
+        });
+
+        const payBody = document.getElementById('ats-payment-methods');
+        payBody.innerHTML = '';
+        atsData.by_payment_method.forEach(g => {
+            payBody.innerHTML += `
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.05)">
+                    <td style="padding:.8rem">${g.name}</td>
+                    <td style="padding:.8rem">${g.sri_code}</td>
+                    <td style="padding:.8rem">${g.count}</td>
+                    <td style="padding:.8rem;color:var(--color-accent)">$${g.total.toFixed(2)}</td>
+                </tr>
+            `;
+        });
+
+        // 4. Historial
+        loadInvoiceHistory();
+    }
+
+    // Cargar Historial
+    async function loadInvoiceHistory() {
+        const start = document.getElementById('filter-start-date').value;
+        const end = document.getElementById('filter-end-date').value;
+        const query = document.getElementById('txt-search-invoice').value;
+        
+        let url = `/api/billing-reports/sales?start_date=${start}&end_date=${end}`;
+        if(query) url += `&query=${encodeURIComponent(query)}`;
+        
+        const res = await fetch(url);
+        const sales = await res.json();
+        
+        const body = document.getElementById('list-invoice-history');
+        body.innerHTML = '';
+        
+        sales.forEach(s => {
+            // Excluir órdenes no facturadas
+            if(!s.invoice_number.startsWith('0')) return;
+
+            let badgeClass = 'status-pendiente';
+            if(s.status === 'ANULADA') badgeClass = 'status-anulada';
+            else if(s.sri_status === 'AUTORIZADO') badgeClass = 'status-autorizado';
+            
+            let actionBtn = '';
+            if(s.status === 'ANULADA') {
+                actionBtn = `<span style="font-size:0.85rem;color:var(--color-muted)">Nota de Crédito: <strong>${s.credit_note_number || ''}</strong></span>`;
+            } else {
+                actionBtn = `<button class="btn btn-danger btn-sm" onclick="openAnnulModal(${s.id}, '${s.invoice_number}')">Anular (NC)</button>`;
+            }
+            
+            body.innerHTML += `
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.05)">
+                    <td style="padding:.8rem">${s.sale_date}</td>
+                    <td style="padding:.8rem"><strong>${s.invoice_number}</strong></td>
+                    <td style="padding:.8rem">${s.customer_name}</td>
+                    <td style="padding:.8rem">${s.customer_id}</td>
+                    <td style="padding:.8rem">$${s.total.toFixed(2)}</td>
+                    <td style="padding:.8rem"><span class="status-badge ${badgeClass}">${s.status === 'ANULADA' ? 'ANULADA' : s.sri_status}</span></td>
+                    <td style="padding:.8rem;text-align:right">${actionBtn}</td>
+                </tr>
+            `;
+        });
+    }
+
+    // Modal de Anulación
+    function openAnnulModal(id, invoiceNum) {
+        document.getElementById('annul-sale-id').value = id;
+        document.getElementById('annul-invoice-number').value = invoiceNum;
+        document.getElementById('modal-annul').classList.add('active');
+    }
+
+    function closeAnnulModal() {
+        document.getElementById('modal-annul').classList.remove('active');
+    }
+
+    async function submitAnnul() {
+        const saleId = document.getElementById('annul-sale-id').value;
+        const epId = document.getElementById('annul-emission-point').value;
+        const reason = document.getElementById('annul-reason').value;
+        
+        if(!epId) {
+            alert('Debe seleccionar un punto de emisión');
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/billing-reports/sales/${saleId}/annul`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    sale_id: parseInt(saleId),
+                    reason: reason,
+                    emission_point_id: parseInt(epId)
+                })
+            });
+            
+            const data = await res.json();
+            if(res.ok) {
+                alert(`Factura anulada con éxito. Nota de Crédito emitida: ${data.credit_note_number}`);
+                closeAnnulModal();
+                loadAllReports();
+            } else {
+                alert(`Error al anular: ${data.detail || 'Error desconocido'}`);
+            }
+        } catch(e) {
+            alert(`Error de red: ${e}`);
+        }
+    }
+
+    function doLogout() {
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+    }
+
+    // Inicializar
+    async function init() {
+        await loadTheme();
+        await loadMetadata();
+        await loadAllReports();
+    }
+
+    window.onload = init;
+</script>
+</body>
+</html>

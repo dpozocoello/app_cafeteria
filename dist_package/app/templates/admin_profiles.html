@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema POS - Gestión de Perfiles</title>
+    <link rel="stylesheet" href="/static/fonts/fonts.css">
+    <style>
+        :root{--bg:#020617;--sidebar:#0f172a;--card:rgba(30,41,59,.5);--accent:#fbbf24;--text:#f8fafc;--muted:#94a3b8;--border:rgba(255,255,255,.07);--success:#10b981;--danger:#ef4444;--info:#3b82f6;}
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+        body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;}
+        .sidebar{width:230px;background:var(--sidebar);border-right:1px solid var(--border);padding:1.2rem;display:flex;flex-direction:column;flex-shrink:0;}
+        .sidebar-logo{display:flex;align-items:center;gap:.6rem;margin-bottom:1.2rem;padding-bottom:1rem;border-bottom:1px solid var(--border);}
+        .sidebar-logo img{width:56px;height:auto;object-fit:contain;border-radius:8px;image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges;}
+        .nav-section{font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:.3rem .5rem;margin-top:.8rem;}
+        .nav-item{padding:.7rem .9rem;border-radius:9px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:9px;transition:all .15s;font-weight:500;font-size:.88rem;margin-bottom:.15rem;}
+        .nav-item:hover,.nav-item.active{background:rgba(251,191,36,.12);color:var(--accent);}
+        .sidebar-bottom{margin-top:auto;padding-top:1rem;}
+
+        .main{flex:1;padding:2rem;overflow-y:auto;}
+        .page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;}
+        h1{font-size:1.6rem;color:var(--accent);}
+
+        /* Grid de roles */
+        .roles-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1.2rem;margin-bottom:2rem;}
+        .role-card{background:var(--card);border:1px solid var(--border);border-radius:1rem;padding:1.2rem;transition:border .2s;}
+        .role-card:hover{border-color:var(--accent);}
+        .role-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.7rem;}
+        .role-name{font-weight:700;font-size:1rem;}
+        .role-badge{font-size:.72rem;padding:.2rem .6rem;border-radius:20px;background:rgba(251,191,36,.15);color:var(--accent);}
+        .role-desc{font-size:.83rem;color:var(--muted);margin-bottom:.9rem;line-height:1.5;}
+        .perms-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.3rem;}
+        .perm-chip{padding:.25rem .5rem;border-radius:5px;font-size:.7rem;font-weight:600;text-align:center;}
+        .perm-on{background:rgba(16,185,129,.15);color:var(--success);}
+        .perm-off{background:rgba(255,255,255,.04);color:var(--muted);}
+        .role-actions{display:flex;gap:.5rem;margin-top:1rem;}
+        .btn{padding:.45rem .9rem;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:.82rem;transition:opacity .2s;}
+        .btn:hover{opacity:.85;}
+        .btn-primary{background:var(--accent);color:#000;}
+        .btn-edit{background:rgba(59,130,246,.2);color:var(--info);}
+        .btn-delete{background:rgba(239,68,68,.2);color:var(--danger);}
+        .btn-success{background:rgba(16,185,129,.2);color:var(--success);}
+        .user-count{font-size:.75rem;color:var(--muted);margin-left:auto;}
+
+        /* Sección plantillas predefinidas */
+        .templates-section{margin-bottom:2rem;}
+        .templates-section h2{font-size:1.1rem;margin-bottom:.8rem;color:var(--text);}
+        .template-chips{display:flex;flex-wrap:wrap;gap:.5rem;}
+        .template-chip{padding:.4rem .9rem;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:.82rem;transition:all .15s;color:var(--muted);}
+        .template-chip:hover{border-color:var(--accent);color:var(--accent);}
+
+        /* Modal */
+        .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;align-items:center;justify-content:center;}
+        .modal-overlay.open{display:flex;}
+        .modal{background:#1e293b;border:1px solid var(--border);border-radius:1.2rem;padding:1.8rem;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;}
+        .modal h2{margin-bottom:1.2rem;color:var(--accent);}
+        .form-group{display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem;}
+        label{font-size:.82rem;color:var(--muted);}
+        input,textarea{background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--text);padding:.55rem .8rem;border-radius:8px;font-size:.9rem;width:100%;}
+        .perms-edit-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem;margin-top:.5rem;}
+        .perm-toggle{display:flex;align-items:center;gap:.5rem;padding:.5rem;background:rgba(255,255,255,.04);border-radius:7px;}
+        .perm-toggle label{color:var(--text);font-size:.85rem;cursor:pointer;margin:0;}
+        .perm-toggle input[type=checkbox]{width:auto;}
+        .modal-footer{display:flex;gap:.8rem;justify-content:flex-end;margin-top:1.5rem;}
+        .btn-cancel{background:rgba(255,255,255,.07);color:var(--muted);}
+
+        .toast{position:fixed;bottom:1.5rem;right:1.5rem;padding:.8rem 1.3rem;border-radius:10px;font-weight:600;z-index:9999;background:#052e16;border:1px solid var(--success);color:var(--success);}
+        .toast.error{background:#450a0a;border-color:var(--danger);color:var(--danger);}
+    </style>
+</head>
+<body>
+<aside class="sidebar">
+    <div class="sidebar-logo">
+        <img src="/static/logo.png" alt="logo" onerror="this.style.display='none'">
+        <div>
+            <div id="sidebar-brand" style="font-weight:700;color:var(--accent);font-size:.9rem">Sistema POS</div>
+            <div style="font-size:.68rem;color:var(--muted)">Sistema de Gestión</div>
+        </div>
+    </div>
+    <div class="nav-section">Operación</div>
+    <a href="/" class="nav-item">📊 Dashboard</a>
+    <a href="/pos" class="nav-item">🛒 Punto de Venta</a>
+    <a href="/pedidos" class="nav-item">🍽️ Toma de Pedidos</a>
+    <a href="/comandas" class="nav-item">📝 Comandas KDS</a>
+    <div class="nav-section">Administración</div>
+    <a href="/inventory" class="nav-item">📦 Inventario</a>
+    <a href="/admin/recipes" class="nav-item">🧪 Recetas</a>
+    <a href="/admin/menus" class="nav-item">📋 Menús &amp; Mesas</a>
+    <div class="nav-section">Sistema</div>
+    <a href="/admin/profiles" class="nav-item active">🎭 Perfiles</a>
+    <a href="/admin/users" class="nav-item">👥 Usuarios</a>
+    <a href="/admin/settings" class="nav-item">⚙️ Configuración</a>
+    <a href="/admin/reports" class="nav-item">🧾 Reportería &amp; Anulación</a>
+    <a href="/admin/migration" class="nav-item">🔄 Migración BD</a>
+    <a href="/audit" class="nav-item">🔍 Auditoría</a>
+    <div class="sidebar-bottom">
+        <button class="btn" style="width:100%;background:rgba(255,255,255,.06);color:var(--muted);border:none;padding:.55rem;border-radius:8px;cursor:pointer;font-size:.82rem" onclick="doLogout()">🚪 Cerrar Sesión</button>
+    </div>
+</aside>
+
+<main class="main">
+    <div class="page-header">
+        <div>
+            <h1>🎭 Gestión de Perfiles</h1>
+            <p style="color:var(--muted);font-size:.88rem;margin-top:.2rem">Roles RBAC · Control de acceso por módulo</p>
+        </div>
+        <div style="display:flex;gap:.5rem">
+            <button class="btn btn-success" onclick="initCoffeeShopProfiles()">✨ Inicializar Perfiles Cafetería</button>
+            <button class="btn btn-primary" onclick="openModal()">+ Nuevo Perfil</button>
+        </div>
+    </div>
+
+    <!-- Plantillas predefinidas -->
+    <div class="templates-section">
+        <h2>Plantillas Predefinidas para Cafetería</h2>
+        <div class="template-chips" id="template-chips">
+            <!-- Dinámico -->
+        </div>
+    </div>
+
+    <!-- Grid de roles existentes -->
+    <div class="roles-grid" id="roles-grid">
+        <div style="color:var(--muted);text-align:center;padding:3rem;grid-column:1/-1">Cargando perfiles...</div>
+    </div>
+</main>
+
+<!-- Modal Crear/Editar Perfil -->
+<div class="modal-overlay" id="role-modal">
+    <div class="modal">
+        <h2 id="modal-title">Nuevo Perfil</h2>
+        <input type="hidden" id="edit-id">
+        <div class="form-group">
+            <label>Nombre del Perfil *</label>
+            <input id="f-name" placeholder="Ej: Mesero, Gerente de Turno">
+        </div>
+        <div class="form-group">
+            <label>Descripción</label>
+            <input id="f-desc" placeholder="¿Qué puede hacer este perfil?">
+        </div>
+        <div class="form-group">
+            <label>Permisos por Módulo</label>
+            <div class="perms-edit-grid" id="perms-grid"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-cancel" onclick="closeModal()">Cancelar</button>
+            <button class="btn btn-primary" onclick="saveRole()">💾 Guardar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const PERMISSION_LABELS = {
+    dashboard:'Dashboard', ventas:'Punto de Venta', inventario:'Inventario',
+    recetas:'Recetas', menus:'Menús & Mesas', gastos:'Gastos Operativos',
+    usuarios:'Gestión Usuarios', reportes:'Reportes', config:'Configuración',
+    auditoria:'Auditoría', pedidos:'Toma de Pedidos', comandas:'Comandas KDS',
+    migracion:'Migración BD'
+};
+
+let editingId = null;
+let templates = [];
+
+async function init() {
+    const [rolesRes, tmplRes] = await Promise.all([
+        fetch('/api/roles'), fetch('/api/roles/templates')
+    ]);
+    const roles = await rolesRes.json();
+    templates = await tmplRes.json();
+
+    renderTemplateChips(templates);
+    renderRoles(roles);
+    fetch('/api/settings/theme').then(r=>r.json()).then(t=>{
+        if(t.brand_name) document.getElementById('sidebar-brand').innerText=t.brand_name;
+    }).catch(()=>{});
+}
+
+function renderTemplateChips(tmpl) {
+    document.getElementById('template-chips').innerHTML = tmpl.map(t =>
+        `<div class="template-chip" onclick="applyTemplate('${t.name}')" title="${t.description}">
+            ${getRoleEmoji(t.name)} ${t.name}
+        </div>`
+    ).join('');
+}
+
+function getRoleEmoji(name) {
+    const map = {'Administrador':'👑','Gerente de Turno':'📋','Barista/Cajero':'☕','Mesero':'🍽️','Cocinero':'👨‍🍳','Auditor':'🔍'};
+    return map[name] || '🎭';
+}
+
+function renderRoles(roles) {
+    const grid = document.getElementById('roles-grid');
+    if (!roles.length) {
+        grid.innerHTML = '<div style="color:var(--muted);text-align:center;padding:3rem;grid-column:1/-1">No hay perfiles. Usa "Inicializar Perfiles Cafetería" para comenzar.</div>';
+        return;
+    }
+    grid.innerHTML = roles.map(r => {
+        const perms = r.permissions || {};
+        const permHtml = Object.entries(PERMISSION_LABELS).map(([k, label]) =>
+            `<div class="perm-chip ${perms[k]?'perm-on':'perm-off'}">${perms[k]?'✓':''} ${label}</div>`
+        ).join('');
+        return `
+        <div class="role-card">
+            <div class="role-header">
+                <div>
+                    <div class="role-name">${getRoleEmoji(r.name)} ${r.name}</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:.5rem">
+                    <span class="role-badge">${r.active_users} usuario${r.active_users!==1?'s':''}</span>
+                </div>
+            </div>
+            <div class="role-desc">${r.description || 'Sin descripción'}</div>
+            <div class="perms-grid">${permHtml}</div>
+            <div class="role-actions">
+                <button class="btn btn-edit" onclick="editRole(${r.id})">✏️ Editar</button>
+                ${r.active_users === 0
+                    ? `<button class="btn btn-delete" onclick="deleteRole(${r.id},'${r.name}')">🗑️ Eliminar</button>`
+                    : `<span class="user-count">(tiene usuarios)</span>`}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function openModal(prefill = null) {
+    editingId = null;
+    document.getElementById('modal-title').innerText = 'Nuevo Perfil';
+    document.getElementById('edit-id').value = '';
+    document.getElementById('f-name').value = prefill?.name || '';
+    document.getElementById('f-desc').value = prefill?.description || '';
+    renderPermsGrid(prefill?.permissions || {});
+    document.getElementById('role-modal').classList.add('open');
+}
+
+function applyTemplate(name) {
+    const tmpl = templates.find(t => t.name === name);
+    if (tmpl) openModal(tmpl);
+}
+
+function renderPermsGrid(perms) {
+    document.getElementById('perms-grid').innerHTML = Object.entries(PERMISSION_LABELS).map(([k, label]) => `
+        <div class="perm-toggle">
+            <input type="checkbox" id="perm-${k}" ${perms[k]?'checked':''}>
+            <label for="perm-${k}">${label}</label>
+        </div>`).join('');
+}
+
+async function editRole(id) {
+    const res = await fetch('/api/roles');
+    const roles = await res.json();
+    const role = roles.find(r => r.id === id);
+    if (!role) return;
+    editingId = id;
+    document.getElementById('modal-title').innerText = 'Editar Perfil';
+    document.getElementById('edit-id').value = id;
+    document.getElementById('f-name').value = role.name;
+    document.getElementById('f-desc').value = role.description || '';
+    renderPermsGrid(role.permissions || {});
+    document.getElementById('role-modal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('role-modal').classList.remove('open'); }
+
+async function saveRole() {
+    const perms = {};
+    Object.keys(PERMISSION_LABELS).forEach(k => {
+        perms[k] = document.getElementById(`perm-${k}`)?.checked || false;
+    });
+    const payload = {
+        name: document.getElementById('f-name').value,
+        description: document.getElementById('f-desc').value,
+        permissions: perms
+    };
+    const id = document.getElementById('edit-id').value;
+    const url = id ? `/api/roles/${id}` : '/api/roles';
+    const method = id ? 'PUT' : 'POST';
+    const res = await fetch(url, { method, headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+    if (res.ok) { closeModal(); showToast('✅ Perfil guardado'); init(); }
+    else { const e = await res.json(); showToast(e.detail||'Error', true); }
+}
+
+async function deleteRole(id, name) {
+    if (!confirm(`¿Eliminar el perfil "${name}"?`)) return;
+    const res = await fetch(`/api/roles/${id}`, { method:'DELETE' });
+    if (res.ok) { showToast('✅ Perfil eliminado'); init(); }
+    else { const e = await res.json(); showToast(e.detail||'Error', true); }
+}
+
+async function initCoffeeShopProfiles() {
+    if (!confirm('Esto creará o actualizará los 6 perfiles predefinidos para una cafetería. ¿Continuar?')) return;
+    const res = await fetch('/api/roles/initialize-coffee-shop', { method:'POST' });
+    const data = await res.json();
+    showToast(`✅ ${data.message}`);
+    init();
+}
+
+function showToast(msg, isError=false) {
+    document.querySelectorAll('.toast').forEach(t=>t.remove());
+    const t = document.createElement('div');
+    t.className='toast'+(isError?' error':'');
+    t.innerText=msg;
+    document.body.appendChild(t);
+    setTimeout(()=>t.remove(), 4000);
+}
+
+function doLogout() {
+    const tk=localStorage.getItem('auth_token');
+    if(tk) fetch('/api/auth/logout',{method:'POST',headers:{'Authorization':`Bearer ${tk}`}});
+    localStorage.removeItem('auth_token');
+    window.location.href='/login';
+}
+
+init();
+</script>
+</body>
+</html>
+
