@@ -1,13 +1,13 @@
-# Documentación Técnica - CoffeeApp v2.0
+# Documentación Técnica - YUQUI v2.0
 ## Sistema de Gestión de Cafetería y Facturación Electrónica (SRI Ecuador)
 
-Esta documentación técnica sirve como guía de referencia central para ingenieros de software de cualquier nivel que necesiten leer, mantener o extender el código de **CoffeeApp**. Cubre la arquitectura, base de datos, flujos de negocio clave (SRI, Kárdex/Recetas) y lineamientos para desarrollo.
+Esta documentación técnica sirve como guía de referencia central para ingenieros de software de cualquier nivel que necesiten leer, mantener o extender el código de **YUQUI**. Cubre la arquitectura, base de datos, flujos de negocio clave (SRI, Kárdex/Recetas) y lineamientos para desarrollo.
 
 ---
 
 ## 1. Arquitectura y Componentes del Sistema
 
-CoffeeApp está estructurado como una aplicación monolitica con diseño modular en capas utilizando **FastAPI** para la API web y servicios, y **SQLAlchemy** como el mapeador objeto-relacional (ORM) para interactuar de forma transparente con bases de datos SQL.
+YUQUI está estructurado como una aplicación monolitica con diseño modular en capas utilizando **FastAPI** para la API web y servicios, y **SQLAlchemy** como el mapeador objeto-relacional (ORM) para interactuar de forma transparente con bases de datos SQL.
 
 ### 1.1 Diagrama de Componentes (Mermaid)
 
@@ -131,7 +131,7 @@ flowchart LR
     cajero((Cajero))
     cliente((Cliente))
     
-    subgraph CoffeeApp ["Casos de Uso - CoffeeApp"]
+    subgraph YUQUI ["Casos de Uso - YUQUI"]
         g_recetas["Gestionar Menús y Recetas BOM"]
         g_seguridad["Configurar Políticas de Seguridad ISO 27001"]
         v_auditoria["Ver Bitácora de Auditoría Inmutable"]
@@ -170,8 +170,14 @@ A continuación se muestra el diagrama ERD generado a partir de las declaracione
 
 ```mermaid
 erDiagram
+    companies ||--o{ branches : "posee"
+    companies ||--o{ users : "asocia"
+    companies ||--o{ products : "pertenece"
+    companies ||--o{ sales : "registra"
+    branches ||--o{ emission_points : "tiene"
     branches ||--o{ users : "registra"
     branches ||--o{ sales : "emite"
+    emission_points ||--o{ sales : "emite"
     roles ||--o{ users : "asigna_a"
     users ||--o{ audit_logs : "genera"
     users ||--o{ password_history : "guarda"
@@ -190,11 +196,34 @@ erDiagram
     products ||--o{ recipes : "es_producto_de"
     products ||--o{ recipes : "es_ingrediente_de"
 
+    companies {
+        int id PK
+        string ruc "RUC de la empresa (13 dígitos)"
+        string business_name "Razón Social"
+        string commercial_name "Nombre Comercial"
+        string address "Dirección Matriz"
+        boolean obligado_contabilidad
+        int environment "1: Pruebas, 2: Producción"
+        string font_family "Tipografía de la interfaz"
+        string color_bg "Variables de diseño visual"
+        string color_sidebar "Color lateral"
+    }
+
     branches {
         int id PK
+        int company_id FK
         string name
         string sri_establishment_code "Código SRI (e.g. 001)"
         string address
+        boolean is_active
+    }
+
+    emission_points {
+        int id PK
+        int branch_id FK
+        string code "Código SRI (e.g. 001, 002)"
+        string name "Nombre Caja / Terminal"
+        int invoice_sequential "Secuencial autoincrementable de facturas"
         boolean is_active
     }
 
@@ -205,6 +234,7 @@ erDiagram
         string password_hash
         int role_id FK
         int branch_id FK
+        int company_id FK
         boolean is_locked
         int failed_login_attempts
         datetime password_expires_at
@@ -230,6 +260,8 @@ erDiagram
         int id PK
         int branch_id FK
         int user_id FK
+        int company_id FK
+        int emission_point_id FK
         string access_key "Clave SRI 49 dígitos"
         string invoice_number "Nro. 001-001-000000001"
         string status "PENDIENTE, FACTURADO, LISTO_FACTURAR"
@@ -245,6 +277,8 @@ erDiagram
         int product_id FK
         decimal quantity
         decimal unit_price
+        decimal tax_percentage
+        decimal subtotal
         decimal total
     }
 
@@ -283,18 +317,24 @@ erDiagram
 ### 5.1 Flujo de Facturación Electrónica SRI (Ecuador)
 Cuando se procesa una venta en `/sales/`, el sistema interactúa con [SRIService](file:///c:/applications/app_cafeteria/app/services/sri_service.py). El flujo técnico es:
 
-1. **Generación de la Clave de Acceso (49 dígitos)**:
-   Se construye concatenando la fecha, código de factura ("01"), RUC de la empresa (13 dígitos), ambiente ("1" o "2"), serie de emisión ("Establecimiento + Punto Emisión", e.g., "001001"), secuencial (9 dígitos), código numérico aleatorio (8 dígitos) y tipo de emisión ("1").
-2. **Cálculo de Chequeador Módulo 11**:
+1. **Gestión Multiempresa (Multi-tenant) y Multipunto**:
+   La cabecera de la venta (`Sale`) almacena la referencia a la empresa (`company_id`) y al punto de emisión (`emission_point_id`) seleccionados. Los datos fiscales (RUC, razón social, dirección matriz, ambiente) y la identidad de marca (personalidad, colores, logo) son recuperados dinámicamente del modelo `Company` almacenado en la base de datos, en lugar de estar fijos en variables `.env`.
+2. **Generación de Secuenciales Strict**:
+   El secuencial de la factura (`invoice_number`) se genera a partir del punto de emisión activo: `establecimiento - punto_emision - secuencial`. El secuencial se incrementa de forma secuencial y atómica por transacción de venta en el backend.
+3. **Determinación Dinámica de IVA por Periodos**:
+   El porcentaje de impuesto se obtiene dinámicamente de la tabla `tax_parameters` basado en la fecha de la venta (`sale_date`). El backend realiza una consulta para encontrar el parámetro de IVA activo y vigente para ese tramo de tiempo, permitiendo regularizaciones gubernamentales del SRI sin alterar la base histórica.
+4. **Generación de la Clave de Acceso (49 dígitos)**:
+   Se construye concatenando la fecha de emisión, código de factura ("01"), RUC de la empresa (13 dígitos), ambiente de la empresa ("1" o "2"), serie de emisión ("Establecimiento + Punto Emisión", e.g., "001001"), secuencial (9 dígitos), código numérico aleatorio (8 dígitos) y tipo de emisión ("1").
+5. **Cálculo de Chequeador Módulo 11**:
    La función `_calculate_modulo11` aplica factores de multiplicación repetidos del 2 al 7 a cada dígito de derecha a izquierda. La suma de estos productos se divide por 11, y se resta el residuo a 11.
    *Fórmula matemática*:
    $$\text{Suma} = \sum_{i=1}^{N} d_i \times f_i$$
    $$\text{Residuo} = \text{Suma} \pmod{11}$$
    $$\text{Verificador} = 11 - \text{Residuo}$$ (Si el resultado es 11 $\rightarrow 0$; si es 10 $\rightarrow 1$).
-3. **Esquema XML**:
-   Se compila un documento XML cumpliendo el esquema estándar de la ficha técnica SRI (v1.1.0).
-4. **Firma XAdES-BES**:
-   El método `sign_xml` provee la estructura inicial (Mock) para integrar firma mediante certificados electrónicos `.p12`.
+6. **Esquema XML**:
+   Se compila un documento XML cumpliendo el esquema estándar de la ficha técnica SRI (v1.1.0). El código de porcentaje de IVA se asocia de forma dinámica (e.g., 2 para 12%, 4 para 15% según el estándar ecuatoriano).
+7. **Firma XAdES-BES**:
+   El método `sign_xml` provee la estructura inicial (Mock) para integrar firma mediante certificados electrónicos `.p12` cargados desde la base de datos de la empresa.
 
 ### 5.2 Descuento Automático de Inventario (BOM / Recetas)
 La función clave es [InventoryService.process_sale_inventory_deduction](file:///c:/applications/app_cafeteria/app/services/inventory_service.py#L65-L111):

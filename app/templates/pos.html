@@ -77,7 +77,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);disp
 <!-- Panel izquierdo -->
 <div class="left-panel">
   <div class="left-header">
-    <img src="/static/logo.png" style="width:32px;border-radius:7px" onerror="this.style.display='none'">
+    <img src="/static/logo.png" style="width:48px;height:auto;object-fit:contain;border-radius:7px;image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges" onerror="this.style.display='none'">
     <h1>🛒 Punto de Venta</h1>
     <a href="/comandas" style="margin-left:auto;font-size:.8rem;color:var(--muted);text-decoration:none">🍳 KDS</a>
     <a href="/" style="font-size:.8rem;color:var(--muted);text-decoration:none">← Dashboard</a>
@@ -109,6 +109,10 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);disp
           <option value="LLEVAR">🛍️ Para Llevar</option>
           <option value="DOMICILIO">🛵 Delivery</option>
         </select>
+      </div>
+      <div class="field-group" id="emission-point-group" style="display:none">
+        <label>Caja / Punto de Emisión</label>
+        <select id="pos-emission-point"></select>
       </div>
       <div class="field-group">
         <label>Cliente / Nombre</label>
@@ -210,10 +214,59 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);disp
 <script>
 let cart = [];
 let pendingOrderId = null;  // ID del pedido desde la cola KDS
+let activeTaxRate = 0.15;
+let activeTaxName = "IVA 15%";
+let emissionPoints = [];
 
 // ─── Inicialización ───────────────────────────────────────────────────────────
 async function init() {
-    await Promise.all([loadProducts(), loadQueue()]);
+    await Promise.all([loadProducts(), loadQueue(), loadActiveTax(), loadEmissionPoints()]);
+}
+
+async function loadActiveTax() {
+    try {
+        const res = await fetch('/api/settings/taxes/active');
+        if (res.ok) {
+            const data = await res.json();
+            activeTaxRate = parseFloat(data.rate) / 100.0;
+            activeTaxName = data.name;
+            
+            // Actualizar etiqueta
+            const labels = document.querySelectorAll('.total-row span');
+            for (let label of labels) {
+                if (label.innerText.includes('IVA')) {
+                    label.innerText = activeTaxName;
+                }
+            }
+        }
+    } catch(e) {
+        console.error("Error cargando IVA activo:", e);
+    }
+}
+
+async function loadEmissionPoints() {
+    try {
+        const res = await fetch('/api/settings/emission-points');
+        if (res.ok) {
+            emissionPoints = await res.json();
+            const activePoints = emissionPoints.filter(ep => ep.is_active && ep.branch_id === 1);
+            const select = document.getElementById('pos-emission-point');
+            const group = document.getElementById('emission-point-group');
+            
+            if (activePoints.length > 0) {
+                select.innerHTML = activePoints.map(ep => `<option value="${ep.id}">${ep.code} - ${ep.name}</option>`).join('');
+                if (activePoints.length > 1) {
+                    group.style.display = 'block';
+                } else {
+                    group.style.display = 'none';
+                }
+            } else {
+                group.style.display = 'none';
+            }
+        }
+    } catch(e) {
+        console.error("Error al cargar puntos de emisión:", e);
+    }
 }
 
 async function loadProducts() {
@@ -308,7 +361,7 @@ function renderCart() {
 }
 
 function updateTotals(sub) {
-    const tax = sub * 0.15;
+    const tax = sub * activeTaxRate;
     document.getElementById('total-sub').innerText = `$${sub.toFixed(2)}`;
     document.getElementById('total-tax').innerText = `$${tax.toFixed(2)}`;
     document.getElementById('total-all').innerText = `$${(sub+tax).toFixed(2)}`;
@@ -328,7 +381,7 @@ function openInvoiceModal() {
     if (!cart.length) { showToast('Carrito vacío', true); return; }
     const type = document.getElementById('consumption-type').value;
     const sub = cart.reduce((s,i) => s + parseFloat(i.price)*i.qty, 0);
-    const total = sub * 1.15;
+    const total = sub * (1 + activeTaxRate);
     document.getElementById('modal-order-summary').innerHTML =
         cart.map(i => `<div style="display:flex;justify-content:space-between;margin:.2rem 0"><span>${i.qty}x ${i.name}</span><span style="color:var(--accent)">$${(i.price*i.qty).toFixed(2)}</span></div>`).join('') +
         `<div style="border-top:1px solid var(--border);margin-top:.5rem;padding-top:.5rem;font-weight:700;display:flex;justify-content:space-between"><span>TOTAL</span><span style="color:var(--accent)">$${total.toFixed(2)}</span></div>`;
@@ -385,11 +438,15 @@ async function processInvoice() {
     }
 
     // 2. Procesar la venta
+    const epSelect = document.getElementById('pos-emission-point');
+    const epId = epSelect && epSelect.value ? parseInt(epSelect.value) : null;
+
     const payload = {
         customer_name: custName || 'CONSUMIDOR FINAL',
         customer_id: custId,
         customer_id_type: custId.length === 13 ? '04' : '05',
         branch_id: 1, user_id: 1, payment_method_id: 1,
+        emission_point_id: epId,
         consumption_type: type,
         delivery_address: address,
         details: cart.map(i => ({product_id: i.id, quantity: i.qty, unit_price: i.price}))

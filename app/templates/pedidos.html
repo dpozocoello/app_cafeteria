@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -13,7 +13,7 @@
         /* ── Sidebar ── */
         .sidebar{width:230px;background:var(--sidebar);border-right:1px solid var(--border);padding:1.2rem;display:flex;flex-direction:column;flex-shrink:0;gap:.2rem;}
         .sidebar-logo{display:flex;align-items:center;gap:.6rem;margin-bottom:1.2rem;padding-bottom:1rem;border-bottom:1px solid var(--border);}
-        .sidebar-logo img{width:36px;border-radius:8px;}
+        .sidebar-logo img{width:56px;height:auto;object-fit:contain;border-radius:8px;image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges;}
         .sidebar-brand{font-weight:700;color:var(--accent);font-size:.9rem;}
         .nav-section{font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:.3rem .5rem;margin-top:.8rem;}
         .nav-item{padding:.7rem .9rem;border-radius:9px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:9px;transition:all .15s;font-weight:500;font-size:.88rem;}
@@ -210,11 +210,12 @@ let selectedTableId   = null;
 let selectedTableNum  = null;
 let tempSelectedId    = null;
 let currentCategory   = "Todos";
-const IVA = 0.15;
+let IVA = 0.15;
+let IVAName = "IVA (15%)";
 
 // ─── Inicialización ───────────────────────────────────────────────────────────
 async function init() {
-    await Promise.all([loadMenus(), loadTables()]);
+    await Promise.all([loadMenus(), loadTables(), loadActiveTax()]);
     // Preseleccionar mesa por URL param
     const params = new URLSearchParams(location.search);
     if (params.get("tid")) selectTable(parseInt(params.get("tid")), params.get("mesa"));
@@ -222,6 +223,27 @@ async function init() {
     fetch('/api/settings/theme').then(r=>r.json()).then(t=>{
         if(t.brand_name) document.getElementById('sidebar-brand').innerText = t.brand_name;
     }).catch(()=>{});
+}
+
+async function loadActiveTax() {
+    try {
+        const res = await fetch('/api/settings/taxes/active');
+        if (res.ok) {
+            const data = await res.json();
+            IVA = parseFloat(data.rate) / 100.0;
+            IVAName = data.name;
+            
+            // Actualizar etiqueta
+            const labels = document.querySelectorAll('.total-row span');
+            for (let label of labels) {
+                if (label.innerText.includes('IVA')) {
+                    label.innerText = IVAName;
+                }
+            }
+        }
+    } catch(e) {
+        console.error("Error cargando IVA activo:", e);
+    }
 }
 
 async function loadMenus() {

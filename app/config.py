@@ -70,6 +70,11 @@ def get_theme() -> dict:
         "color_muted":  _get("COLOR_MUTED", "#94a3b8"),
         "color_success": _get("COLOR_SUCCESS", "#10b981"),
         "color_danger": _get("COLOR_DANGER", "#ef4444"),
+        "brand_personality": _get("BRAND_PERSONALITY", "Joven, orgulloso, directo, auténtico, viral"),
+        "brand_visuals":     _get("BRAND_VISUALS", "Icono estilizado pan de yuca, tipografía fuerte, fotografía de producto"),
+        "brand_packaging":   _get("BRAND_PACKAGING", "Funda Ziploc con logo impreso, sticker circular negro/amarillo, QR de Instagram"),
+        "brand_tone":        _get("BRAND_TONE", "Pan de yuca como lo hacía la abuela. Ahora con entrega a domicilio."),
+        "brand_channels":    _get("BRAND_CHANNELS", "Instagram, TikTok, apps de delivery, markets modernos, ferias gastronómicas"),
     }
 
 

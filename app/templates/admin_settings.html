@@ -107,7 +107,9 @@
         <div class="tabs">
             <button class="tab active" onclick="switchTab('appearance', this)">🎨 Identidad Visual</button>
             <button class="tab" onclick="switchTab('database', this)">🗄️ Base de Datos</button>
-            <button class="tab" onclick="switchTab('brand', this)">🏷️ Marca</button>
+            <button class="tab" onclick="switchTab('brand', this)">🏢 Empresa y Marca</button>
+            <button class="tab" onclick="switchTab('emission-points', this)">🏪 Puntos de Emisión</button>
+            <button class="tab" onclick="switchTab('taxes', this)">⚖️ Impuestos (IVA)</button>
             <button class="tab" onclick="switchTab('email', this)">📧 Correo SMTP</button>
         </div>
 
@@ -247,40 +249,161 @@
             </div>
         </div>
 
-        <!-- ═══ TAB: MARCA ════════════════════════════════════════════════ -->
+        <!-- ═══ TAB: EMPRESA Y MARCA ════════════════════════════════════════ -->
         <div class="tab-section" id="tab-brand">
             <div class="flex-between mb-lg">
-                <h2>Identidad de Marca</h2>
-                <button class="btn btn-primary" onclick="saveBrand()">💾 Guardar Marca</button>
+                <h2>🏢 Configuración de Empresa y Marca</h2>
+                <button class="btn btn-primary" onclick="saveBrand()">💾 Guardar Información</button>
             </div>
-            <div class="form-row">
+            
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
+                <!-- Columna 1: Datos Fiscales SRI -->
                 <div class="card">
-                    <h3 class="mb-md">Nombre y Eslogan</h3>
-                    <div class="form-group">
-                        <label>Nombre Comercial</label>
-                        <input id="brand-name" placeholder="Antigravity Coffee" value="">
+                    <h3 class="mb-md">🏢 Datos Fiscales SRI</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Razón Social (Oficial)</label>
+                            <input id="brand-business-name" placeholder="YUQUI S.A." value="">
+                        </div>
+                        <div class="form-group">
+                            <label>RUC (13 dígitos)</label>
+                            <input id="brand-ruc" placeholder="1790011001001" value="" maxlength="13">
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Eslogan / Tagline</label>
-                        <input id="brand-tagline" placeholder="Café de especialidad · Quito" value="">
+                    <div class="form-row mt-md">
+                        <div class="form-group">
+                            <label>Dirección Matriz</label>
+                            <input id="brand-address" placeholder="Av. de los Shyris, Quito" value="">
+                        </div>
+                        <div class="form-group">
+                            <label>Teléfono</label>
+                            <input id="brand-phone" placeholder="+593 2 2999 999" value="">
+                        </div>
                     </div>
-                    <div class="preview-box mt-md">
-                        <div style="font-weight:700;font-size:1.4rem;color:var(--color-accent)" id="prev-name">—</div>
-                        <div class="text-muted text-sm" id="prev-tagline">—</div>
+                    <div class="form-row mt-md">
+                        <div class="form-group">
+                            <label>Ambiente de Facturación</label>
+                            <select id="brand-environment">
+                                <option value="1">1 - Pruebas / Homologación</option>
+                                <option value="2">2 - Producción / Real</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label style="display:flex;align-items:center;gap:.5rem;margin-top:1.5rem">
+                                <input id="brand-obligado" type="checkbox" checked> Obligado a llevar contabilidad
+                            </label>
+                        </div>
                     </div>
                 </div>
+                
+                <!-- Columna 2: Identidad Comercial y Logo -->
                 <div class="card">
-                    <h3 class="mb-md">Logo del Negocio</h3>
-                    <div style="text-align:center;padding:1.5rem;border:2px dashed var(--color-border);border-radius:var(--radius-lg);margin-bottom:1rem">
-                        <img id="logo-preview" src="/static/logo.png" alt="logo" style="max-width:100px;max-height:100px" onerror="this.style.display='none'">
-                        <p class="text-muted text-sm mt-md">Logo actual</p>
+                    <h3 class="mb-md">🏷️ Nombre Comercial & Logo</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nombre Comercial</label>
+                            <input id="brand-name" placeholder="YUQUI - Piqueos & Cafeteria" value="">
+                        </div>
+                        <div class="form-group">
+                            <label>Eslogan / Tagline</label>
+                            <input id="brand-tagline" placeholder="El pan de yuca como lo hacía la abuela." value="">
+                        </div>
+                    </div>
+                    
+                    <div style="display:flex;gap:1rem;align-items:center;margin-top:1rem;border-top:1px solid var(--color-border);padding-top:1rem">
+                        <div style="text-align:center;padding:.5rem;border:1px dashed var(--color-border);border-radius:var(--radius-lg);width:100px;background:rgba(0,0,0,0.2)">
+                            <img id="logo-preview" src="/static/logo.png" alt="logo" style="max-width:80px;max-height:80px;object-fit:contain;image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges" onerror="this.style.display='none'">
+                        </div>
+                        <div style="flex:1">
+                            <div class="form-group mb-sm">
+                                <label class="text-sm">Subir nuevo logo</label>
+                                <input type="file" id="logo-upload" accept="image/*" onchange="previewLogo(this)" style="font-size:.8rem">
+                            </div>
+                            <button class="btn btn-success btn-block" onclick="uploadLogo()">📤 Subir Logo</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-lg">
+                <h3 class="mb-md">💡 Características de Marca (Parámetros de Identidad)</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Personalidad de Marca</label>
+                        <textarea id="brand-personality" style="height: 80px; resize: vertical;" placeholder="Ej. Joven, orgulloso, directo, auténtico, viral"></textarea>
                     </div>
                     <div class="form-group">
-                        <label>Subir nuevo logo (PNG/SVG recomendado)</label>
-                        <input type="file" id="logo-upload" accept="image/*" onchange="previewLogo(this)">
+                        <label>Elementos Visuales</label>
+                        <textarea id="brand-visuals" style="height: 80px; resize: vertical;" placeholder="Ej. Icono estilizado pan de yuca, tipografía fuerte, fotografía de producto"></textarea>
                     </div>
-                    <button class="btn btn-success btn-block" onclick="uploadLogo()">📤 Subir Logo</button>
                 </div>
+                <div class="form-row mt-md">
+                    <div class="form-group">
+                        <label>Packaging / Empaque</label>
+                        <textarea id="brand-packaging" style="height: 80px; resize: vertical;" placeholder="Ej. Funda Ziploc con logo impreso, sticker circular negro/amarillo, QR de Instagram"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Tono de Voz</label>
+                        <textarea id="brand-tone" style="height: 80px; resize: vertical;" placeholder="Ej. Pan de yuca como lo hacía la abuela. Ahora con entrega a domicilio."></textarea>
+                    </div>
+                </div>
+                <div class="form-group mt-md">
+                    <label>Canales Recomendados</label>
+                    <textarea id="brand-channels" style="height: 60px; resize: vertical;" placeholder="Ej. Instagram, TikTok, apps de delivery, markets modernos, ferias gastronómicas"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ TAB: PUNTOS DE EMISIÓN ════════════════════════════════════ -->
+        <div class="tab-section" id="tab-emission-points">
+            <div class="flex-between mb-lg">
+                <h2>🏪 Puntos de Emisión / Cajas (SRI)</h2>
+                <button class="btn btn-primary" onclick="openNewEmissionPointModal()">➕ Registrar Nuevo Punto</button>
+            </div>
+            
+            <div class="card">
+                <table style="width:100%;border-collapse:collapse;text-align:left" id="tbl-emission-points">
+                    <thead>
+                        <tr style="border-bottom:2px solid var(--color-border);font-weight:700">
+                            <th style="padding:.8rem">Sucursal</th>
+                            <th style="padding:.8rem">Código SRI</th>
+                            <th style="padding:.8rem">Nombre Caja</th>
+                            <th style="padding:.8rem">Secuencial Factura</th>
+                            <th style="padding:.8rem">Estado</th>
+                            <th style="padding:.8rem;text-align:right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="list-emission-points">
+                        <!-- Generado por JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ═══ TAB: IMPUESTOS ════════════════════════════════════════════ -->
+        <div class="tab-section" id="tab-taxes">
+            <div class="flex-between mb-lg">
+                <h2>⚖️ Configuración de Impuestos (IVA por Periodo)</h2>
+                <button class="btn btn-primary" onclick="openNewTaxModal()">➕ Registrar Tarifa Temporal</button>
+            </div>
+            
+            <div class="card">
+                <h3 class="mb-md">Historial de Vigencia de IVA (Ecuador)</h3>
+                <table style="width:100%;border-collapse:collapse;text-align:left" id="tbl-taxes">
+                    <thead>
+                        <tr style="border-bottom:2px solid var(--color-border);font-weight:700">
+                            <th style="padding:.8rem">Nombre Tarifa</th>
+                            <th style="padding:.8rem">Porcentaje</th>
+                            <th style="padding:.8rem">Vigente Desde</th>
+                            <th style="padding:.8rem">Vigente Hasta</th>
+                            <th style="padding:.8rem">Estado</th>
+                            <th style="padding:.8rem;text-align:right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="list-taxes">
+                        <!-- Generado por JS -->
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -366,6 +489,66 @@
     </main>
 </div>
 
+<!-- Modal Nuevo Punto de Emisión -->
+<div class="modal-overlay" id="modal-new-ep">
+    <div class="modal-box">
+        <h3>🏪 Nuevo Punto de Emisión</h3>
+        <div class="form-group mb-md">
+            <label>Sucursal</label>
+            <select id="new-ep-branch" style="width:100%;background:rgba(255,255,255,.05);border:1px solid var(--color-border);color:var(--color-text);padding:.6rem;border-radius:8px">
+                <option value="1">Cafetería Central - YUQUI</option>
+            </select>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Código SRI (3 dígitos)</label>
+                <input id="new-ep-code" placeholder="002" maxlength="3">
+            </div>
+            <div class="form-group">
+                <label>Nombre de la Caja / Terminal</label>
+                <input id="new-ep-name" placeholder="Caja Secundaria / POS Movil">
+            </div>
+        </div>
+        <div class="form-group mt-md">
+            <label>Secuencial Inicial Factura</label>
+            <input id="new-ep-seq" type="number" value="1">
+        </div>
+        <div style="display:flex;gap:.5rem;margin-top:1.5rem">
+            <button class="btn btn-ghost" style="flex:1" onclick="closeModal('ep')">Cancelar</button>
+            <button class="btn btn-primary" style="flex:1" onclick="saveNewEmissionPoint()">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nuevo Tramo Impuestos -->
+<div class="modal-overlay" id="modal-new-tax">
+    <div class="modal-box">
+        <h3>⚖️ Registrar Nueva Tarifa IVA</h3>
+        <div class="form-group mb-md">
+            <label>Nombre de la Tarifa</label>
+            <input id="new-tax-name" placeholder="IVA 15% - Temporal">
+        </div>
+        <div class="form-group mb-md">
+            <label>Porcentaje (%)</label>
+            <input id="new-tax-pct" type="number" step="0.01" placeholder="15.00">
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Vigente Desde (YYYY-MM-DD)</label>
+                <input id="new-tax-from" type="date">
+            </div>
+            <div class="form-group">
+                <label>Vigente Hasta (Opcional - YYYY-MM-DD)</label>
+                <input id="new-tax-until" type="date">
+            </div>
+        </div>
+        <div style="display:flex;gap:.5rem;margin-top:1.5rem">
+            <button class="btn btn-ghost" style="flex:1" onclick="closeModal('tax')">Cancelar</button>
+            <button class="btn btn-primary" style="flex:1" onclick="saveNewTax()">Guardar</button>
+        </div>
+    </div>
+</div>
+
 <script>
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 const COLOR_TOKENS = [
@@ -394,6 +577,9 @@ async function init() {
     currentTheme = await res.json();
     renderSwatches();
     loadBrandUI();
+    loadEmissionPoints();
+    loadTaxes();
+    loadEmailConfig();
 
     // Config DB
     const dbRes = await fetch('/api/settings/database');
@@ -522,23 +708,39 @@ async function saveDatabase() {
 
 // ─── Marca ────────────────────────────────────────────────────────────────────
 function loadBrandUI() {
+    document.getElementById('brand-business-name').value = currentTheme.business_name || '';
+    document.getElementById('brand-ruc').value = currentTheme.ruc || '';
+    document.getElementById('brand-address').value = currentTheme.address || '';
+    document.getElementById('brand-phone').value = currentTheme.phone || '';
+    document.getElementById('brand-environment').value = currentTheme.environment || '1';
+    document.getElementById('brand-obligado').checked = currentTheme.obligado_contabilidad !== false;
+    
     document.getElementById('brand-name').value = currentTheme.brand_name || '';
     document.getElementById('brand-tagline').value = currentTheme.brand_tagline || '';
-    document.getElementById('prev-name').innerText = currentTheme.brand_name || '—';
-    document.getElementById('prev-tagline').innerText = currentTheme.brand_tagline || '—';
+    
+    document.getElementById('brand-personality').value = currentTheme.brand_personality || '';
+    document.getElementById('brand-visuals').value = currentTheme.brand_visuals || '';
+    document.getElementById('brand-packaging').value = currentTheme.brand_packaging || '';
+    document.getElementById('brand-tone').value = currentTheme.brand_tone || '';
+    document.getElementById('brand-channels').value = currentTheme.brand_channels || '';
 }
-
-document.getElementById('brand-name').addEventListener('input', e => {
-    document.getElementById('prev-name').innerText = e.target.value || '—';
-});
-document.getElementById('brand-tagline').addEventListener('input', e => {
-    document.getElementById('prev-tagline').innerText = e.target.value || '—';
-});
 
 async function saveBrand() {
     const payload = {
+        business_name: document.getElementById('brand-business-name').value,
+        ruc: document.getElementById('brand-ruc').value,
+        address: document.getElementById('brand-address').value,
+        phone: document.getElementById('brand-phone').value,
+        environment: parseInt(document.getElementById('brand-environment').value),
+        obligado_contabilidad: document.getElementById('brand-obligado').checked,
+        
         brand_name: document.getElementById('brand-name').value,
         brand_tagline: document.getElementById('brand-tagline').value,
+        brand_personality: document.getElementById('brand-personality').value,
+        brand_visuals: document.getElementById('brand-visuals').value,
+        brand_packaging: document.getElementById('brand-packaging').value,
+        brand_tone: document.getElementById('brand-tone').value,
+        brand_channels: document.getElementById('brand-channels').value,
     };
     const res = await fetch('/api/settings/theme', {
         method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload)
@@ -546,7 +748,139 @@ async function saveBrand() {
     if (res.ok) {
         document.getElementById('sidebar-brand').innerText = payload.brand_name;
         document.getElementById('sidebar-tagline').innerText = payload.brand_tagline;
-        showToast('✅ Marca guardada correctamente.');
+        currentTheme = { ...currentTheme, ...payload };
+        showToast('✅ Información de empresa y marca guardada correctamente.');
+    } else {
+        showToast('❌ Error al guardar', true);
+    }
+}
+
+async function loadEmissionPoints() {
+    const res = await fetch('/api/settings/emission-points');
+    if (!res.ok) return;
+    const points = await res.json();
+    const tbody = document.getElementById('list-emission-points');
+    tbody.innerHTML = points.map(ep => `
+        <tr style="border-bottom:1px solid var(--color-border)">
+            <td style="padding:.8rem">${ep.branch_name}</td>
+            <td style="padding:.8rem"><span class="badge badge-info">${ep.code}</span></td>
+            <td style="padding:.8rem">${ep.name}</td>
+            <td style="padding:.8rem;font-family:monospace">${ep.invoice_sequential}</td>
+            <td style="padding:.8rem">
+                <span class="badge ${ep.is_active ? 'badge-success' : 'badge-danger'}">
+                    ${ep.is_active ? 'Activo' : 'Inactivo'}
+                </span>
+            </td>
+            <td style="padding:.8rem;text-align:right">
+                <button class="btn btn-ghost btn-xs" onclick="toggleEmissionPoint(${ep.id}, ${!ep.is_active})">
+                    ${ep.is_active ? 'Desactivar' : 'Activar'}
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function toggleEmissionPoint(id, active) {
+    const res = await fetch(`/api/settings/emission-points/${id}`, {
+        method: 'PUT',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ is_active: active })
+    });
+    if (res.ok) {
+        showToast('✅ Punto de emisión actualizado.');
+        loadEmissionPoints();
+    }
+}
+
+function openNewEmissionPointModal() {
+    document.getElementById('modal-new-ep').classList.add('open');
+}
+function closeModal(id) {
+    document.getElementById(`modal-new-${id}`).classList.remove('open');
+}
+
+async function saveNewEmissionPoint() {
+    const payload = {
+        branch_id: parseInt(document.getElementById('new-ep-branch').value),
+        code: document.getElementById('new-ep-code').value.trim(),
+        name: document.getElementById('new-ep-name').value.trim(),
+        invoice_sequential: parseInt(document.getElementById('new-ep-seq').value) || 1
+    };
+    if (!payload.code || !payload.name) return alert('Por favor complete todos los campos');
+    const res = await fetch('/api/settings/emission-points', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+        closeModal('ep');
+        showToast('✅ Punto de emisión registrado.');
+        loadEmissionPoints();
+    } else {
+        const e = await res.json();
+        alert(e.detail || 'Error al guardar');
+    }
+}
+
+async function loadTaxes() {
+    const res = await fetch('/api/settings/taxes/periods');
+    if (!res.ok) return;
+    const taxes = await res.json();
+    const tbody = document.getElementById('list-taxes');
+    tbody.innerHTML = taxes.map(t => `
+        <tr style="border-bottom:1px solid var(--color-border)">
+            <td style="padding:.8rem">${t.name}</td>
+            <td style="padding:.8rem;font-weight:700">${t.percentage.toFixed(2)}%</td>
+            <td style="padding:.8rem">${t.valid_from}</td>
+            <td style="padding:.8rem">${t.valid_until || 'Indefinido'}</td>
+            <td style="padding:.8rem">
+                <span class="badge ${t.is_active ? 'badge-success' : 'badge-danger'}">
+                    ${t.is_active ? 'Activo' : 'Inactivo'}
+                </span>
+            </td>
+            <td style="padding:.8rem;text-align:right">
+                <button class="btn btn-ghost btn-xs" onclick="toggleTaxPeriod(${t.id}, ${!t.is_active})">
+                    ${t.is_active ? 'Desactivar' : 'Activar'}
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function toggleTaxPeriod(id, active) {
+    const res = await fetch(`/api/settings/taxes/${id}?is_active=${active}`, {
+        method: 'PUT'
+    });
+    if (res.ok) {
+        showToast('✅ Tarifa de IVA actualizada.');
+        loadTaxes();
+    }
+}
+
+function openNewTaxModal() {
+    document.getElementById('modal-new-tax').classList.add('open');
+}
+
+async function saveNewTax() {
+    const payload = {
+        name: document.getElementById('new-tax-name').value.trim(),
+        percentage: parseFloat(document.getElementById('new-tax-pct').value),
+        valid_from: document.getElementById('new-tax-from').value,
+        valid_until: document.getElementById('new-tax-until').value || null
+    };
+    if (!payload.name || isNaN(payload.percentage) || !payload.valid_from) return alert('Por favor complete todos los campos');
+    const res = await fetch('/api/settings/taxes', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+        closeModal('tax');
+        showToast('✅ Tarifa de IVA registrada.');
+        loadTaxes();
+    } else {
+        const e = await res.json();
+        alert(e.detail || 'Error al guardar');
     }
 }
 

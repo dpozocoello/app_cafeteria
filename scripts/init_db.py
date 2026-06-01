@@ -7,7 +7,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app.database import engine, SessionLocal
 # Importar TODOS los modelos para que SQLAlchemy resuelva las referencias entre clases
-from app.models.core import Base, Branch, Role, User, SecurityPolicy, PasswordHistory
+from app.models.core import Base, Branch, Role, User, SecurityPolicy, PasswordHistory, Company, EmissionPoint
 from app.models.sales import Sale, SaleDetail, SalePayment, TaxParameter, PaymentMethod
 from app.models.inventory import Product, Recipe
 from app.models.expenses import Expense, ExpenseCategory
@@ -29,16 +29,58 @@ def init_db():
             if not db.query(Role).filter_by(name=r.name).first():
                 db.add(r)
         
+        # 1.5 Crear Empresa YUQUI
+        company = db.query(Company).filter_by(ruc="1790011001001").first()
+        if not company:
+            company = Company(
+                ruc="1790011001001",
+                business_name="YUQUI S.A.",
+                commercial_name="YUQUI - Piqueos & Cafeteria",
+                address="Av. de los Shyris y Portugal, Quito",
+                phone="+593 2 2999 999",
+                obligado_contabilidad=True,
+                environment=1,
+                brand_personality="Joven, orgulloso, directo, auténtico, viral",
+                brand_visuals="Icono estilizado pan de yuca, tipografía fuerte, fotografía de producto",
+                brand_packaging="Funda Ziploc con logo impreso, sticker circular negro/amarillo, QR de Instagram",
+                brand_tone="Pan de yuca como lo hacía la abuela. Ahora con entrega a domicilio.",
+                brand_channels="Instagram, TikTok, apps de delivery, markets modernos, ferias gastronómicas",
+                font_family="Outfit",
+                color_bg="#020617",
+                color_sidebar="#0f172a",
+                color_card="rgba(30,41,59,0.5)",
+                color_accent="#fbbf24",
+                color_text="#f8fafc",
+                color_muted="#94a3b8",
+                color_success="#10b981",
+                color_danger="#ef4444"
+            )
+            db.add(company)
+            db.flush()
+
         # 2. Crear Sucursal de Prueba
         branch = db.query(Branch).filter_by(sri_establishment_code="001").first()
         if not branch:
             branch = Branch(
-                name="Cafetería Central - Quito",
+                name="Cafetería Central - YUQUI",
                 address="Av. Amazonas y Naciones Unidas",
-                sri_establishment_code="001"
+                sri_establishment_code="001",
+                company_id=company.id
             )
             db.add(branch)
             db.flush() # Para obtener el ID
+
+        # 2.1 Crear Punto de Emisión por Defecto
+        emission_point = db.query(EmissionPoint).filter_by(branch_id=branch.id, code="001").first()
+        if not emission_point:
+            emission_point = EmissionPoint(
+                branch_id=branch.id,
+                code="001",
+                name="Caja Principal YUQUI",
+                invoice_sequential=1
+            )
+            db.add(emission_point)
+            db.flush()
 
         # 2.5. Roles con permisos granulares RBAC
         perms_admin = {"ventas": True, "inventario": True, "recetas": True, "menus": True, "gastos": True, "usuarios": True, "reportes": True, "config": True}
@@ -67,6 +109,7 @@ def init_db():
                 phone="+593 99 999 9999",
                 role_id=admin_role.id,
                 branch_id=branch.id,
+                company_id=company.id,
                 is_active=True,
                 is_locked=False,
                 must_change_password=False,  # El admin inicial no necesita cambio
@@ -127,17 +170,17 @@ def init_db():
         # 6. Productos e Insumos de Prueba
         # Insumos
         if not db.query(Product).filter_by(sku="INS-001").first():
-            cafe = Product(sku="INS-001", name="Café en Grano (Kg)", unit="gr", is_ingredient=True, cost_price=0.015)
+            cafe = Product(sku="INS-001", name="Café en Grano (Kg)", unit="gr", is_ingredient=True, cost_price=0.015, company_id=company.id)
             db.add(cafe)
         
         if not db.query(Product).filter_by(sku="INS-002").first():
-            leche = Product(sku="INS-002", name="Leche Entera (L)", unit="ml", is_ingredient=True, cost_price=0.001, menu_category="Insumos")
+            leche = Product(sku="INS-002", name="Leche Entera (L)", unit="ml", is_ingredient=True, cost_price=0.001, menu_category="Insumos", company_id=company.id)
             db.add(leche)
         
         # Productos Finales
         capuchino = db.query(Product).filter_by(sku="FIN-001").first()
         if not capuchino:
-            capuchino = Product(sku="FIN-001", name="Capuchino Grande", unit="Unit", is_ready_to_sell=True, sale_price=3.50, menu_category="Cafetería")
+            capuchino = Product(sku="FIN-001", name="Capuchino Grande", unit="Unit", is_ready_to_sell=True, sale_price=3.50, menu_category="Cafetería", company_id=company.id)
             db.add(capuchino)
         
         db.flush()

@@ -27,6 +27,8 @@ class Sale(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     branch_id: Mapped[int] = mapped_column(ForeignKey("branches.id"))
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    company_id: Mapped[Optional[int]] = mapped_column(ForeignKey("companies.id"), nullable=True)
+    emission_point_id: Mapped[Optional[int]] = mapped_column(ForeignKey("emission_points.id"), nullable=True)
     
     # Datos SRI Ecuador
     access_key: Mapped[Optional[str]] = mapped_column(String(49), unique=True) # Clave de acceso SRI
@@ -43,7 +45,7 @@ class Sale(Base):
     table_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tables.id"), nullable=True)
     delivery_address: Mapped[Optional[str]] = mapped_column(String(255))
     delivery_surcharge: Mapped[float] = mapped_column(Numeric(12, 2), default=0.0)
-
+ 
     # Totales
     subtotal: Mapped[float] = mapped_column(Numeric(12, 2), default=0.0)        # Subtotal general
     subtotal_0: Mapped[float] = mapped_column(Numeric(12, 2), default=0.0)
@@ -51,17 +53,19 @@ class Sale(Base):
     tax_amount: Mapped[float] = mapped_column(Numeric(12, 2), default=0.0)
     discount: Mapped[float] = mapped_column(Numeric(12, 2), default=0.0)
     total: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
-
+ 
     # Estado del pedido
     status: Mapped[str] = mapped_column(String(30), default="PENDIENTE")        # PENDIENTE, PREPARANDO, ENTREGADO, FACTURADO
     notes: Mapped[Optional[str]] = mapped_column(Text)
     sale_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     payment_method_id: Mapped[Optional[int]] = mapped_column(ForeignKey("payment_methods.id"), nullable=True)
-
+ 
     timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     
     # Relaciones
     branch: Mapped["Branch"] = relationship(back_populates="sales")
+    company: Mapped[Optional["Company"]] = relationship()
+    emission_point: Mapped[Optional["EmissionPoint"]] = relationship(back_populates="sales")
     details: Mapped[List["SaleDetail"]] = relationship(back_populates="sale")
     payments: Mapped[List["SalePayment"]] = relationship(back_populates="sale")
 

@@ -10,7 +10,7 @@ from datetime import datetime
 
 # Tablas a migrar (en orden de dependencias FK)
 MIGRATION_ORDER = [
-    "branches", "roles", "security_policies",
+    "companies", "branches", "emission_points", "roles", "security_policies",
     "users", "password_history",
     "products", "recipes", "recipe_lines",
     "menus", "menu_items",

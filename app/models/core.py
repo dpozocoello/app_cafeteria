@@ -8,19 +8,85 @@ class Base(DeclarativeBase):
     pass
 
 
+class Company(Base):
+    """Empresa o Contribuyente Principal para Facturación SRI."""
+    __tablename__ = "companies"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    ruc: Mapped[str] = mapped_column(String(13), unique=True, nullable=False)
+    business_name: Mapped[str] = mapped_column(String(255), nullable=False) # Razón Social
+    commercial_name: Mapped[str] = mapped_column(String(255), nullable=False) # Nombre Comercial
+    address: Mapped[Optional[str]] = mapped_column(String(255)) # Dirección Matriz
+    phone: Mapped[Optional[str]] = mapped_column(String(20))
+    obligado_contabilidad: Mapped[bool] = mapped_column(Boolean, default=True) # Obligado a llevar contabilidad
+    
+    # Configuración de Facturación SRI
+    p12_certificate_path: Mapped[Optional[str]] = mapped_column(String(255))
+    p12_password: Mapped[Optional[str]] = mapped_column(String(255))
+    environment: Mapped[int] = mapped_column(default=1) # 1: Pruebas, 2: Producción
+    logo_path: Mapped[Optional[str]] = mapped_column(String(255))
+    
+    # Parámetros de Marca (YUQUI)
+    brand_personality: Mapped[Optional[str]] = mapped_column(String(255))
+    brand_visuals: Mapped[Optional[str]] = mapped_column(String(255))
+    brand_packaging: Mapped[Optional[str]] = mapped_column(String(255))
+    brand_tone: Mapped[Optional[str]] = mapped_column(String(255))
+    brand_channels: Mapped[Optional[str]] = mapped_column(String(255))
+
+    # Design Tokens
+    font_family: Mapped[Optional[str]] = mapped_column(String(50), default="Outfit")
+    color_bg: Mapped[Optional[str]] = mapped_column(String(20), default="#020617")
+    color_sidebar: Mapped[Optional[str]] = mapped_column(String(20), default="#0f172a")
+    color_card: Mapped[Optional[str]] = mapped_column(String(50), default="rgba(30,41,59,0.5)")
+    color_accent: Mapped[Optional[str]] = mapped_column(String(20), default="#fbbf24")
+    color_text: Mapped[Optional[str]] = mapped_column(String(20), default="#f8fafc")
+    color_muted: Mapped[Optional[str]] = mapped_column(String(20), default="#94a3b8")
+    color_success: Mapped[Optional[str]] = mapped_column(String(20), default="#10b981")
+    color_danger: Mapped[Optional[str]] = mapped_column(String(20), default="#ef4444")
+
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    branches: Mapped[List["Branch"]] = relationship(back_populates="company")
+
+
 class Branch(Base):
     """Sucursal / establecimiento. Código SRI Ecuador."""
     __tablename__ = "branches"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    company_id: Mapped[int] = mapped_column(ForeignKey("companies.id"), nullable=False)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     address: Mapped[Optional[str]] = mapped_column(String(255))
     sri_establishment_code: Mapped[str] = mapped_column(String(3), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
+    company: Mapped["Company"] = relationship(back_populates="branches")
+    emission_points: Mapped[List["EmissionPoint"]] = relationship(back_populates="branch")
     users: Mapped[List["User"]] = relationship(back_populates="branch")
     sales: Mapped[List["Sale"]] = relationship(back_populates="branch")
+
+
+class EmissionPoint(Base):
+    """Punto de Emisión del SRI (caja, POS, facturador)."""
+    __tablename__ = "emission_points"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    branch_id: Mapped[int] = mapped_column(ForeignKey("branches.id"), nullable=False)
+    code: Mapped[str] = mapped_column(String(3), nullable=False) # Ej: "001", "002"
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    
+    # Secuenciales autorizados por el SRI
+    invoice_sequential: Mapped[int] = mapped_column(Integer, default=1)
+    credit_note_sequential: Mapped[int] = mapped_column(Integer, default=1)
+    retention_sequential: Mapped[int] = mapped_column(Integer, default=1)
+    
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    branch: Mapped["Branch"] = relationship(back_populates="emission_points")
+    sales: Mapped[List["Sale"]] = relationship(back_populates="emission_point")
 
 
 class Role(Base):
@@ -59,6 +125,7 @@ class User(Base):
 
     role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"))
     branch_id: Mapped[int] = mapped_column(ForeignKey("branches.id"))
+    company_id: Mapped[Optional[int]] = mapped_column(ForeignKey("companies.id"), nullable=True)
 
     # ── Estado de cuenta ──────────────────────────────────────────────────────
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)

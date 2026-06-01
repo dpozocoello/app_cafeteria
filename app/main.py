@@ -2,8 +2,9 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from .database import get_db, engine
-from .models.core import Base, Branch, User, AuditLog
+from .models.core import Base, Branch, User, AuditLog, Company, EmissionPoint
 from .models.sales import Sale, SaleDetail, SalePayment, TaxParameter
 from .models.expenses import Expense, ExpenseCategory
 from .models.operations import Menu, MenuItem, Table, ServiceConfig
@@ -247,44 +248,62 @@ def download_daily_close(branch_id: int, db: Session = Depends(get_db)):
 def create_sale(sale_data: SaleCreate, db: Session = Depends(get_db)):
     """
     Registra una nueva venta, calcula impuestos, genera clave SRI y descuenta stock.
-    
-    Flujo de la transacción:
-    1. Validar existencia del establecimiento/sucursal (`Branch`).
-    2. Consultar el IVA vigente (`TaxParameter`) e iniciar cálculos de subtotal e impuesto.
-    3. Registrar la cabecera de la venta (`Sale`) y sus detalles (`SaleDetail`).
-    4. Registrar la forma de pago asociada (`SalePayment`).
-    5. Generar la Clave de Acceso SRI de 49 dígitos requerida para facturación electrónica en Ecuador.
-    6. Descontar stock a nivel de Kárdex (`InventoryService.process_sale_inventory_deduction`):
-       - Si el producto tiene receta (BOM), descuenta los ingredientes proporcionales.
-       - Si no tiene receta, descuenta el producto directamente.
-    7. Confirmar cambios (`commit`) y refrescar entidad.
-    
-    :param sale_data: Datos de entrada validados por Pydantic (SaleCreate)
-    :param db: Sesión de SQLAlchemy inyectada
-    :return: Objeto Sale con ID, clave de acceso y totales calculados
     """
     # 1. Validar sucursal y usuario
     branch = db.get(Branch, sale_data.branch_id)
     if not branch:
         raise HTTPException(status_code=404, detail="Branch not found")
+        
+    # 1.5 Determinar Punto de Emisión y secuencial
+    if sale_data.emission_point_id:
+        emission_point = db.get(EmissionPoint, sale_data.emission_point_id)
+        if not emission_point or emission_point.branch_id != branch.id:
+            raise HTTPException(status_code=404, detail="Emission point not found or doesn't belong to this branch")
+    else:
+        # Por defecto, usar la primera caja activa de esta sucursal
+        emission_point = db.query(EmissionPoint).filter(
+            EmissionPoint.branch_id == branch.id,
+            EmissionPoint.is_active == True
+        ).first()
+        if not emission_point:
+            raise HTTPException(status_code=404, detail="No active emission point found for this branch")
+            
+    # Obtener y actualizar secuencial de manera atómica (por transacción)
+    sequential_num = emission_point.invoice_sequential
+    emission_point.invoice_sequential += 1
+    
+    invoice_number = f"{branch.sri_establishment_code}-{emission_point.code}-{str(sequential_num).zfill(9)}"
     
     # 2. Calcular totales
     total_subtotal = Decimal(0)
     total_tax = Decimal(0)
     
-    # Obtener IVA vigente (asumimos 15% por defecto si no está configurado)
-    tax_param = db.query(TaxParameter).filter(TaxParameter.is_active == True).first()
+    # Determinar fecha de la venta (UTC por defecto)
+    from datetime import datetime
+    sale_date = datetime.utcnow()
+
+    # Obtener IVA vigente según fecha de venta
+    tax_param = db.query(TaxParameter).filter(
+        TaxParameter.is_active == True,
+        TaxParameter.valid_from <= sale_date,
+        or_(TaxParameter.valid_until == None, TaxParameter.valid_until >= sale_date)
+    ).first()
     tax_multiplier = Decimal(tax_param.percentage / 100) if tax_param else Decimal(0.15)
 
     sale = Sale(
         branch_id=sale_data.branch_id,
         user_id=sale_data.user_id,
+        company_id=branch.company_id,
+        emission_point_id=emission_point.id,
         customer_name=sale_data.customer_name,
         customer_id=sale_data.customer_id,
         customer_id_type=sale_data.customer_id_type,
         consumption_type=sale_data.consumption_type,
-        invoice_number=f"{branch.sri_establishment_code}-001-{str(uuid.uuid4().int)[:9]}", # Generación simplificada
-        environment=1 # 1 = Pruebas, 2 = Producción
+        table_id=sale_data.table_id,
+        delivery_address=sale_data.delivery_address,
+        invoice_number=invoice_number,
+        environment=branch.company.environment if branch.company else 1,
+        sale_date=sale_date
     )
     
     db.add(sale)
@@ -292,7 +311,7 @@ def create_sale(sale_data: SaleCreate, db: Session = Depends(get_db)):
 
     # Procesar detalles de venta e impuestos
     for detail_data in sale_data.details:
-        item_total = detail_data.quantity * detail_data.unit_price
+        item_total = Decimal(detail_data.quantity) * Decimal(detail_data.unit_price)
         item_tax = item_total * tax_multiplier
         
         detail = SaleDetail(
@@ -302,6 +321,7 @@ def create_sale(sale_data: SaleCreate, db: Session = Depends(get_db)):
             unit_price=detail_data.unit_price,
             discount=detail_data.discount,
             tax_percentage=tax_multiplier * 100,
+            subtotal=item_total,
             total=item_total + item_tax
         )
         db.add(detail)

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -22,7 +22,14 @@
         }
 
         .login-header { text-align: center; margin-bottom: var(--space-xl); }
-        .login-header img { width: 72px; margin-bottom: var(--space-md); }
+        .login-header img {
+            width: 120px;
+            height: auto;
+            object-fit: contain;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+            margin-bottom: var(--space-md);
+        }
         .login-header h1 { font-size: var(--font-size-xl); color: var(--color-accent); }
         .login-header p { color: var(--color-muted); font-size: var(--font-size-sm); }
 

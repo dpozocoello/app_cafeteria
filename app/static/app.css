@@ -113,8 +113,12 @@ body {
 }
 
 .sidebar-logo img {
-    width: 40px;
+    width: 56px;
+    height: auto;
+    object-fit: contain;
     border-radius: var(--radius-md);
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
 }
 
 .sidebar-brand {

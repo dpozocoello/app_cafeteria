@@ -22,6 +22,7 @@ class Product(Base):
     description: Mapped[Optional[str]] = mapped_column(String(255))
     unit: Mapped[str] = mapped_column(String(20)) # Kg, L, Unit, gr, ml
     menu_category: Mapped[Optional[str]] = mapped_column(String(50)) # Desayunos, Cafeteria, etc.
+    company_id: Mapped[Optional[int]] = mapped_column(ForeignKey("companies.id"), nullable=True)
     
     cost_price: Mapped[float] = mapped_column(Numeric(12, 4), default=0.0) # Costo promedio
     sale_price: Mapped[float] = mapped_column(Numeric(12, 2), default=0.0)

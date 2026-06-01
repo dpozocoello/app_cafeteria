@@ -91,6 +91,7 @@ class SaleCreate(BaseModel):
     payment_method_id: int
     branch_id: int
     user_id: int
+    emission_point_id: Optional[int] = None
     consumption_type: str = "MESA"   # MESA | LLEVAR | DOMICILIO
     table_id: Optional[int] = None
     delivery_address: Optional[str] = None
