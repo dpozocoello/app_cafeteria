@@ -1,5 +1,8 @@
-from fastapi import FastAPI, Depends, HTTPException
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi import FastAPI, Depends, HTTPException, Request
+from fastapi.responses import HTMLResponse, StreamingResponse, RedirectResponse
+from datetime import date, datetime
+import hashlib
+from .config import _get, save_env_values, BASE_DIR
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
@@ -31,6 +34,75 @@ from datetime import date
 import os
 
 app = FastAPI(title="CoffeeApp API - Ecuador SRI", version="2.0")
+
+
+# ─── Sistema de Control de Licencias y Período de Prueba ──────────────────────
+
+def get_installation_date() -> date:
+    """Obtiene la fecha de instalación desde el .env o registra la fecha de hoy si no existe."""
+    inst_str = _get("INSTALLATION_DATE", "").strip()
+    if not inst_str:
+        today_str = date.today().strftime("%Y-%m-%d")
+        save_env_values({"INSTALLATION_DATE": today_str})
+        return date.today()
+    try:
+        return datetime.strptime(inst_str, "%Y-%m-%d").date()
+    except ValueError:
+        today_str = date.today().strftime("%Y-%m-%d")
+        save_env_values({"INSTALLATION_DATE": today_str})
+        return date.today()
+
+def get_trial_days() -> int:
+    """Obtiene los días de prueba configurados en .env. Máximo 30 días, por defecto 15."""
+    try:
+        days = int(_get("TRIAL_DAYS", "15"))
+        if days > 30:
+            return 30
+        if days < 1:
+            return 1
+        return days
+    except ValueError:
+        return 15
+
+def is_system_activated() -> bool:
+    """Verifica si el archivo diedcomp existe en la raíz y contiene la firma SHA256 correcta."""
+    diedcomp_path = BASE_DIR / "diedcomp"
+    if not diedcomp_path.exists():
+        return False
+    try:
+        with open(diedcomp_path, "r", encoding="utf-8") as f:
+            content = f.read().strip()
+        expected = "8c331be7a41aaa926685215b7c5385d8589d2a890a57d6e327036ff735cf0a1a"
+        return content == expected
+    except Exception:
+        return False
+
+@app.middleware("http")
+async def check_licensing_middleware(request: Request, call_next):
+    """
+    Middleware que bloquea el sistema si expiró el trial y no está activado.
+    Permite acceso libre a login, activación y archivos estáticos.
+    """
+    path = request.url.path
+    if (
+        path.startswith("/static") or 
+        path.startswith("/api/auth") or 
+        path == "/login" or 
+        path == "/activate" or 
+        path == "/api/activate"
+    ):
+        return await call_next(request)
+        
+    if not is_system_activated():
+        inst_date = get_installation_date()
+        trial_days = get_trial_days()
+        days_elapsed = (date.today() - inst_date).days
+        if days_elapsed > trial_days:
+            # Trial expiró y no está activado -> Redirigir a activación
+            return RedirectResponse(url="/activate")
+            
+    return await call_next(request)
+
 
 @app.on_event("startup")
 def startup_db_migration():
@@ -107,6 +179,41 @@ def get_reports_ui():
     template_path = os.path.join(os.path.dirname(__file__), "templates", "admin_reports.html")
     with open(template_path, "r", encoding="utf-8") as f:
         return HTMLResponse(f.read())
+
+
+@app.get("/activate", response_class=HTMLResponse)
+def get_activation_ui():
+    if is_system_activated():
+        return RedirectResponse(url="/")
+    template_path = os.path.join(os.path.dirname(__file__), "templates", "activate.html")
+    with open(template_path, "r", encoding="utf-8") as f:
+        return HTMLResponse(f.read())
+
+
+from pydantic import BaseModel
+
+class ActivationRequest(BaseModel):
+    key: str
+
+@app.post("/api/activate")
+def activate_system(req: ActivationRequest):
+    seed = "JessicaAlava$1976"
+    entered_key = req.key
+    # Calcular hash en memoria
+    computed_hash = hashlib.sha256((entered_key + seed).encode()).hexdigest()
+    expected_hash = "8c331be7a41aaa926685215b7c5385d8589d2a890a57d6e327036ff735cf0a1a"
+    
+    if computed_hash == expected_hash:
+        # Se escribe únicamente el hash, la clave en texto plano NUNCA se almacena en el disco.
+        diedcomp_path = BASE_DIR / "diedcomp"
+        try:
+            with open(diedcomp_path, "w", encoding="utf-8") as f:
+                f.write(computed_hash)
+            return {"ok": True, "message": "Sistema activado exitosamente."}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error al escribir el archivo de licencia: {e}")
+    else:
+        raise HTTPException(status_code=400, detail="Clave de activación incorrecta o inválida.")
 
 
 @app.get("/pos", response_class=HTMLResponse)
