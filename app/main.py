@@ -220,6 +220,16 @@ def get_recipes_data(db: Session = Depends(get_db)):
 
 @app.get("/reports/daily-close")
 def download_daily_close(branch_id: int, db: Session = Depends(get_db)):
+    """
+    Genera y descarga el reporte en PDF del cierre diario para una sucursal específica.
+    
+    Obtiene las métricas diarias y los productos más vendidos, y genera un documento PDF
+    fluyente para descarga directa del usuario.
+    
+    :param branch_id: ID de la sucursal
+    :param db: Sesión de SQLAlchemy inyectada
+    :return: StreamingResponse con el archivo PDF adjunto
+    """
     today = date.today()
     metrics = DashboardService.get_daily_metrics(db, today, branch_id)
     top_products_raw = DashboardService.get_top_products(db, today)
@@ -235,6 +245,24 @@ def download_daily_close(branch_id: int, db: Session = Depends(get_db)):
 
 @app.post("/sales/", response_model=SaleResponse)
 def create_sale(sale_data: SaleCreate, db: Session = Depends(get_db)):
+    """
+    Registra una nueva venta, calcula impuestos, genera clave SRI y descuenta stock.
+    
+    Flujo de la transacción:
+    1. Validar existencia del establecimiento/sucursal (`Branch`).
+    2. Consultar el IVA vigente (`TaxParameter`) e iniciar cálculos de subtotal e impuesto.
+    3. Registrar la cabecera de la venta (`Sale`) y sus detalles (`SaleDetail`).
+    4. Registrar la forma de pago asociada (`SalePayment`).
+    5. Generar la Clave de Acceso SRI de 49 dígitos requerida para facturación electrónica en Ecuador.
+    6. Descontar stock a nivel de Kárdex (`InventoryService.process_sale_inventory_deduction`):
+       - Si el producto tiene receta (BOM), descuenta los ingredientes proporcionales.
+       - Si no tiene receta, descuenta el producto directamente.
+    7. Confirmar cambios (`commit`) y refrescar entidad.
+    
+    :param sale_data: Datos de entrada validados por Pydantic (SaleCreate)
+    :param db: Sesión de SQLAlchemy inyectada
+    :return: Objeto Sale con ID, clave de acceso y totales calculados
+    """
     # 1. Validar sucursal y usuario
     branch = db.get(Branch, sale_data.branch_id)
     if not branch:
@@ -244,7 +272,7 @@ def create_sale(sale_data: SaleCreate, db: Session = Depends(get_db)):
     total_subtotal = Decimal(0)
     total_tax = Decimal(0)
     
-    # Obtener IVA vigente (asumimos 15% para este ejemplo)
+    # Obtener IVA vigente (asumimos 15% por defecto si no está configurado)
     tax_param = db.query(TaxParameter).filter(TaxParameter.is_active == True).first()
     tax_multiplier = Decimal(tax_param.percentage / 100) if tax_param else Decimal(0.15)
 
@@ -255,13 +283,14 @@ def create_sale(sale_data: SaleCreate, db: Session = Depends(get_db)):
         customer_id=sale_data.customer_id,
         customer_id_type=sale_data.customer_id_type,
         consumption_type=sale_data.consumption_type,
-        invoice_number=f"{branch.sri_establishment_code}-001-{str(uuid.uuid4().int)[:9]}", # Simplificado
-        environment=1 # Pruebas
+        invoice_number=f"{branch.sri_establishment_code}-001-{str(uuid.uuid4().int)[:9]}", # Generación simplificada
+        environment=1 # 1 = Pruebas, 2 = Producción
     )
     
     db.add(sale)
-    db.flush() # Para obtener sale.id
+    db.flush() # flush() permite obtener sale.id sin confirmar la transacción (commit)
 
+    # Procesar detalles de venta e impuestos
     for detail_data in sale_data.details:
         item_total = detail_data.quantity * detail_data.unit_price
         item_tax = item_total * tax_multiplier
@@ -293,9 +322,9 @@ def create_sale(sale_data: SaleCreate, db: Session = Depends(get_db)):
 
     # 4. Generar Clave SRI y XML
     sale.access_key = SRIService.generate_access_key(sale, branch)
-    # xml_content = SRIService.create_invoice_xml(sale, branch) # Se podría guardar en disco/bucket
+    # xml_content = SRIService.create_invoice_xml(sale, branch) # Generación XML SRI
 
-    # 5. Ejecutar descuento de inventario por recetas
+    # 5. Ejecutar descuento de inventario por recetas (BOM / Kárdex)
     InventoryService.process_sale_inventory_deduction(db, sale)
 
     db.commit()
@@ -304,6 +333,15 @@ def create_sale(sale_data: SaleCreate, db: Session = Depends(get_db)):
 
 @app.post("/expenses/")
 def create_expense(expense_data: ExpenseCreate, db: Session = Depends(get_db)):
+    """
+    Registra un gasto operativo en la sucursal.
+    
+    Permite el registro manual de egresos relacionados a la operación (servicios, insumos directos, arriendos).
+    
+    :param expense_data: Datos del gasto validado (ExpenseCreate)
+    :param db: Sesión de SQLAlchemy inyectada
+    :return: Objeto Expense creado
+    """
     expense = Expense(
         category_id=expense_data.category_id,
         branch_id=expense_data.branch_id,
