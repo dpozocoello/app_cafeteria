@@ -1,0 +1,417 @@
+{
+  "version": "1.0",
+  "app": "JECA Piqueos & Cafeteria",
+  "generated_at": "2026-06-07T15:55:20.000866Z",
+  "total": 21,
+  "base_url": "/static/images/menu",
+  "categories": {
+    "sanduches": {
+      "slug": "sanduches",
+      "label": "Sánduches",
+      "count": 6,
+      "items": [
+        "FIN-SAN-001",
+        "FIN-SAN-002",
+        "FIN-SAN-003",
+        "FIN-SAN-004",
+        "FIN-SAN-005",
+        "FIN-SAN-006"
+      ]
+    },
+    "piqueos": {
+      "slug": "piqueos",
+      "label": "Piqueos",
+      "count": 7,
+      "items": [
+        "FIN-PIQ-001",
+        "FIN-PIQ-002",
+        "FIN-PIQ-003",
+        "FIN-PIQ-004",
+        "FIN-PIQ-005",
+        "FIN-PIQ-006",
+        "FIN-PIQ-007"
+      ]
+    },
+    "jugos": {
+      "slug": "jugos",
+      "label": "Jugos y Bebidas Naturales",
+      "count": 4,
+      "items": [
+        "FIN-JUG-001",
+        "FIN-JUG-002",
+        "FIN-JUG-003",
+        "FIN-JUG-004"
+      ]
+    },
+    "bebidas_calientes": {
+      "slug": "bebidas_calientes",
+      "label": "Bebidas Calientes",
+      "count": 4,
+      "items": [
+        "FIN-BEB-001",
+        "FIN-BEB-002",
+        "FIN-BEB-003",
+        "FIN-BEB-004"
+      ]
+    }
+  },
+  "products": [
+    {
+      "sku": "FIN-SAN-001",
+      "name": "Sanduche de Pollo Mayonesa",
+      "category": "sanduches",
+      "category_label": "Sánduches",
+      "price": "$ 2.75",
+      "tag": "CLASICO",
+      "image_url": "/static/images/menu/sanduches/FIN-SAN-001.svg",
+      "image_path": "app/static/images/menu/sanduches/FIN-SAN-001.svg",
+      "file_size_bytes": 3880,
+      "format": "svg+xml",
+      "theme": {
+        "grad_a": "#f59e0b",
+        "grad_b": "#dc2626",
+        "badge_fill": "#f59e0b"
+      }
+    },
+    {
+      "sku": "FIN-SAN-002",
+      "name": "Sanduche de Res Desmenuzado",
+      "category": "sanduches",
+      "category_label": "Sánduches",
+      "price": "$ 3.00",
+      "tag": "SABOR",
+      "image_url": "/static/images/menu/sanduches/FIN-SAN-002.svg",
+      "image_path": "app/static/images/menu/sanduches/FIN-SAN-002.svg",
+      "file_size_bytes": 3880,
+      "format": "svg+xml",
+      "theme": {
+        "grad_a": "#f59e0b",
+        "grad_b": "#dc2626",
+        "badge_fill": "#f59e0b"
+      }
+    },
+    {
+      "sku": "FIN-SAN-003",
+      "name": "Sanduche de Cerdo",
+      "category": "sanduches",
+      "category_label": "Sánduches",
+      "price": "$ 3.25",
+      "tag": "SUCULENTO",
+      "image_url": "/static/images/menu/sanduches/FIN-SAN-003.svg",
+      "image_path": "app/static/images/menu/sanduches/FIN-SAN-003.svg",
+      "file_size_bytes": 3870,
+      "format": "svg+xml",
+      "theme": {
+        "grad_a": "#f59e0b",
+        "grad_b": "#dc2626",
+        "badge_fill": "#f59e0b"
+      }
+    },
+    {
+      "sku": "FIN-SAN-004",
+      "name": "Sanduche de Chorizo Ahumado",
+      "category": "sanduches",
+      "category_label": "Sánduches",
+      "price": "$ 3.75",
+      "tag": "AHUMADO",
+      "image_url": "/static/images/menu/sanduches/FIN-SAN-004.svg",
+      "image_path": "app/static/images/menu/sanduches/FIN-SAN-004.svg",
+      "file_size_bytes": 3882,
+      "format": "svg+xml",
+      "theme": {
+        "grad_a": "#f59e0b",
+        "grad_b": "#dc2626",
+        "badge_fill": "#f59e0b"
+      }
+    },
+    {
+      "sku": "FIN-SAN-005",
+      "name": "Sanduche Cordon Blue",
+      "category": "sanduches",
+      "category_label": "Sánduches",
+      "price": "$ 3.50",
+      "tag": "GOURMET",
+      "image_url": "/static/images/menu/sanduches/FIN-SAN-005.svg",
+      "image_path": "app/static/images/menu/sanduches/FIN-SAN-005.svg",
+      "file_size_bytes": 3871,
+      "format": "svg+xml",
+      "theme": {
+        "grad_a": "#f59e0b",
+        "grad_b": "#dc2626",
+        "badge_fill": "#f59e0b"
+      }
+    },
+    {
+      "sku": "FIN-SAN-006",
+      "name": "Sanduche de Albondigas",
+      "category": "sanduches",
+      "category_label": "Sánduches",
+      "price": "$ 3.50",
+      "tag": "ESTRELLA",
+      "image_url": "/static/images/menu/sanduches/FIN-SAN-006.svg",
+      "image_path": "app/static/images/menu/sanduches/FIN-SAN-006.svg",
+      "file_size_bytes": 3880,
+      "format": "svg+xml",
+      "theme": {
+        "grad_a": "#f59e0b",
+        "grad_b": "#dc2626",
+        "badge_fill": "#f59e0b"
+      }
+    },
+    {
+      "sku": "FIN-PIQ-001",
+      "name": "Mouse de Camaron",
+      "category": "piqueos",
+      "category_label": "Piqueos",
+      "price": "$ 2.00",
+      "tag": "ESPECIAL",
+      "image_url": "/static/images/menu/piqueos/FIN-PIQ-001.svg",
+      "image_path": "app/static/images/menu/piqueos/FIN-PIQ-001.svg",
+      "file_size_bytes": 3873,
+      "format": "svg+xml",
+      "theme": {
+        "grad_a": "#10b981",
+        "grad_b": "#0e7490",
+        "badge_fill": "#10b981"
+      }
+    },
+    {
+      "sku": "FIN-PIQ-002",
+      "name": "Mote con Chicharron",
+      "category": "piqueos",
+      "category_label": "Piqueos",
+      "price": "$ 2.00",
+      "tag": "TRADICIONAL",
+      "image_url": "/static/images/menu/piqueos/FIN-PIQ-002.svg",
+      "image_path": "app/static/images/menu/piqueos/FIN-PIQ-002.svg",
+      "file_size_bytes": 3882,
+      "format": "svg+xml",
+      "theme": {
+        "grad_a": "#10b981",
+        "grad_b": "#0e7490",
+        "badge_fill": "#10b981"
+      }
+    },
+    {
+      "sku": "FIN-PIQ-003",
+      "name": "Pan de Yuca (3u)",
+      "category": "piqueos",
+      "category_label": "Piqueos",
+      "price": "$ 1.25",
+      "tag": "ARTESANAL",
+      "image_url": "/static/images/menu/piqueos/FIN-PIQ-003.svg",
+      "image_path": "app/static/images/menu/piqueos/FIN-PIQ-003.svg",
+      "file_size_bytes": 3872,
+      "format": "svg+xml",
+      "theme": {
+        "grad_a": "#10b981",
+        "grad_b": "#0e7490",
+        "badge_fill": "#10b981"
+      }
+    },
+    {
+      "sku": "FIN-PIQ-004",
+      "name": "Pan de Yuca Tocino (3u)",
+      "category": "piqueos",
+      "category_label": "Piqueos",
+      "price": "$ 1.35",
+      "tag": "PREMIUM",
+      "image_url": "/static/images/menu/piqueos/FIN-PIQ-004.svg",
+      "image_path": "app/static/images/menu/piqueos/FIN-PIQ-004.svg",
+      "file_size_bytes": 3881,
+      "format": "svg+xml",
+      "theme": {
+        "grad_a": "#10b981",
+        "grad_b": "#0e7490",
+        "badge_fill": "#10b981"
+      }
+    },
+    {
+      "sku": "FIN-PIQ-005",
+      "name": "Tortilla Maiz Queso (3u)",
+      "category": "piqueos",
+      "category_label": "Piqueos",
+      "price": "$ 1.50",
+      "tag": "CRUJIENTE",
+      "image_url": "/static/images/menu/piqueos/FIN-PIQ-005.svg",
+      "image_path": "app/static/images/menu/piqueos/FIN-PIQ-005.svg",
+      "file_size_bytes": 3883,
+      "format": "svg+xml",
+      "theme": {
+        "grad_a": "#10b981",
+        "grad_b": "#0e7490",
+        "badge_fill": "#10b981"
+      }
+    },
+    {
+      "sku": "FIN-PIQ-006",
+      "name": "Tortilla Maiz Chicharron (3u)",
+      "category": "piqueos",
+      "category_label": "Piqueos",
+      "price": "$ 1.50",
+      "tag": "CRUJIENTE",
+      "image_url": "/static/images/menu/piqueos/FIN-PIQ-006.svg",
+      "image_path": "app/static/images/menu/piqueos/FIN-PIQ-006.svg",
+      "file_size_bytes": 3893,
+      "format": "svg+xml",
+      "theme": {
+        "grad_a": "#10b981",
+        "grad_b": "#0e7490",
+        "badge_fill": "#10b981"
+      }
+    },
+    {
+      "sku": "FIN-PIQ-007",
+      "name": "Torta de Choclo",
+      "category": "piqueos",
+      "category_label": "Piqueos",
+      "price": "$ 1.50",
+      "tag": "CASERO",
+      "image_url": "/static/images/menu/piqueos/FIN-PIQ-007.svg",
+      "image_path": "app/static/images/menu/piqueos/FIN-PIQ-007.svg",
+      "file_size_bytes": 3869,
+      "format": "svg+xml",
+      "theme": {
+        "grad_a": "#10b981",
+        "grad_b": "#0e7490",
+        "badge_fill": "#10b981"
+      }
+    },
+    {
+      "sku": "FIN-JUG-001",
+      "name": "Jugo de Naranja",
+      "category": "jugos",
+      "category_label": "Jugos y Bebidas Naturales",
+      "price": "$ 1.00",
+      "tag": "NATURAL",
+      "image_url": "/static/images/menu/jugos/FIN-JUG-001.svg",
+      "image_path": "app/static/images/menu/jugos/FIN-JUG-001.svg",
+      "file_size_bytes": 3868,
+      "format": "svg+xml",
+      "theme": {
+        "grad_a": "#06b6d4",
+        "grad_b": "#7c3aed",
+        "badge_fill": "#06b6d4"
+      }
+    },
+    {
+      "sku": "FIN-JUG-002",
+      "name": "Jugo Naranja-Zanahoria",
+      "category": "jugos",
+      "category_label": "Jugos y Bebidas Naturales",
+      "price": "$ 1.00",
+      "tag": "NUTRITIVO",
+      "image_url": "/static/images/menu/jugos/FIN-JUG-002.svg",
+      "image_path": "app/static/images/menu/jugos/FIN-JUG-002.svg",
+      "file_size_bytes": 3879,
+      "format": "svg+xml",
+      "theme": {
+        "grad_a": "#06b6d4",
+        "grad_b": "#7c3aed",
+        "badge_fill": "#06b6d4"
+      }
+    },
+    {
+      "sku": "FIN-JUG-003",
+      "name": "Jugo Jamaica-Canela",
+      "category": "jugos",
+      "category_label": "Jugos y Bebidas Naturales",
+      "price": "$ 0.75",
+      "tag": "REFRESCANTE",
+      "image_url": "/static/images/menu/jugos/FIN-JUG-003.svg",
+      "image_path": "app/static/images/menu/jugos/FIN-JUG-003.svg",
+      "file_size_bytes": 3875,
+      "format": "svg+xml",
+      "theme": {
+        "grad_a": "#06b6d4",
+        "grad_b": "#7c3aed",
+        "badge_fill": "#06b6d4"
+      }
+    },
+    {
+      "sku": "FIN-JUG-004",
+      "name": "Fruta de Temporada",
+      "category": "jugos",
+      "category_label": "Jugos y Bebidas Naturales",
+      "price": "$ 1.00",
+      "tag": "FRESCO",
+      "image_url": "/static/images/menu/jugos/FIN-JUG-004.svg",
+      "image_path": "app/static/images/menu/jugos/FIN-JUG-004.svg",
+      "file_size_bytes": 3873,
+      "format": "svg+xml",
+      "theme": {
+        "grad_a": "#06b6d4",
+        "grad_b": "#7c3aed",
+        "badge_fill": "#06b6d4"
+      }
+    },
+    {
+      "sku": "FIN-BEB-001",
+      "name": "Cafe",
+      "category": "bebidas_calientes",
+      "category_label": "Bebidas Calientes",
+      "price": "$ 0.50",
+      "tag": "CLASICO",
+      "image_url": "/static/images/menu/bebidas_calientes/FIN-BEB-001.svg",
+      "image_path": "app/static/images/menu/bebidas_calientes/FIN-BEB-001.svg",
+      "file_size_bytes": 3853,
+      "format": "svg+xml",
+      "theme": {
+        "grad_a": "#8b5cf6",
+        "grad_b": "#ec4899",
+        "badge_fill": "#8b5cf6"
+      }
+    },
+    {
+      "sku": "FIN-BEB-002",
+      "name": "Cappuccino",
+      "category": "bebidas_calientes",
+      "category_label": "Bebidas Calientes",
+      "price": "$ 2.00",
+      "tag": "ESPECIAL",
+      "image_url": "/static/images/menu/bebidas_calientes/FIN-BEB-002.svg",
+      "image_path": "app/static/images/menu/bebidas_calientes/FIN-BEB-002.svg",
+      "file_size_bytes": 3862,
+      "format": "svg+xml",
+      "theme": {
+        "grad_a": "#8b5cf6",
+        "grad_b": "#ec4899",
+        "badge_fill": "#8b5cf6"
+      }
+    },
+    {
+      "sku": "FIN-BEB-003",
+      "name": "Chocolate Caliente",
+      "category": "bebidas_calientes",
+      "category_label": "Bebidas Calientes",
+      "price": "$ 2.00",
+      "tag": "INDULGENTE",
+      "image_url": "/static/images/menu/bebidas_calientes/FIN-BEB-003.svg",
+      "image_path": "app/static/images/menu/bebidas_calientes/FIN-BEB-003.svg",
+      "file_size_bytes": 3879,
+      "format": "svg+xml",
+      "theme": {
+        "grad_a": "#8b5cf6",
+        "grad_b": "#ec4899",
+        "badge_fill": "#8b5cf6"
+      }
+    },
+    {
+      "sku": "FIN-BEB-004",
+      "name": "Agua Aromatica",
+      "category": "bebidas_calientes",
+      "category_label": "Bebidas Calientes",
+      "price": "$ 1.00",
+      "tag": "NATURAL",
+      "image_url": "/static/images/menu/bebidas_calientes/FIN-BEB-004.svg",
+      "image_path": "app/static/images/menu/bebidas_calientes/FIN-BEB-004.svg",
+      "file_size_bytes": 3868,
+      "format": "svg+xml",
+      "theme": {
+        "grad_a": "#8b5cf6",
+        "grad_b": "#ec4899",
+        "badge_fill": "#8b5cf6"
+      }
+    }
+  ]
+}

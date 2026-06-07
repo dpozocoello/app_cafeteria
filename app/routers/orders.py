@@ -6,13 +6,11 @@ Los pedidos pasan a la pantalla KDS (comandas) para preparación.
 from typing import Optional, List
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from sqlalchemy import text
 
 from ..database import get_db
-from ..models.operations import Table, Menu, MenuItem, ServiceConfig
+from ..models.operations import Table, Menu, ServiceConfig
 from ..models.inventory import Product
 from ..models.sales import Sale, SaleDetail
 
@@ -159,6 +157,67 @@ def create_order(data: OrderCreate, db: Session = Depends(get_db)):
             "surcharge": surcharge, "status": "PENDIENTE"}
 
 
+@router.get("/table/{table_id}/active")
+def get_active_order_for_table(table_id: int, db: Session = Depends(get_db)):
+    """Obtiene el pedido activo (PENDIENTE o PREPARANDO) para una mesa específica."""
+    sale = db.query(Sale).filter(
+        Sale.table_id == table_id,
+        Sale.status.in_(["PENDIENTE", "PREPARANDO"])
+    ).first()
+    
+    if not sale:
+        return None
+        
+    return _serialize_orders([sale], db)[0]
+
+
+@router.post("/{order_id}/items")
+def add_items_to_order(order_id: int, items: List[OrderItem], db: Session = Depends(get_db)):
+    """Añade productos a un pedido existente y recalcula los totales."""
+    sale = db.get(Sale, order_id)
+    if not sale:
+        raise HTTPException(status_code=404, detail="Pedido no encontrado")
+        
+    if sale.status not in ["PENDIENTE", "PREPARANDO"]:
+        raise HTTPException(status_code=400, detail="No se pueden añadir productos a un pedido que no esté pendiente o en preparación")
+        
+    # Calcular IVA
+    iva_pct = 0.15
+    from ..models.sales import TaxParameter
+    tax = db.query(TaxParameter).filter_by(is_active=True).first()
+    if tax:
+        iva_pct = float(tax.rate) / 100
+        
+    subtotal_addition = 0.0
+    for item in items:
+        prod = db.get(Product, item.product_id)
+        if not prod:
+            raise HTTPException(status_code=404, detail=f"Producto {item.product_id} no encontrado")
+        unit_price = float(prod.sale_price or 0)
+        line_total = unit_price * item.quantity
+        subtotal_addition += line_total
+        
+        # Guardar detalle
+        sale_detail = SaleDetail(
+            sale_id=sale.id,
+            product_id=item.product_id,
+            quantity=item.quantity,
+            unit_price=unit_price,
+            subtotal=line_total,
+        )
+        db.add(sale_detail)
+        
+    # Actualizar totales de la venta
+    sale.subtotal = float(sale.subtotal or 0) + subtotal_addition
+    tax_addition = subtotal_addition * iva_pct
+    sale.tax_amount = float(sale.tax_amount or 0) + tax_addition
+    sale.total = float(sale.total or 0) + subtotal_addition + tax_addition
+    
+    db.commit()
+    db.refresh(sale)
+    return {"order_number": sale.invoice_number, "total": float(sale.total), "status": sale.status}
+
+
 @router.get("/pending")
 def get_pending_orders(db: Session = Depends(get_db)):
     """Lista pedidos pendientes para el KDS (Comandas)."""
@@ -238,3 +297,61 @@ def complete_order(order_id: int, db: Session = Depends(get_db)):
             t.status = "LIBRE"
     db.commit()
     return {"message": "Pedido facturado correctamente", "status": "FACTURADO"}
+
+
+# ─── Endpoints para integración con App Android ───────────────────────────────
+
+class StatusUpdate(BaseModel):
+    status: str
+
+
+@router.put("/{order_id}/status")
+def update_order_status(order_id: int, body: StatusUpdate, db: Session = Depends(get_db)):
+    """App Android: actualiza el estado de un pedido (PENDIENTE→PREPARANDO→LISTO_FACTURAR)."""
+    valid = {"PENDIENTE", "PREPARANDO", "LISTO_FACTURAR", "CANCELADO"}
+    if body.status not in valid:
+        raise HTTPException(status_code=400, detail=f"Estado inválido. Valores permitidos: {valid}")
+    sale = db.get(Sale, order_id)
+    if not sale:
+        raise HTTPException(status_code=404, detail="Pedido no encontrado")
+    if sale.status == "FACTURADO":
+        raise HTTPException(status_code=400, detail="No se puede modificar un pedido ya facturado")
+    sale.status = body.status
+    if body.status == "CANCELADO" and sale.table_id:
+        t = db.get(Table, sale.table_id)
+        if t:
+            t.status = "LIBRE"
+    db.commit()
+    return {"ok": True, "order_id": order_id, "status": sale.status}
+
+
+@router.get("/billing-queue")
+def get_billing_queue(branch_id: int = 1, db: Session = Depends(get_db)):
+    """
+    Cola de pedidos LISTO_FACTURAR pendientes de cobro en el POS desktop.
+    El cajero recupera esta lista para procesar el cobro y generar la factura.
+    """
+    orders = db.query(Sale).filter(
+        Sale.branch_id == branch_id,
+        Sale.status == "LISTO_FACTURAR"
+    ).order_by(Sale.sale_date).all()
+    return _serialize_orders(orders, db)
+
+
+@router.get("/active")
+def get_all_active_orders(branch_id: int = 1, db: Session = Depends(get_db)):
+    """App Android: lista todos los pedidos activos de la sucursal (para vista del mesero)."""
+    orders = db.query(Sale).filter(
+        Sale.branch_id == branch_id,
+        Sale.status.in_(["PENDIENTE", "PREPARANDO", "LISTO_FACTURAR"])
+    ).order_by(Sale.sale_date).all()
+    return _serialize_orders(orders, db)
+
+
+@router.get("/{order_id}")
+def get_order_detail(order_id: int, db: Session = Depends(get_db)):
+    """Detalle completo de un pedido por ID."""
+    sale = db.get(Sale, order_id)
+    if not sale:
+        raise HTTPException(status_code=404, detail="Pedido no encontrado")
+    return _serialize_orders([sale], db)[0]

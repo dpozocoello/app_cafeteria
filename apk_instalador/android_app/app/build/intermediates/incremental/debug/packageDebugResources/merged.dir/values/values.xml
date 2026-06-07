@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="background">#f9fafb</color>
+    <color name="divider">#e5e7eb</color>
+    <color name="error">#dc2626</color>
+    <color name="on_primary">#ffffff</color>
+    <color name="primary">#1a56db</color>
+    <color name="primary_container">#dbeafe</color>
+    <color name="primary_dark">#1341b0</color>
+    <color name="secondary">#0e9f6e</color>
+    <color name="success">#16a34a</color>
+    <color name="surface">#ffffff</color>
+    <color name="text_primary">#111827</color>
+    <color name="text_secondary">#6b7280</color>
+    <string name="action_reload">Recargar</string>
+    <string name="action_settings">Cambiar servidor</string>
+    <string name="app_name">Cafetería POS</string>
+    <style name="Theme.CafeteriaPos" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryDark">@color/primary_dark</item>
+        <item name="colorAccent">@color/secondary</item>
+        <item name="android:windowBackground">@color/background</item>
+        <item name="android:statusBarColor">@color/primary_dark</item>
+    </style>
+    <style name="Theme.CafeteriaPos.NoActionBar" parent="Theme.CafeteriaPos">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+</resources>

@@ -28,6 +28,15 @@ from .routers import migration as migration_router
 from .routers import orders as orders_router
 from .routers import customers as customers_router
 from .routers import billing_reports as billing_reports_router
+from .routers import images as images_router
+from .routers import cash as cash_router
+from .routers import accounting as accounting_router
+from .routers import banking as banking_router
+# Nuevos modelos — necesarios para que Base.metadata los registre
+from .models import cash as _cash_models          # noqa: F401
+from .models import accounting as _acc_models     # noqa: F401
+from .models import banking as _bank_models       # noqa: F401
+from .services.accounting_service import AccountingService
 from decimal import Decimal
 import uuid
 from datetime import date
@@ -108,41 +117,47 @@ async def check_licensing_middleware(request: Request, call_next):
 @app.on_event("startup")
 def startup_db_migration():
     """
-    Verifica que las columnas de retenciones y la tabla de notas de crédito existan.
-    Si no existen, las crea dinámicamente para evitar pérdida de datos históricos.
+    Crea/migra esquema de base de datos en cada arranque.
+    Incluye tablas de caja, contabilidad y bancos (NIIF Ecuador).
     """
     from sqlalchemy import inspect, text
-    from .database import engine
+    from .database import engine, SessionLocal
     from .models.core import Base
-    
-    # 1. Crear tablas si no existen (como credit_notes)
+
+    # 1. Crear TODAS las tablas (nuevas y existentes)
     Base.metadata.create_all(bind=engine)
-    
-    # 2. Agregar columnas a sales si no existen (SQLite ALTER TABLE)
+
+    # 2. Migraciones incrementales — columnas que pueden faltar en DBs existentes
     inspector = inspect(engine)
-    columns = [col["name"] for col in inspector.get_columns("sales")]
-    
+
+    def safe_alter(conn, table: str, col: str, definition: str):
+        existing = [c["name"] for c in inspector.get_columns(table)]
+        if col not in existing:
+            try:
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {definition}"))
+                print(f"[MIGRACION] Columna agregada: {table}.{col}")
+            except Exception as e:
+                print(f"[MIGRACION] {table}.{col}: {e}")
+
     with engine.begin() as conn:
-        if "withholding_number" not in columns:
-            try:
-                conn.execute(text("ALTER TABLE sales ADD COLUMN withholding_number VARCHAR(17)"))
-            except Exception as e:
-                print(f"[MIGRACION] Error agregando withholding_number: {e}")
-        if "withholding_iva" not in columns:
-            try:
-                conn.execute(text("ALTER TABLE sales ADD COLUMN withholding_iva NUMERIC(12, 2) DEFAULT 0.0"))
-            except Exception as e:
-                print(f"[MIGRACION] Error agregando withholding_iva: {e}")
-        if "withholding_renta" not in columns:
-            try:
-                conn.execute(text("ALTER TABLE sales ADD COLUMN withholding_renta NUMERIC(12, 2) DEFAULT 0.0"))
-            except Exception as e:
-                print(f"[MIGRACION] Error agregando withholding_renta: {e}")
-        if "withholding_date" not in columns:
-            try:
-                conn.execute(text("ALTER TABLE sales ADD COLUMN withholding_date DATETIME"))
-            except Exception as e:
-                print(f"[MIGRACION] Error agregando withholding_date: {e}")
+        # Sales: retenciones y sesión de caja
+        safe_alter(conn, "sales", "withholding_number",       "VARCHAR(17)")
+        safe_alter(conn, "sales", "withholding_iva",          "NUMERIC(12,2) DEFAULT 0.0")
+        safe_alter(conn, "sales", "withholding_renta",        "NUMERIC(12,2) DEFAULT 0.0")
+        safe_alter(conn, "sales", "withholding_date",         "DATETIME")
+        safe_alter(conn, "sales", "cash_session_id",          "INTEGER")
+        safe_alter(conn, "sales", "journal_entry_id",         "INTEGER")
+        # Expenses: cuenta contable por categoría
+        safe_alter(conn, "expense_categories", "accounting_account_code", "VARCHAR(20)")
+
+    # 3. Seed Plan de Cuentas (solo si tabla vacía)
+    db = SessionLocal()
+    try:
+        AccountingService.seed_chart_of_accounts(db)
+    except Exception as e:
+        print(f"[CONTABILIDAD] Error al sembrar Plan de Cuentas: {e}")
+    finally:
+        db.close()
 
 # ─── Archivos estáticos ───────────────────────────────────────────────────────
 os.makedirs(os.path.join(os.path.dirname(__file__), "static"), exist_ok=True)
@@ -161,6 +176,10 @@ app.include_router(migration_router.router)
 app.include_router(orders_router.router)
 app.include_router(customers_router.router)
 app.include_router(billing_reports_router.router)
+app.include_router(images_router.router)
+app.include_router(cash_router.router)
+app.include_router(accounting_router.router)
+app.include_router(banking_router.router)
 
 @app.get("/api/branches")
 def list_branches(db=Depends(get_db)):
@@ -294,6 +313,24 @@ def get_menu_digital(menu_id: int, db: Session = Depends(get_db)):
 @app.get("/comandas", response_class=HTMLResponse)
 def get_comandas_ui():
     template_path = os.path.join(os.path.dirname(__file__), "templates", "comandas.html")
+    with open(template_path, "r", encoding="utf-8") as f:
+        return f.read()
+
+@app.get("/caja", response_class=HTMLResponse)
+def get_caja_ui():
+    template_path = os.path.join(os.path.dirname(__file__), "templates", "caja.html")
+    with open(template_path, "r", encoding="utf-8") as f:
+        return f.read()
+
+@app.get("/contabilidad", response_class=HTMLResponse)
+def get_contabilidad_ui():
+    template_path = os.path.join(os.path.dirname(__file__), "templates", "contabilidad.html")
+    with open(template_path, "r", encoding="utf-8") as f:
+        return f.read()
+
+@app.get("/bancos", response_class=HTMLResponse)
+def get_bancos_ui():
+    template_path = os.path.join(os.path.dirname(__file__), "templates", "bancos.html")
     with open(template_path, "r", encoding="utf-8") as f:
         return f.read()
 
@@ -545,6 +582,14 @@ def create_sale(sale_data: SaleCreate, db: Session = Depends(get_db)):
     # 5. Ejecutar descuento de inventario por recetas (BOM / Kárdex)
     InventoryService.process_sale_inventory_deduction(db, sale)
 
+    # 6. Asiento contable automático (NIIF — Ventas)
+    try:
+        je = AccountingService.create_sale_journal_entry(db, sale)
+        if je:
+            sale.journal_entry_id = je.id
+    except Exception as e:
+        print(f"[CONTABILIDAD] Asiento de venta no generado: {e}")
+
     db.commit()
     db.refresh(sale)
     return sale
@@ -571,6 +616,14 @@ def create_expense(expense_data: ExpenseCreate, db: Session = Depends(get_db)):
         invoice_reference=expense_data.invoice_reference
     )
     db.add(expense)
+    db.flush()
+
+    # Asiento contable automático (NIIF — Gastos)
+    try:
+        AccountingService.create_expense_journal_entry(db, expense)
+    except Exception as e:
+        print(f"[CONTABILIDAD] Asiento de gasto no generado: {e}")
+
     db.commit()
     db.refresh(expense)
     return expense

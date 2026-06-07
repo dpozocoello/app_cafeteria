@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control de Caja — POS</title>
+<link rel="stylesheet" href="/static/app.css">
+<style>
+  :root { --primary:#1a56db; --success:#16a34a; --danger:#dc2626; --warning:#d97706; }
+  body { font-family:'Outfit',sans-serif; background:#f3f4f6; margin:0; }
+  .topbar { background:var(--primary); color:#fff; padding:14px 24px; display:flex; align-items:center; gap:16px; }
+  .topbar a { color:#fff; text-decoration:none; opacity:.8; }
+  .topbar a:hover { opacity:1; }
+  .container { max-width:1100px; margin:24px auto; padding:0 16px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .card { background:#fff; border-radius:12px; padding:20px; box-shadow:0 1px 4px rgba(0,0,0,.08); }
+  .card h3 { margin:0 0 16px; font-size:1rem; color:#374151; border-bottom:1px solid #e5e7eb; padding-bottom:10px; }
+  .stat-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #f3f4f6; font-size:.9rem; }
+  .stat-row:last-child { border:none; }
+  .stat-label { color:#6b7280; }
+  .stat-value { font-weight:600; }
+  .badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:.75rem; font-weight:600; }
+  .badge-open    { background:#dcfce7; color:#16a34a; }
+  .badge-closed  { background:#f3f4f6; color:#6b7280; }
+  .badge-surplus { background:#dbeafe; color:#1a56db; }
+  .badge-short   { background:#fee2e2; color:#dc2626; }
+  .badge-balanced{ background:#dcfce7; color:#16a34a; }
+  .btn { display:inline-block; padding:10px 20px; border-radius:8px; border:none; cursor:pointer; font-size:.9rem; font-weight:600; }
+  .btn-primary { background:var(--primary); color:#fff; }
+  .btn-success { background:var(--success); color:#fff; }
+  .btn-danger  { background:var(--danger);  color:#fff; }
+  .btn-outline { background:#fff; color:var(--primary); border:1.5px solid var(--primary); }
+  .btn:hover { opacity:.88; }
+  .input-row { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
+  .input-row label { font-size:.85rem; color:#374151; font-weight:600; }
+  .input-row input, .input-row select, .input-row textarea {
+    padding:10px 12px; border:1.5px solid #d1d5db; border-radius:8px; font-size:.9rem; outline:none;
+  }
+  .input-row input:focus { border-color:var(--primary); }
+  .table-wrap { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:.88rem; }
+  th { background:#f9fafb; padding:10px 12px; text-align:left; font-weight:600; color:#374151; border-bottom:2px solid #e5e7eb; }
+  td { padding:10px 12px; border-bottom:1px solid #f3f4f6; }
+  tr:hover td { background:#f9fafb; }
+  .diff-positive { color:var(--success); font-weight:700; }
+  .diff-negative { color:var(--danger); font-weight:700; }
+  .diff-zero     { color:#6b7280; }
+  .denom-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:10px; }
+  .denom-item { display:flex; align-items:center; gap:8px; }
+  .denom-item label { min-width:52px; font-size:.88rem; color:#374151; }
+  .denom-item input { width:64px; padding:6px 8px; border:1.5px solid #d1d5db; border-radius:6px; font-size:.88rem; text-align:center; }
+  .total-display { text-align:right; font-size:1.4rem; font-weight:700; color:var(--primary); margin-top:12px; }
+  #alert { display:none; padding:12px 16px; border-radius:8px; margin-bottom:16px; font-weight:600; }
+  .alert-ok  { background:#dcfce7; color:#16a34a; }
+  .alert-err { background:#fee2e2; color:#dc2626; }
+  .tab-bar { display:flex; gap:4px; margin-bottom:20px; }
+  .tab-btn { padding:8px 18px; border:none; background:#e5e7eb; border-radius:8px 8px 0 0; cursor:pointer; font-weight:600; font-size:.88rem; }
+  .tab-btn.active { background:var(--primary); color:#fff; }
+  .tab-panel { display:none; }
+  .tab-panel.active { display:block; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/">← Dashboard</a>
+  <span style="font-size:1.1rem;font-weight:700;">🏧 Control de Caja</span>
+</div>
+
+<div class="container">
+  <div id="alert"></div>
+
+  <!-- Tabs -->
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="showTab('tab-session')">Sesión Actual</button>
+    <button class="tab-btn" onclick="showTab('tab-close')">Cierre de Caja</button>
+    <button class="tab-btn" onclick="showTab('tab-history')">Historial</button>
+    <button class="tab-btn" onclick="showTab('tab-flow')">Flujo de Caja</button>
+  </div>
+
+  <!-- TAB: Sesión Actual -->
+  <div id="tab-session" class="tab-panel active">
+    <div class="grid2">
+      <!-- Estado de sesión -->
+      <div class="card">
+        <h3>Estado de Sesión — Caja</h3>
+        <div id="session-status">
+          <p style="color:#6b7280;text-align:center;padding:20px;">Cargando...</p>
+        </div>
+      </div>
+
+      <!-- Apertura / Movimiento -->
+      <div class="card" id="card-open">
+        <h3>Apertura de Caja</h3>
+        <div class="input-row">
+          <label>Caja</label>
+          <select id="open-register-id"></select>
+        </div>
+        <div class="input-row">
+          <label>Fondo inicial (USD)</label>
+          <input type="number" id="open-amount" value="50.00" step="0.01" min="0">
+        </div>
+        <div class="input-row">
+          <label>Observaciones</label>
+          <input type="text" id="open-notes" placeholder="Opcional">
+        </div>
+        <button class="btn btn-success" onclick="openSession()">Abrir Sesión</button>
+      </div>
+
+      <div class="card" id="card-movement" style="display:none;">
+        <h3>Movimiento Manual de Efectivo</h3>
+        <div class="input-row">
+          <label>Tipo</label>
+          <select id="mov-type">
+            <option value="INGRESO">Ingreso de Efectivo</option>
+            <option value="EGRESO">Egreso / Pago</option>
+            <option value="RETIRO">Retiro de Caja</option>
+            <option value="FONDO_CAMBIO">Fondo de Cambio</option>
+          </select>
+        </div>
+        <div class="input-row">
+          <label>Monto (USD)</label>
+          <input type="number" id="mov-amount" value="0.00" step="0.01" min="0.01">
+        </div>
+        <div class="input-row">
+          <label>Descripción</label>
+          <input type="text" id="mov-desc" placeholder="Motivo del movimiento">
+        </div>
+        <button class="btn btn-primary" onclick="addMovement()">Registrar Movimiento</button>
+      </div>
+    </div>
+
+    <!-- Resumen en tiempo real -->
+    <div class="card" id="card-summary" style="margin-top:20px;display:none;">
+      <h3>Resumen de Sesión en Tiempo Real</h3>
+      <div class="grid2">
+        <div>
+          <div class="stat-row"><span class="stat-label">Fondo de apertura</span><span class="stat-value" id="s-opening">—</span></div>
+          <div class="stat-row"><span class="stat-label">Ventas en efectivo</span><span class="stat-value" id="s-cash">—</span></div>
+          <div class="stat-row"><span class="stat-label">Ventas con tarjeta</span><span class="stat-value" id="s-card">—</span></div>
+          <div class="stat-row"><span class="stat-label">Ingresos manuales</span><span class="stat-value" id="s-in">—</span></div>
+        </div>
+        <div>
+          <div class="stat-row"><span class="stat-label">Gastos pagados</span><span class="stat-value" id="s-exp">—</span></div>
+          <div class="stat-row"><span class="stat-label">Retiros / Egresos</span><span class="stat-value" id="s-out">—</span></div>
+          <div class="stat-row"><span class="stat-label">Nro. ventas</span><span class="stat-value" id="s-count">—</span></div>
+          <div class="stat-row" style="background:#f0fdf4;border-radius:8px;padding:8px;">
+            <span class="stat-label">💰 <b>Saldo esperado en caja</b></span>
+            <span class="stat-value" id="s-expected" style="font-size:1.1rem;color:var(--success);">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: Cierre -->
+  <div id="tab-close" class="tab-panel">
+    <div class="grid2">
+      <div class="card">
+        <h3>Conteo Físico de Caja</h3>
+        <p style="font-size:.85rem;color:#6b7280;margin-top:-8px;">Ingrese la cantidad de cada denominación contada físicamente.</p>
+        <div class="denom-grid" id="denom-grid"></div>
+        <div class="total-display">Total contado: $<span id="denom-total">0.00</span></div>
+      </div>
+      <div class="card">
+        <h3>Cierre de Sesión</h3>
+        <div id="close-summary" style="margin-bottom:16px;"></div>
+        <div class="input-row">
+          <label>Monto declarado (USD) <small style="color:#6b7280;">(autocompletado con conteo)</small></label>
+          <input type="number" id="close-declared" step="0.01" min="0" placeholder="0.00">
+        </div>
+        <div class="input-row">
+          <label>Observaciones de cierre</label>
+          <textarea id="close-notes" rows="2" placeholder="Diferencias, novedades..."></textarea>
+        </div>
+        <button class="btn btn-danger" onclick="closeSession()">Cerrar Sesión de Caja</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: Historial -->
+  <div id="tab-history" class="tab-panel">
+    <div class="card">
+      <h3>Historial de Sesiones</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Fecha</th><th>Apertura $</th><th>Ventas $</th><th>Esperado $</th><th>Declarado $</th><th>Diferencia</th><th>Estado</th></tr>
+          </thead>
+          <tbody id="history-body"><tr><td colspan="7" style="text-align:center;color:#9ca3af;">Cargando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: Flujo de Caja -->
+  <div id="tab-flow" class="tab-panel">
+    <div class="card">
+      <h3>Reporte de Flujo de Caja</h3>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;align-items:flex-end;">
+        <div class="input-row" style="margin:0;"><label>Desde</label><input type="date" id="flow-start"></div>
+        <div class="input-row" style="margin:0;"><label>Hasta</label><input type="date" id="flow-end"></div>
+        <button class="btn btn-primary" onclick="loadFlowReport()">Generar</button>
+      </div>
+      <div id="flow-totals" style="display:none;margin-bottom:16px;" class="grid2">
+        <div class="stat-row"><span class="stat-label">Total ventas efectivo</span><span class="stat-value" id="ft-sales">—</span></div>
+        <div class="stat-row"><span class="stat-label">Total gastos</span><span class="stat-value" id="ft-exp">—</span></div>
+        <div class="stat-row"><span class="stat-label">Diferencias acumuladas</span><span class="stat-value" id="ft-diff">—</span></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Fecha</th><th>Apertura $</th><th>Ventas Efectivo</th><th>Gastos</th><th>Retiros</th><th>Esperado</th><th>Declarado</th><th>Diferencia</th></tr></thead>
+          <tbody id="flow-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const BRANCH_ID = 1;
+const USER_ID   = 1;
+let currentSession = null;
+const DENOMS = [100, 50, 20, 10, 5, 1, 0.50, 0.25, 0.10, 0.05, 0.01];
+
+function fmt(n) { return '$' + parseFloat(n||0).toFixed(2); }
+
+function showAlert(msg, ok=true) {
+  const el = document.getElementById('alert');
+  el.className = ok ? 'alert-ok' : 'alert-err';
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => el.style.display='none', 5000);
+}
+
+function showTab(id) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+  if (id === 'tab-history') loadHistory();
+}
+
+// ── Cargar cajas ───────────────────────────────────────────────────────────────
+async function loadRegisters() {
+  const r = await fetch(`/api/caja/registers?branch_id=${BRANCH_ID}`);
+  const regs = await r.json();
+  const sel = document.getElementById('open-register-id');
+  regs.forEach(rg => {
+    const opt = document.createElement('option');
+    opt.value = rg.id; opt.textContent = rg.name;
+    sel.appendChild(opt);
+  });
+  if (!regs.length) {
+    // Crear caja por defecto
+    await fetch('/api/caja/registers', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({name:'Caja Principal', branch_id: BRANCH_ID})
+    });
+    loadRegisters();
+  }
+}
+
+// ── Cargar sesión actual ───────────────────────────────────────────────────────
+async function loadCurrentSession() {
+  const r = await fetch(`/api/caja/session/current?branch_id=${BRANCH_ID}`);
+  const data = await r.json();
+  const statusDiv = document.getElementById('session-status');
+
+  if (!data.open) {
+    currentSession = null;
+    document.getElementById('card-open').style.display = 'block';
+    document.getElementById('card-movement').style.display = 'none';
+    document.getElementById('card-summary').style.display = 'none';
+    statusDiv.innerHTML = `
+      <div style="text-align:center;padding:20px;">
+        <span class="badge badge-closed">⚫ SIN SESIÓN ABIERTA</span>
+        <p style="color:#6b7280;margin-top:12px;">No hay caja abierta para esta sucursal.</p>
+      </div>`;
+    return;
+  }
+
+  currentSession = data.session;
+  document.getElementById('card-open').style.display = 'none';
+  document.getElementById('card-movement').style.display = 'block';
+  document.getElementById('card-summary').style.display = 'block';
+
+  const s = data.session;
+  statusDiv.innerHTML = `
+    <div style="text-align:center;padding:8px 0 16px;">
+      <span class="badge badge-open">🟢 SESIÓN ABIERTA #${s.session_id}</span>
+    </div>
+    <div class="stat-row"><span class="stat-label">Abierta a las</span>
+      <span class="stat-value">${new Date(s.opened_at).toLocaleTimeString('es-EC')}</span></div>`;
+
+  // Rellenar resumen
+  document.getElementById('s-opening').textContent = fmt(s.opening_amount);
+  document.getElementById('s-cash').textContent    = fmt(s.total_sales_cash);
+  document.getElementById('s-card').textContent    = fmt(s.total_sales_card);
+  document.getElementById('s-in').textContent      = fmt(s.total_cash_in);
+  document.getElementById('s-exp').textContent     = fmt(s.total_expenses);
+  document.getElementById('s-out').textContent     = fmt(s.total_cash_out);
+  document.getElementById('s-count').textContent   = s.sale_count;
+  document.getElementById('s-expected').textContent= fmt(s.expected_amount);
+
+  // Rellenar panel de cierre
+  document.getElementById('close-declared').value = s.expected_amount.toFixed(2);
+  document.getElementById('close-summary').innerHTML = `
+    <div class="stat-row"><span class="stat-label">Saldo esperado por sistema</span>
+      <span class="stat-value" style="color:var(--primary);">${fmt(s.expected_amount)}</span></div>`;
+}
+
+// ── Apertura ───────────────────────────────────────────────────────────────────
+async function openSession() {
+  const reg = document.getElementById('open-register-id').value;
+  const amount = parseFloat(document.getElementById('open-amount').value) || 0;
+  const notes  = document.getElementById('open-notes').value;
+  const r = await fetch('/api/caja/session/open', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({register_id: parseInt(reg), branch_id: BRANCH_ID, user_id: USER_ID, opening_amount: amount, notes})
+  });
+  const data = await r.json();
+  if (r.ok) { showAlert(`Sesión #${data.session_id} abierta. Fondo: ${fmt(amount)}`); loadCurrentSession(); }
+  else showAlert(data.detail || 'Error al abrir sesión', false);
+}
+
+// ── Movimiento manual ──────────────────────────────────────────────────────────
+async function addMovement() {
+  if (!currentSession) return;
+  const type = document.getElementById('mov-type').value;
+  const amount = parseFloat(document.getElementById('mov-amount').value) || 0;
+  const desc = document.getElementById('mov-desc').value;
+  if (amount <= 0) return showAlert('Ingrese un monto válido', false);
+  const r = await fetch('/api/caja/session/movement', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({session_id: currentSession.session_id, user_id: USER_ID, transaction_type: type, amount, description: desc})
+  });
+  const data = await r.json();
+  if (r.ok) { showAlert('Movimiento registrado'); document.getElementById('mov-amount').value='0.00'; loadCurrentSession(); }
+  else showAlert(data.detail || 'Error', false);
+}
+
+// ── Denominaciones ─────────────────────────────────────────────────────────────
+function buildDenomGrid() {
+  const grid = document.getElementById('denom-grid');
+  grid.innerHTML = '';
+  DENOMS.forEach(d => {
+    const div = document.createElement('div');
+    div.className = 'denom-item';
+    div.innerHTML = `<label>$${d.toFixed(2)}</label>
+      <input type="number" min="0" value="0" id="denom-${d.toString().replace('.','_')}"
+        oninput="updateDenomTotal()">`;
+    grid.appendChild(div);
+  });
+}
+
+function updateDenomTotal() {
+  let total = 0;
+  DENOMS.forEach(d => {
+    const qty = parseInt(document.getElementById(`denom-${d.toString().replace('.','_')}`).value) || 0;
+    total += d * qty;
+  });
+  const t = total.toFixed(2);
+  document.getElementById('denom-total').textContent = t;
+  document.getElementById('close-declared').value = t;
+}
+
+// ── Cierre ─────────────────────────────────────────────────────────────────────
+async function closeSession() {
+  if (!currentSession) return showAlert('No hay sesión abierta', false);
+  if (!confirm('¿Confirma el cierre de caja?')) return;
+
+  const declared = parseFloat(document.getElementById('close-declared').value) || 0;
+  const notes    = document.getElementById('close-notes').value;
+  const denoms   = DENOMS.map(d => ({
+    denomination: d,
+    quantity: parseInt(document.getElementById(`denom-${d.toString().replace('.','_')}`).value) || 0
+  })).filter(x => x.quantity > 0);
+
+  const r = await fetch('/api/caja/session/close', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({session_id: currentSession.session_id, user_id: USER_ID, declared_amount: declared, denominations: denoms, notes, company_id: 1})
+  });
+  const data = await r.json();
+  if (r.ok) {
+    const diff = data.difference;
+    const status = data.difference_status;
+    const badge = status==='CUADRADA' ? 'badge-balanced' : status==='SOBRANTE' ? 'badge-surplus' : 'badge-short';
+    showAlert(`Caja cerrada. Esperado: ${fmt(data.expected_amount)} | Declarado: ${fmt(data.declared_amount)} | Diferencia: ${fmt(diff)} [${status}]`, diff >= 0);
+    loadCurrentSession();
+    loadHistory();
+  } else showAlert(data.detail || 'Error al cerrar', false);
+}
+
+// ── Historial ──────────────────────────────────────────────────────────────────
+async function loadHistory() {
+  const r = await fetch(`/api/caja/sessions/history?branch_id=${BRANCH_ID}&limit=30`);
+  const sessions = await r.json();
+  const tbody = document.getElementById('history-body');
+  if (!sessions.length) { tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:#9ca3af;">Sin sesiones registradas</td></tr>'; return; }
+  tbody.innerHTML = sessions.map(s => {
+    const diff = parseFloat(s.difference);
+    const cls  = Math.abs(diff)<0.01 ? 'diff-zero' : diff>0 ? 'diff-positive' : 'diff-negative';
+    const label= s.status==='ABIERTA' ? '<span class="badge badge-open">Abierta</span>' : '<span class="badge badge-closed">Cerrada</span>';
+    return `<tr>
+      <td>${s.date}</td>
+      <td>${fmt(s.opening)}</td>
+      <td>${fmt(s.total_sales)}</td>
+      <td>${fmt(s.expected)}</td>
+      <td>${fmt(s.declared)}</td>
+      <td class="${cls}">${fmt(diff)}</td>
+      <td>${label}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Flujo de caja ──────────────────────────────────────────────────────────────
+async function loadFlowReport() {
+  const start = document.getElementById('flow-start').value;
+  const end   = document.getElementById('flow-end').value;
+  if (!start || !end) return showAlert('Seleccione fechas', false);
+  const r = await fetch(`/api/caja/flow-report?branch_id=${BRANCH_ID}&start=${start}&end=${end}`);
+  const data = await r.json();
+  document.getElementById('flow-totals').style.display='grid';
+  document.getElementById('ft-sales').textContent = fmt(data.total_sales_cash);
+  document.getElementById('ft-exp').textContent   = fmt(data.total_expenses);
+  const totalDiff = parseFloat(data.total_difference);
+  const diffEl = document.getElementById('ft-diff');
+  diffEl.textContent = fmt(totalDiff);
+  diffEl.className = 'stat-value ' + (Math.abs(totalDiff)<0.01?'diff-zero':totalDiff>0?'diff-positive':'diff-negative');
+
+  const tbody = document.getElementById('flow-body');
+  tbody.innerHTML = (data.sessions||[]).map(s => {
+    const diff = parseFloat(s.difference);
+    const cls  = Math.abs(diff)<0.01?'diff-zero':diff>0?'diff-positive':'diff-negative';
+    return `<tr>
+      <td>${s.date}</td>
+      <td>${fmt(s.opening)}</td>
+      <td>${fmt(s.sales_cash)}</td>
+      <td>${fmt(s.expenses)}</td>
+      <td>${fmt(s.cash_out)}</td>
+      <td>${fmt(s.expected)}</td>
+      <td>${fmt(s.declared)}</td>
+      <td class="${cls}">${fmt(s.difference)}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="8" style="text-align:center;color:#9ca3af;">Sin datos</td></tr>';
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────────
+(async function init() {
+  const today = new Date().toISOString().split('T')[0];
+  const firstOfMonth = today.slice(0,8)+'01';
+  document.getElementById('flow-start').value = firstOfMonth;
+  document.getElementById('flow-end').value   = today;
+
+  await loadRegisters();
+  await loadCurrentSession();
+  buildDenomGrid();
+  setInterval(loadCurrentSession, 30000); // Actualizar cada 30 s
+})();
+</script>
+</body>
+</html>
