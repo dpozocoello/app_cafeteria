@@ -29,6 +29,7 @@ object RetrofitClient {
     fun userId(ctx: Context): Int       = prefs(ctx).getInt(KEY_USER_ID, 1)
     fun branchId(ctx: Context): Int     = prefs(ctx).getInt(KEY_BRANCH_ID, 1)
     fun fullName(ctx: Context): String  = prefs(ctx).getString(KEY_FULL_NAME, "Mesero") ?: "Mesero"
+    fun userRole(ctx: Context): String  = prefs(ctx).getString(KEY_ROLE, "mesero") ?: "mesero"
 
     fun saveSession(ctx: Context, token: String, userId: Int, branchId: Int, fullName: String, role: String) {
         prefs(ctx).edit()

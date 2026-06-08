@@ -1,35 +1,65 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@color/background">
 
+    <!-- Tabs de categorías / menús -->
     <com.google.android.material.tabs.TabLayout
         android:id="@+id/tabMenus"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/surface"/>
+        android:background="@color/surface"
+        app:tabMode="scrollable"
+        app:tabGravity="start"
+        app:tabRippleColor="@color/primary_container"
+        app:tabSelectedTextColor="@color/primary"
+        app:tabTextColor="@color/text_secondary"
+        app:tabIndicatorColor="@color/primary"
+        app:tabIndicatorHeight="3dp"
+        android:elevation="4dp"/>
 
+    <!-- Loading indicator -->
     <ProgressBar
         android:id="@+id/progressBar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
         android:visibility="gone"
-        android:layout_marginTop="16dp"/>
+        android:layout_marginTop="24dp"
+        android:layout_marginBottom="24dp"/>
 
-    <TextView
-        android:id="@+id/tvEmpty"
+    <!-- Empty state -->
+    <LinearLayout
+        android:id="@+id/layoutEmpty"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="No hay productos disponibles"
-        android:textSize="15sp"
-        android:textColor="@color/text_secondary"
+        android:orientation="vertical"
         android:gravity="center"
-        android:visibility="gone"
-        android:padding="32dp"/>
+        android:padding="40dp"
+        android:visibility="gone">
 
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🍽️"
+            android:textSize="48sp"
+            android:gravity="center"
+            android:layout_marginBottom="12dp"/>
+
+        <TextView
+            android:id="@+id/tvEmpty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="No hay productos disponibles"
+            android:textSize="15sp"
+            android:textColor="@color/text_secondary"
+            android:gravity="center"/>
+    </LinearLayout>
+
+    <!-- Lista de productos -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvProducts"
         android:layout_width="match_parent"
@@ -38,32 +68,91 @@
         android:padding="8dp"
         android:clipToPadding="false"/>
 
+    <!-- Barra inferior del carrito -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
+        android:orientation="vertical"
         android:background="@color/surface"
-        android:padding="12dp"
-        android:elevation="4dp">
+        android:elevation="8dp">
 
-        <TextView
-            android:id="@+id/tvCartCount"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:text="0"
-            android:textSize="12sp"
-            android:textColor="#fff"
-            android:textStyle="bold"
-            android:gravity="center"
-            android:background="@color/error"
-            android:visibility="gone"/>
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnCart"
+        <!-- Resumen total (visible cuando hay items) -->
+        <LinearLayout
+            android:id="@+id/layoutCartSummary"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:text="Ver Carrito"
-            android:textSize="15sp"/>
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="10dp"
+            android:paddingBottom="4dp"
+            android:gravity="center_vertical"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/tvCartItemCount"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:text="0"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/on_primary"
+                    android:gravity="center"
+                    android:background="@color/primary"
+                    android:layout_marginEnd="8dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="productos seleccionados"
+                    android:textSize="13sp"
+                    android:textColor="@color/text_secondary"/>
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvCartSubtotal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="$0.00"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/primary"/>
+        </LinearLayout>
+
+        <!-- Botón ver carrito -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="12dp"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tvCartCount"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:text="0"
+                android:textSize="12sp"
+                android:textColor="#fff"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:background="@color/error"
+                android:visibility="gone"
+                android:layout_marginEnd="8dp"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCart"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:text="Ver Carrito"
+                android:textSize="16sp"/>
+        </LinearLayout>
     </LinearLayout>
 
 </LinearLayout>

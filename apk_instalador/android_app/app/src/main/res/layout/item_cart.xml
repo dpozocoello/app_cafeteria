@@ -1,69 +1,111 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:padding="12dp"
-    android:gravity="center_vertical">
+    android:orientation="vertical"
+    android:paddingHorizontal="4dp"
+    android:paddingTop="10dp"
+    android:paddingBottom="2dp">
 
+    <!-- Fila nombre + quitar -->
     <LinearLayout
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical">
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="6dp">
 
         <TextView
             android:id="@+id/tvCartItemName"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Nombre"
+            android:layout_weight="1"
+            android:text="Nombre del Producto"
             android:textSize="14sp"
             android:textStyle="bold"
-            android:textColor="@color/text_primary"/>
+            android:textColor="@color/text_primary"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:paddingEnd="8dp"/>
 
+        <ImageButton
+            android:id="@+id/btnRemoveItem"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@android:drawable/ic_menu_delete"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tint="@color/error"
+            android:contentDescription="Eliminar item"/>
+    </LinearLayout>
+
+    <!-- Fila stepper cantidad + precio unitario + subtotal -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="10dp">
+
+        <!-- Botón - -->
+        <ImageButton
+            android:id="@+id/btnMinus"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@android:drawable/ic_input_delete"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Reducir cantidad"/>
+
+        <!-- Cantidad -->
+        <TextView
+            android:id="@+id/tvCartQty"
+            android:layout_width="36dp"
+            android:layout_height="wrap_content"
+            android:text="1"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:gravity="center"/>
+
+        <!-- Botón + -->
+        <ImageButton
+            android:id="@+id/btnPlus"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@android:drawable/ic_input_add"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Aumentar cantidad"/>
+
+        <!-- Espaciador -->
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1"/>
+
+        <!-- Precio unitario -->
         <TextView
             android:id="@+id/tvCartItemPrice"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:text="$0.00 c/u"
+            android:textSize="12sp"
+            android:textColor="@color/text_secondary"
+            android:layout_marginEnd="8dp"/>
+
+        <!-- Subtotal -->
+        <TextView
+            android:id="@+id/tvCartItemSubtotal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:text="$0.00"
-            android:textSize="14sp"
-            android:textColor="@color/primary"
-            android:layout_marginTop="2dp"/>
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="@color/primary"/>
     </LinearLayout>
 
-    <ImageButton
-        android:id="@+id/btnMinus"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
-        android:src="@android:drawable/ic_input_delete"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Reducir cantidad"/>
-
-    <TextView
-        android:id="@+id/tvCartQty"
-        android:layout_width="32dp"
-        android:layout_height="wrap_content"
-        android:text="1"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:textColor="@color/text_primary"
-        android:gravity="center"/>
-
-    <ImageButton
-        android:id="@+id/btnPlus"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
-        android:src="@android:drawable/ic_input_add"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Aumentar cantidad"/>
-
-    <ImageButton
-        android:id="@+id/btnRemoveItem"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
-        android:src="@android:drawable/ic_menu_delete"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:layout_marginStart="8dp"
-        android:contentDescription="Eliminar item"/>
-
+    <!-- Divisor -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/divider"/>
 </LinearLayout>

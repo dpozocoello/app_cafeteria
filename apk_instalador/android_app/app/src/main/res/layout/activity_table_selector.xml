@@ -1,88 +1,106 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@color/background">
 
+    <!-- Sección tipo de servicio (surface blanca) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
+        android:background="@color/surface"
         android:padding="16dp"
-        android:background="@color/surface">
+        android:elevation="2dp">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Tipo de Servicio"
-            android:textSize="13sp"
+            android:text="TIPO DE SERVICIO"
+            android:textSize="11sp"
+            android:textStyle="bold"
             android:textColor="@color/text_secondary"
-            android:textAllCaps="true"
-            android:letterSpacing="0.08"
-            android:layout_marginBottom="8dp"/>
+            android:letterSpacing="0.1"
+            android:layout_marginBottom="10dp"/>
 
-        <RadioGroup
-            android:id="@+id/rgServiceType"
+        <!-- Chips de tipo de servicio -->
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroupServiceType"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            app:singleSelection="true"
+            app:selectionRequired="true"
+            android:layout_marginBottom="14dp">
 
-            <RadioButton android:id="@+id/rbMesa"
-                android:layout_width="0dp"
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipMesa"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Mesa"
-                android:checked="true"/>
+                android:text="🪑 Mesa"
+                android:textSize="14sp"
+                android:checked="true"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                app:checkedIconVisible="true"/>
 
-            <RadioButton android:id="@+id/rbLlevar"
-                android:layout_width="0dp"
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipLlevar"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Llevar"/>
+                android:text="🛍 Para Llevar"
+                android:textSize="14sp"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                app:checkedIconVisible="true"/>
 
-            <RadioButton android:id="@+id/rbDomicilio"
-                android:layout_width="0dp"
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipDomicilio"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Domicilio"/>
-        </RadioGroup>
+                android:text="🛵 Domicilio"
+                android:textSize="14sp"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                app:checkedIconVisible="true"/>
+        </com.google.android.material.chip.ChipGroup>
 
+        <!-- Nombre del cliente -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilCustomer"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Nombre del cliente (opcional)"
-            android:layout_marginTop="12dp">
+            app:startIconDrawable="@android:drawable/ic_menu_myplaces">
+
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etCustomerName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textPersonName"/>
+                android:inputType="textPersonName"
+                android:imeOptions="actionDone"/>
         </com.google.android.material.textfield.TextInputLayout>
 
-        <LinearLayout
-            android:id="@+id/layoutAddress"
+        <!-- Dirección de entrega (solo para Domicilio) -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilAddress"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:visibility="gone">
-            <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:hint="Dirección de entrega"
+            android:layout_marginTop="10dp"
+            android:visibility="gone"
+            app:startIconDrawable="@android:drawable/ic_dialog_map">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etAddress"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Dirección de entrega"
-                android:layout_marginTop="10dp">
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etAddress"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="textPostalAddress"/>
-            </com.google.android.material.textfield.TextInputLayout>
-        </LinearLayout>
+                android:inputType="textPostalAddress"
+                android:imeOptions="actionDone"/>
+        </com.google.android.material.textfield.TextInputLayout>
     </LinearLayout>
 
+    <!-- ProgressBar de carga de mesas -->
     <ProgressBar
         android:id="@+id/progressBar"
         android:layout_width="wrap_content"
@@ -91,34 +109,124 @@
         android:visibility="gone"
         android:layout_marginTop="16dp"/>
 
-    <TextView
-        android:id="@+id/tvTablesLabel"
+    <!-- Label de mesas (visible solo si tipo=MESA) -->
+    <LinearLayout
+        android:id="@+id/layoutTablesSection"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Seleccione una mesa disponible"
-        android:textSize="13sp"
-        android:textColor="@color/text_secondary"
-        android:textAllCaps="true"
-        android:letterSpacing="0.08"
+        android:orientation="horizontal"
         android:paddingHorizontal="16dp"
         android:paddingTop="16dp"
-        android:paddingBottom="8dp"/>
+        android:paddingBottom="8dp"
+        android:gravity="center_vertical">
 
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="SELECCIONA UNA MESA"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_secondary"
+            android:letterSpacing="0.1"/>
+
+        <!-- Leyenda de colores -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <View
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:background="@color/table_free_stroke"
+                android:layout_marginEnd="4dp"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Libre"
+                android:textSize="10sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginEnd="8dp"/>
+
+            <View
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:background="@color/table_occupied_stroke"
+                android:layout_marginEnd="4dp"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Ocupada"
+                android:textSize="10sp"
+                android:textColor="@color/text_secondary"/>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Grid de mesas -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvTables"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:padding="12dp"
+        android:padding="10dp"
         android:clipToPadding="false"/>
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnContinue"
+    <!-- Mensaje para llevar/domicilio -->
+    <LinearLayout
+        android:id="@+id/layoutNoTablesNeeded"
         android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:text="Continuar al Menú →"
-        android:textSize="16sp"
-        android:enabled="false"
-        android:layout_margin="16dp"/>
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="32dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🛍️"
+            android:textSize="48sp"
+            android:layout_marginBottom="16dp"/>
+
+        <TextView
+            android:id="@+id/tvNoTableMessage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="No se requiere mesa"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:gravity="center"
+            android:layout_marginBottom="8dp"/>
+
+        <TextView
+            android:id="@+id/tvNoTableSubtitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Continúa para seleccionar los productos"
+            android:textSize="14sp"
+            android:textColor="@color/text_secondary"
+            android:gravity="center"/>
+    </LinearLayout>
+
+    <!-- Botón continuar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/surface"
+        android:padding="16dp"
+        android:elevation="8dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnContinue"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="Continuar al Menú →"
+            android:textSize="16sp"
+            android:enabled="false"/>
+    </LinearLayout>
 
 </LinearLayout>

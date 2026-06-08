@@ -1,11 +1,11 @@
 package com.cafeteria.pos.adapters
 
-import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.cardview.widget.CardView
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.cafeteria.pos.R
 import com.cafeteria.pos.data.TableDto
@@ -32,9 +32,11 @@ class TableAdapter(
 
     override fun onBindViewHolder(holder: VH, position: Int) {
         val table = tables[position]
+        val ctx   = holder.itemView.context
+        val isSelected = selectedId == table.id
 
         holder.tvNumber.text   = table.number
-        holder.tvCapacity.text = "${table.capacity} personas"
+        holder.tvCapacity.text = "${table.capacity} pers."
         holder.tvStatus.text   = when (table.status) {
             "LIBRE"     -> "Libre"
             "OCUPADA"   -> "Ocupada"
@@ -42,25 +44,47 @@ class TableAdapter(
             else        -> table.status
         }
 
-        val (bgColor, textColor, enabled) = when (table.status) {
-            "LIBRE"     -> Triple(Color.parseColor("#dcfce7"), Color.parseColor("#16a34a"), true)
-            "OCUPADA"   -> Triple(Color.parseColor("#fee2e2"), Color.parseColor("#dc2626"), false)
-            "RESERVADA" -> Triple(Color.parseColor("#fef3c7"), Color.parseColor("#d97706"), false)
-            else        -> Triple(Color.parseColor("#f3f4f6"), Color.parseColor("#6b7280"), true)
+        data class TableColors(val bg: Int, val text: Int, val enabled: Boolean)
+
+        val colors = if (isSelected) {
+            TableColors(
+                bg = ContextCompat.getColor(ctx, R.color.table_selected_bg),
+                text = ContextCompat.getColor(ctx, R.color.primary),
+                enabled = true
+            )
+        } else {
+            when (table.status) {
+                "LIBRE"     -> TableColors(
+                    bg = ContextCompat.getColor(ctx, R.color.table_free_bg),
+                    text = ContextCompat.getColor(ctx, R.color.table_free_text),
+                    enabled = true
+                )
+                "OCUPADA"   -> TableColors(
+                    bg = ContextCompat.getColor(ctx, R.color.table_occupied_bg),
+                    text = ContextCompat.getColor(ctx, R.color.table_occupied_text),
+                    enabled = false
+                )
+                "RESERVADA" -> TableColors(
+                    bg = ContextCompat.getColor(ctx, R.color.table_reserved_bg),
+                    text = ContextCompat.getColor(ctx, R.color.table_reserved_text),
+                    enabled = false
+                )
+                else -> TableColors(
+                    bg = ContextCompat.getColor(ctx, R.color.background),
+                    text = ContextCompat.getColor(ctx, R.color.text_secondary),
+                    enabled = true
+                )
+            }
         }
 
-        holder.card.setCardBackgroundColor(bgColor)
-        holder.tvStatus.setTextColor(textColor)
-        holder.itemView.isEnabled = enabled
-        holder.itemView.alpha = if (enabled) 1f else 0.55f
+        holder.card.setCardBackgroundColor(colors.bg)
+        holder.tvStatus.setTextColor(colors.text)
+        holder.tvNumber.setTextColor(colors.text)
+        holder.card.cardElevation = if (isSelected) 6f else 2f
+        holder.itemView.isEnabled = colors.enabled
+        holder.itemView.alpha = if (colors.enabled) 1f else 0.5f
 
-        // Borde de selección
-        if (selectedId == table.id) {
-            holder.card.cardElevation = 8f
-            holder.card.setCardBackgroundColor(Color.parseColor("#dbeafe"))
-        }
-
-        if (enabled) {
+        if (colors.enabled) {
             holder.itemView.setOnClickListener {
                 val prev = selectedId
                 selectedId = table.id

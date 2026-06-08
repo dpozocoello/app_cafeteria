@@ -5,35 +5,41 @@
     android:id="@+id/cardTable"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="4dp"
-    app:cardCornerRadius="10dp"
-    app:cardElevation="2dp">
+    android:layout_margin="5dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="2dp"
+    app:cardBackgroundColor="@color/table_free_bg">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:gravity="center"
-        android:padding="12dp">
+        android:padding="14dp"
+        android:minHeight="90dp">
 
+        <!-- Número de mesa grande -->
         <TextView
             android:id="@+id/tvTableNumber"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="1"
-            android:textSize="22sp"
+            android:textSize="26sp"
             android:textStyle="bold"
-            android:textColor="@color/text_primary"/>
+            android:textColor="@color/table_free_text"
+            android:layout_marginBottom="2dp"/>
 
+        <!-- Capacidad -->
         <TextView
             android:id="@+id/tvCapacity"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="4 personas"
+            android:text="4 pers."
             android:textSize="11sp"
-            android:textColor="@color/text_secondary"
-            android:layout_marginTop="2dp"/>
+            android:textColor="@color/text_hint"
+            android:layout_marginBottom="4dp"/>
 
+        <!-- Estado de la mesa -->
         <TextView
             android:id="@+id/tvTableStatus"
             android:layout_width="wrap_content"
@@ -41,6 +47,16 @@
             android:text="Libre"
             android:textSize="11sp"
             android:textStyle="bold"
-            android:layout_marginTop="4dp"/>
+            android:textColor="@color/table_free_text"/>
+
+        <!-- Zona (si aplica) -->
+        <TextView
+            android:id="@+id/tvZone"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textSize="10sp"
+            android:textColor="@color/text_hint"
+            android:visibility="gone"/>
     </LinearLayout>
 </androidx.cardview.widget.CardView>

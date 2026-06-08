@@ -4,10 +4,14 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="6dp"
-    app:cardCornerRadius="10dp"
+    android:layout_marginHorizontal="8dp"
+    android:layout_marginVertical="5dp"
+    app:cardCornerRadius="12dp"
     app:cardElevation="2dp"
-    app:cardBackgroundColor="@color/surface">
+    app:cardBackgroundColor="@color/surface"
+    android:foreground="?android:attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -15,18 +19,20 @@
         android:orientation="vertical"
         android:padding="14dp">
 
+        <!-- Fila 1: Número de orden + hora -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:gravity="center_vertical"
+            android:layout_marginBottom="6dp">
 
             <TextView
                 android:id="@+id/tvOrderNumber"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="ORD-001"
+                android:text="ORD-2025-001"
                 android:textSize="15sp"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary"/>
@@ -36,34 +42,58 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="12:30"
-                android:textSize="13sp"
-                android:textColor="@color/text_secondary"/>
+                android:textSize="12sp"
+                android:textColor="@color/text_hint"/>
         </LinearLayout>
 
+        <!-- Fila 2: Tipo de servicio + mesa -->
         <TextView
             android:id="@+id/tvTableType"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Mesa 1"
+            android:text="🪑 Mesa 3"
             android:textSize="13sp"
             android:textColor="@color/text_secondary"
-            android:layout_marginTop="4dp"/>
+            android:layout_marginBottom="8dp"/>
 
-        <TextView
-            android:id="@+id/tvStatus"
+        <!-- Chip de estado -->
+        <LinearLayout
+            android:id="@+id/layoutStatusChip"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Pendiente"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            android:layout_marginTop="4dp"/>
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="4dp"
+            android:background="@color/status_pending_bg"
+            android:layout_marginBottom="10dp">
 
+            <View
+                android:id="@+id/statusDot"
+                android:layout_width="7dp"
+                android:layout_height="7dp"
+                android:background="@color/status_pending_dot"
+                android:layout_marginEnd="6dp"/>
+
+            <TextView
+                android:id="@+id/tvStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="PENDIENTE"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="@color/status_pending_text"
+                android:letterSpacing="0.05"/>
+        </LinearLayout>
+
+        <!-- Divisor -->
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:background="@color/divider"
-            android:layout_marginVertical="10dp"/>
+            android:layout_marginBottom="10dp"/>
 
+        <!-- Items del pedido -->
         <TextView
             android:id="@+id/tvItems"
             android:layout_width="match_parent"
@@ -72,24 +102,39 @@
             android:textSize="13sp"
             android:textColor="@color/text_secondary"
             android:maxLines="2"
-            android:ellipsize="end"/>
+            android:ellipsize="end"
+            android:lineSpacingMultiplier="1.3"
+            android:layout_marginBottom="10dp"/>
 
+        <!-- Divisor -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/divider"
+            android:layout_marginBottom="10dp"/>
+
+        <!-- Fila final: total + botón acción -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginTop="10dp">
+            android:gravity="center_vertical">
 
-            <TextView
-                android:id="@+id/tvTotal"
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Total: $0.00"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:textColor="@color/primary"/>
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvTotal"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Total: $0.00"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/primary"/>
+            </LinearLayout>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnAction"
@@ -97,6 +142,7 @@
                 android:layout_height="36dp"
                 android:text="Gestionar"
                 android:textSize="13sp"
+                android:paddingHorizontal="16dp"
                 android:visibility="gone"/>
         </LinearLayout>
     </LinearLayout>

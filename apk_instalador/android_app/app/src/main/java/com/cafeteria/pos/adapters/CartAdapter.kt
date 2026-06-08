@@ -17,12 +17,13 @@ class CartAdapter(
 ) : RecyclerView.Adapter<CartAdapter.VH>() {
 
     inner class VH(view: View) : RecyclerView.ViewHolder(view) {
-        val tvName    : TextView    = view.findViewById(R.id.tvCartItemName)
-        val tvPrice   : TextView    = view.findViewById(R.id.tvCartItemPrice)
-        val tvQty     : TextView    = view.findViewById(R.id.tvCartQty)
-        val btnMinus  : ImageButton = view.findViewById(R.id.btnMinus)
-        val btnPlus   : ImageButton = view.findViewById(R.id.btnPlus)
-        val btnRemove : ImageButton = view.findViewById(R.id.btnRemoveItem)
+        val tvName     : TextView    = view.findViewById(R.id.tvCartItemName)
+        val tvPrice    : TextView    = view.findViewById(R.id.tvCartItemPrice)
+        val tvQty      : TextView    = view.findViewById(R.id.tvCartQty)
+        val tvSubtotal : TextView    = view.findViewById(R.id.tvCartItemSubtotal)
+        val btnMinus   : ImageButton = view.findViewById(R.id.btnMinus)
+        val btnPlus    : ImageButton = view.findViewById(R.id.btnPlus)
+        val btnRemove  : ImageButton = view.findViewById(R.id.btnRemoveItem)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = VH(
@@ -33,12 +34,22 @@ class CartAdapter(
 
     override fun onBindViewHolder(holder: VH, position: Int) {
         val item = items[position]
-        holder.tvName.text  = item.name
-        holder.tvPrice.text = "$%.2f".format(item.price * item.quantity)
-        holder.tvQty.text   = item.quantity.toString()
+        holder.tvName.text     = item.name
+        holder.tvPrice.text    = "$%.2f c/u".format(item.price)
+        holder.tvQty.text      = item.quantity.toString()
+        holder.tvSubtotal.text = "$%.2f".format(item.price * item.quantity)
 
-        holder.btnMinus.setOnClickListener  { onDecrement(item.menuItemId); notifyItemChanged(position) }
-        holder.btnPlus.setOnClickListener   { onIncrement(item.menuItemId); notifyItemChanged(position) }
-        holder.btnRemove.setOnClickListener { onRemove(item.menuItemId); notifyDataSetChanged() }
+        holder.btnMinus.setOnClickListener {
+            onDecrement(item.menuItemId)
+            notifyDataSetChanged()
+        }
+        holder.btnPlus.setOnClickListener {
+            onIncrement(item.menuItemId)
+            notifyItemChanged(position)
+        }
+        holder.btnRemove.setOnClickListener {
+            onRemove(item.menuItemId)
+            notifyDataSetChanged()
+        }
     }
 }
