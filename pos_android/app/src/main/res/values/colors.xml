@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary">#1a56db</color>
+    <color name="primary_dark">#1341b0</color>
+    <color name="primary_container">#dbeafe</color>
+    <color name="secondary">#0e9f6e</color>
+    <color name="background">#f3f4f6</color>
+    <color name="surface">#ffffff</color>
+    <color name="error">#dc2626</color>
+    <color name="warning">#d97706</color>
+    <color name="text_primary">#111827</color>
+    <color name="text_secondary">#6b7280</color>
+    <color name="divider">#e5e7eb</color>
+    
+    <!-- Order States -->
+    <color name="state_pendiente_text">#92400e</color>
+    <color name="state_pendiente_bg">#fef3c7</color>
+    <color name="state_preparando_text">#9a3412</color>
+    <color name="state_preparando_bg">#ffedd5</color>
+    <color name="state_listo_text">#065f46</color>
+    <color name="state_listo_bg">#d1fae5</color>
+    <color name="state_facturado_text">#374151</color>
+    <color name="state_facturado_bg">#f3f4f6</color>
+
+    <!-- Table States -->
+    <color name="table_libre_bg">#d1fae5</color>
+    <color name="table_libre_text">#065f46</color>
+    <color name="table_ocupada_bg">#fee2e2</color>
+    <color name="table_ocupada_text">#991b1b</color>
+    <color name="table_reservada_bg">#fef3c7</color>
+    <color name="table_reservada_text">#92400e</color>
+</resources>

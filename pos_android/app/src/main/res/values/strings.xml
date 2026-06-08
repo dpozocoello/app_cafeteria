@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Cafeteria POS</string>
+    <string name="system_waiter">Sistema de Mesero</string>
+    <string name="connect">CONECTAR</string>
+    <string name="scan_qr">ESCANEAR CÓDIGO QR/BARRAS</string>
+    <string name="server_address">Dirección del servidor</string>
+    
+    <string name="login_user">Usuario</string>
+    <string name="login_password">Contraseña</string>
+    <string name="login_enter">INGRESAR</string>
+    <string name="login_change_server">Cambiar servidor</string>
+    
+    <string name="home_new_order">NUEVO PEDIDO</string>
+    <string name="home_active_orders">MIS PEDIDOS ACTIVOS</string>
+    <string name="home_logout">Cerrar Sesión</string>
+    
+    <string name="order_table_type">TIPO DE SERVICIO</string>
+    <string name="order_type_table">Mesa</string>
+    <string name="order_type_takeout">Llevar</string>
+    <string name="order_type_delivery">Domicilio</string>
+    
+    <string name="order_client_name">Nombre del cliente</string>
+    <string name="order_delivery_address">Dirección de entrega</string>
+    <string name="order_continue">CONTINUAR AL MENÚ</string>
+</resources>
