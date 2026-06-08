@@ -128,7 +128,7 @@ class SetupActivity : AppCompatActivity() {
     }
 
     private fun launchMain() {
-        startActivity(Intent(this, MainActivity::class.java))
+        startActivity(Intent(this, LoginActivity::class.java))
         finish()
     }
 

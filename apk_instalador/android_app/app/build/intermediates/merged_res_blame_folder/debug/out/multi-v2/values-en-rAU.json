@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.cafeteria.pos.app-mergeDebugResources-30:/values-en-rAU/values-en-rAU.xml",
+            "outputFile": "com.cafeteria.pos.app-mergeDebugResources-35:/values-en-rAU/values-en-rAU.xml",
             "map": [
                 {
                     "source": "C:\\Users\\ASUS TUF\\.gradle\\caches\\transforms-4\\21669e6d68ca88325e9b69b3384a8c3b\\transformed\\core-1.12.0\\res\\values-en-rAU\\values-en-rAU.xml",

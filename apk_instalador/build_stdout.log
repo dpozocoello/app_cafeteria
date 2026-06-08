@@ -4,44 +4,47 @@ Daemon will be stopped at the end of the build
 > Task :app:preDebugBuild UP-TO-DATE
 > Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
 > Task :app:checkKotlinGradlePluginConfigurationErrors
-> Task :app:dataBindingMergeDependencyArtifactsDebug
-> Task :app:generateDebugResValues
-> Task :app:generateDebugResources
-> Task :app:packageDebugResources
-> Task :app:mergeDebugResources
-> Task :app:parseDebugLocalResources
-> Task :app:checkDebugAarMetadata
-> Task :app:dataBindingGenBaseClassesDebug
-> Task :app:mapDebugSourceSetPaths
-> Task :app:createDebugCompatibleScreenManifests
-> Task :app:extractDeepLinksDebug
-> Task :app:processDebugMainManifest
-> Task :app:processDebugManifest
-> Task :app:javaPreCompileDebug
-> Task :app:mergeDebugShaders
+> Task :app:dataBindingMergeDependencyArtifactsDebug UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:dataBindingGenBaseClassesDebug UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:mergeDebugShaders UP-TO-DATE
 > Task :app:compileDebugShaders NO-SOURCE
 > Task :app:generateDebugAssets UP-TO-DATE
-> Task :app:mergeDebugAssets
-> Task :app:compressDebugAssets
-> Task :app:desugarDebugFileDependencies
-> Task :app:mergeDebugJniLibFolders
-> Task :app:checkDebugDuplicateClasses
+> Task :app:mergeDebugAssets UP-TO-DATE
+> Task :app:compressDebugAssets UP-TO-DATE
+> Task :app:desugarDebugFileDependencies UP-TO-DATE
+> Task :app:checkDebugDuplicateClasses UP-TO-DATE
+> Task :app:mergeExtDexDebug UP-TO-DATE
+> Task :app:mergeLibDexDebug UP-TO-DATE
+> Task :app:mergeDebugJniLibFolders UP-TO-DATE
 > Task :app:mergeDebugNativeLibs NO-SOURCE
-> Task :app:processDebugManifestForPackage
-> Task :app:mergeExtDexDebug
 > Task :app:stripDebugDebugSymbols NO-SOURCE
-> Task :app:mergeLibDexDebug
-> Task :app:validateSigningDebug
-> Task :app:writeDebugAppMetadata
-> Task :app:writeDebugSigningConfigVersions
-> Task :app:processDebugResources
+> Task :app:validateSigningDebug UP-TO-DATE
+> Task :app:writeDebugAppMetadata UP-TO-DATE
+> Task :app:writeDebugSigningConfigVersions UP-TO-DATE
 
 > Task :app:compileDebugKotlin
+w: file:///C:/applications/app_cafeteria/apk_instalador/android_app/app/src/main/java/com/cafeteria/pos/ActiveOrdersActivity.kt:35:13 Variable 'tvEmpty' is never used
 w: file:///C:/applications/app_cafeteria/apk_instalador/android_app/app/src/main/java/com/cafeteria/pos/MainActivity.kt:132:19 'onBackPressed(): Unit' is deprecated. Deprecated in Java
+w: file:///C:/applications/app_cafeteria/apk_instalador/android_app/app/src/main/java/com/cafeteria/pos/MenuActivity.kt:157:20 Unnecessary safe call on a non-null receiver of type ProgressBar
+w: file:///C:/applications/app_cafeteria/apk_instalador/android_app/app/src/main/java/com/cafeteria/pos/MenuActivity.kt:183:28 Unnecessary safe call on a non-null receiver of type ProgressBar
 
 > Task :app:compileDebugJavaWithJavac
 > Task :app:dexBuilderDebug
-> Task :app:mergeDebugGlobalSynthetics
+> Task :app:mergeDebugGlobalSynthetics UP-TO-DATE
 > Task :app:processDebugJavaRes
 > Task :app:mergeProjectDexDebug
 > Task :app:mergeDebugJavaResource
@@ -49,5 +52,5 @@ w: file:///C:/applications/app_cafeteria/apk_instalador/android_app/app/src/main
 > Task :app:createDebugApkListingFileRedirect
 > Task :app:assembleDebug
 
-BUILD SUCCESSFUL in 3m 33s
-36 actionable tasks: 36 executed
+BUILD SUCCESSFUL in 30s
+36 actionable tasks: 9 executed, 27 up-to-date

@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.cafeteria.pos.app-mergeDebugResources-30:/values-he/values-he.xml",
+            "outputFile": "com.cafeteria.pos.app-mergeDebugResources-35:/values-he/values-he.xml",
             "map": [
                 {
                     "source": "C:\\Users\\ASUS TUF\\.gradle\\caches\\transforms-4\\990f89a233f2556c51ff4824e8d3a61d\\transformed\\jetified-zxing-android-embedded-4.3.0\\res\\values-he\\values-he.xml",

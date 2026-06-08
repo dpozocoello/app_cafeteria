@@ -19,6 +19,8 @@
         .nav-item{padding:.7rem .9rem;border-radius:9px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:9px;transition:all .15s;font-weight:500;font-size:.88rem;}
         .nav-item:hover,.nav-item.active{background:rgba(251,191,36,.12);color:var(--accent);}
         .sidebar-bottom{margin-top:auto;padding-top:1rem;display:flex;flex-direction:column;gap:.5rem;}
+        .nav-badge{margin-left:auto;font-size:.65rem;padding:.15rem .45rem;border-radius:9999px;background:#1e293b;color:#94a3b8;white-space:nowrap;}
+        .nav-badge-alert{margin-left:auto;font-size:.65rem;padding:.15rem .45rem;border-radius:9999px;background:var(--danger);color:#fff;font-weight:700;display:none;}
         .btn-logout{background:rgba(255,255,255,.05);color:var(--muted);border:none;padding:.55rem;border-radius:8px;cursor:pointer;font-size:.82rem;width:100%;}
 
         /* ── Layout principal ── */
@@ -125,6 +127,15 @@
     <a href="/admin/reports" class="nav-item">🧾 Reportería &amp; Anulación</a>
     <a href="/admin/migration" class="nav-item">🔄 Migración BD</a>
     <a href="/audit" class="nav-item">🔍 Auditoría</a>
+    <div class="nav-section">Dispositivos</div>
+    <a href="/api/qr/server-config/page" target="_blank" class="nav-item nav-qr" id="nav-qr-link">
+      📱 Conectar Dispositivo
+      <span id="qr-badge" class="nav-badge">QR</span>
+    </a>
+    <a href="/admin/devices" class="nav-item" id="nav-devices-link">
+      🔐 Dispositivos
+      <span id="devices-pending-badge" class="nav-badge-alert"></span>
+    </a>
     <div class="sidebar-bottom">
         <button class="btn-logout" onclick="doLogout()">🚪 Cerrar Sesión</button>
     </div>
@@ -468,6 +479,30 @@ function doLogout() {
 }
 
 init();
+
+// ── Badge de dispositivos pendientes ─────────────────────────────────────────
+async function pollPendingDevices() {
+  const tk = localStorage.getItem('auth_token');
+  if (!tk) return;
+  try {
+    const r = await fetch('/api/devices', {
+      headers: { 'Authorization': `Bearer ${tk}` }
+    });
+    if (!r.ok) return;
+    const devs = await r.json();
+    const pending = devs.filter(d => d.is_active && !d.is_approved).length;
+    const badge = document.getElementById('devices-pending-badge');
+    if (!badge) return;
+    if (pending > 0) {
+      badge.textContent = pending;
+      badge.style.display = 'inline';
+    } else {
+      badge.style.display = 'none';
+    }
+  } catch(_) {}
+}
+pollPendingDevices();
+setInterval(pollPendingDevices, 15000);
 </script>
 </body>
 </html>

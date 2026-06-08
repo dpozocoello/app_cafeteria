@@ -14,7 +14,7 @@
         android:theme="@style/Theme.CafeteriaPos"
         android:usesCleartextTraffic="true">
 
-        <!-- Pantalla de configuración inicial — launcher principal -->
+        <!-- 1. Configuración del servidor (launcher) -->
         <activity
             android:name=".SetupActivity"
             android:exported="true"
@@ -25,7 +25,34 @@
             </intent-filter>
         </activity>
 
-        <!-- Pantalla principal WebView -->
+        <!-- 2. Login del mesero -->
+        <activity
+            android:name=".LoginActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- 3. Menú principal -->
+        <activity
+            android:name=".HomeActivity"
+            android:exported="false" />
+
+        <!-- 4. Selección de mesa / tipo de servicio -->
+        <activity
+            android:name=".TableSelectorActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- 5. Carta de menús y carrito -->
+        <activity
+            android:name=".MenuActivity"
+            android:exported="false" />
+
+        <!-- 6. Pedidos activos del mesero -->
+        <activity
+            android:name=".ActiveOrdersActivity"
+            android:exported="false" />
+
+        <!-- MainActivity mantenida como WebView de respaldo (sin uso en flujo principal) -->
         <activity
             android:name=".MainActivity"
             android:exported="false"

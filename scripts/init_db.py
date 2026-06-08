@@ -117,6 +117,49 @@ def init_db():
             )
             db.add(admin_user)
             print("[SEGURIDAD] Usuario 'admin' creado con hash bcrypt (costo=12)")
+        
+        # 3.2 Crear Meseros de ejemplo
+        mesero_role = db.query(Role).filter_by(name="Mesero").first()
+        if not mesero_role:
+            mesero_role = Role(name="Mesero", description="Toma de pedidos en mesa")
+            db.add(mesero_role)
+            db.flush()
+        
+        # Mesero 1
+        if not db.query(User).filter_by(username="mesero1").first():
+            mesero1 = User(
+                username="mesero1",
+                email="mesero1@cafeteria.com",
+                password_hash=bcrypt.hashpw("Mesero1#2026".encode(), bcrypt.gensalt(rounds=12)).decode(),
+                full_name="Carlos Mendoza",
+                phone="0991234567",
+                role_id=mesero_role.id,
+                branch_id=branch.id,
+                company_id=company.id,
+                is_active=True,
+                must_change_password=True,   # forzar cambio en primer login
+                password_changed_at=datetime.utcnow(),
+            )
+            db.add(mesero1)
+            print("[USUARIOS] Usuario 'mesero1' creado (Carlos Mendoza) - cambio de contrasena requerido al primer login")
+
+        # Mesero 2
+        if not db.query(User).filter_by(username="mesero2").first():
+            mesero2 = User(
+                username="mesero2",
+                email="mesero2@cafeteria.com",
+                password_hash=bcrypt.hashpw("Mesero2#2026".encode(), bcrypt.gensalt(rounds=12)).decode(),
+                full_name="Ana Lopez",
+                phone="0987654321",
+                role_id=mesero_role.id,
+                branch_id=branch.id,
+                company_id=company.id,
+                is_active=True,
+                must_change_password=True,   # forzar cambio en primer login
+                password_changed_at=datetime.utcnow(),
+            )
+            db.add(mesero2)
+            print("[USUARIOS] Usuario 'mesero2' creado (Ana Lopez) - cambio de contrasena requerido al primer login")
 
         # 3.1 Política de Seguridad por defecto (ISO 27001)
         if not db.query(SecurityPolicy).first():

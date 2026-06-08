@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema POS - Dispositivos Autorizados</title>
+    <link rel="stylesheet" href="/static/fonts/fonts.css">
+    <link rel="stylesheet" href="/static/app.css">
+    <style>
+        .device-type-badge {
+            display: inline-flex; align-items: center; gap: .35rem;
+            padding: .2rem .65rem; border-radius: 9999px; font-size: .75rem; font-weight: 600;
+        }
+        .badge-mesero { background: rgba(16,185,129,.15); color: #10b981; border: 1px solid rgba(16,185,129,.3); }
+        .badge-caja   { background: rgba(251,191,36,.15); color: #fbbf24; border: 1px solid rgba(251,191,36,.3); }
+        .status-dot   { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .dot-active   { background: var(--color-success); box-shadow: 0 0 6px var(--color-success); }
+        .dot-inactive { background: var(--color-muted); }
+        .qr-panel     { background: var(--color-card); border: 1px solid var(--color-border);
+                        border-radius: var(--radius-lg); padding: var(--space-lg); text-align: center; }
+        .qr-panel img { width: 180px; height: 180px; border-radius: var(--radius-md); margin: .75rem 0; }
+        .qr-url       { font-family: monospace; font-size: .78rem; color: var(--color-accent);
+                        background: var(--color-sidebar); padding: .4rem .8rem;
+                        border-radius: var(--radius-sm); word-break: break-all; }
+        .device-row   { display: grid;
+                        grid-template-columns: 2fr 110px 130px 1fr 90px 110px;
+                        align-items: center; gap: .75rem;
+                        padding: .85rem 1rem; border-radius: var(--radius-md);
+                        border: 1px solid var(--color-border); background: var(--color-card);
+                        margin-bottom: .5rem; transition: border-color .15s; }
+        .device-row:hover { border-color: var(--color-accent); }
+        .device-name  { font-weight: 600; color: var(--color-text); }
+        .device-meta  { font-size: .75rem; color: var(--color-muted); margin-top: .15rem; }
+        .empty-state    { text-align: center; padding: 3rem; color: var(--color-muted); }
+        .split-layout   { display: grid; grid-template-columns: 1fr 240px; gap: 1.5rem; align-items: start; }
+        .sidebar-bottom { margin-top: auto; }
+        .page-actions   { display: flex; gap: .6rem; }
+        .col-header     { display: grid;
+                          grid-template-columns: 2fr 110px 130px 1fr 90px 110px;
+                          gap: .75rem; padding: .4rem 1rem; font-size: .72rem;
+                          color: var(--color-muted); text-transform: uppercase;
+                          letter-spacing: .5px; font-weight: 600; margin-bottom: .25rem; }
+        .qr-panel-title { color: var(--color-accent); font-size: .95rem; margin-bottom: .25rem; }
+        .qr-panel-sub   { font-size: .8rem; margin-bottom: .5rem; }
+        .qr-panel-actions { margin-top: 1rem; display: flex; flex-direction: column; gap: .5rem; }
+        .qr-panel-footer  { margin-top: 1rem; padding-top: 1rem;
+                            border-top: 1px solid var(--color-border); }
+        .qr-panel-hint    { font-size: .7rem; color: var(--color-muted); line-height: 1.5; }
+        .modal-overlay  { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6);
+                          z-index: 200; align-items: center; justify-content: center; }
+        .modal-box      { background: var(--color-card); border: 1px solid var(--color-border);
+                          border-radius: var(--radius-lg); padding: 1.5rem;
+                          max-width: 360px; width: 90%; }
+        .modal-title    { color: var(--color-text); margin-bottom: .5rem; }
+        .modal-body     { color: var(--color-muted); font-size: .9rem; margin-bottom: 1.2rem; }
+        .modal-actions  { display: flex; gap: .75rem; justify-content: flex-end; }
+        @media (max-width: 900px) { .split-layout { grid-template-columns: 1fr; }
+            .device-row { grid-template-columns: 1fr 1fr; } }
+    </style>
+</head>
+<body>
+<div class="app-layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <img src="/static/logo.png" alt="logo" onerror="this.style.display='none'">
+            <div>
+                <div class="sidebar-brand" id="brand-name">Sistema POS</div>
+                <div class="sidebar-tagline">Sistema de Gestión</div>
+            </div>
+        </div>
+        <span class="nav-section-label">Operación</span>
+        <a href="/" class="nav-item">📊 Dashboard</a>
+        <a href="/pos" class="nav-item">🛒 Punto de Venta</a>
+        <a href="/caja" class="nav-item">🏧 Control de Caja</a>
+        <a href="/comandas" class="nav-item">📝 Comandas</a>
+        <span class="nav-section-label">Administración</span>
+        <a href="/inventory" class="nav-item">📦 Inventario</a>
+        <a href="/admin/recipes" class="nav-item">🧪 Recetas</a>
+        <a href="/admin/menus" class="nav-item">📋 Menús &amp; Mesas</a>
+        <span class="nav-section-label">Sistema</span>
+        <a href="/admin/users" class="nav-item">👥 Usuarios</a>
+        <a href="/admin/devices" class="nav-item active">🔐 Dispositivos</a>
+        <a href="/admin/settings" class="nav-item">⚙️ Configuración</a>
+        <a href="/admin/reports" class="nav-item">🧾 Reportería</a>
+        <a href="/audit" class="nav-item">🔍 Auditoría</a>
+        <div class="sidebar-bottom">
+            <button type="button" class="btn btn-ghost btn-block" onclick="doLogout()">🚪 Cerrar Sesión</button>
+        </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main-content">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">🔐 Dispositivos Autorizados</h1>
+                <p class="page-subtitle text-muted">
+                    Tablets y teléfonos conectados mediante QR
+                    &nbsp;·&nbsp; <span id="device-count">—</span> registrados
+                </p>
+            </div>
+            <div class="page-actions">
+                <button type="button" class="btn btn-secondary" onclick="loadDevices()">↺ Actualizar</button>
+                <a class="btn btn-primary" href="/api/qr/server-config/page" target="_blank">
+                    📱 QR de Conexión
+                </a>
+            </div>
+        </div>
+
+        <div class="split-layout">
+
+            <!-- ═══ LISTA DE DISPOSITIVOS ══════════════════════════════════════ -->
+            <div>
+                <div class="col-header">
+                    <span>Dispositivo</span>
+                    <span>Tipo</span>
+                    <span>IP / Red</span>
+                    <span>Última vez</span>
+                    <span>Estado</span>
+                    <span>Acciones</span>
+                </div>
+                <div id="device-list">
+                    <div class="empty-state">Cargando...</div>
+                </div>
+            </div>
+
+            <!-- ═══ PANEL QR ════════════════════════════════════════════════════ -->
+            <div class="qr-panel">
+                <h3 class="qr-panel-title">Conectar Dispositivo</h3>
+                <p class="text-muted qr-panel-sub">Escanea desde la tablet o teléfono</p>
+                <img id="qr-img" src="/api/qr/server-config.png" alt="QR Conexión"
+                     onerror="this.style.opacity='.3'">
+                <div class="qr-url" id="qr-url">Cargando URL...</div>
+                <div class="qr-panel-actions">
+                    <a class="btn btn-secondary btn-sm" href="/api/qr/server-config/page" target="_blank">
+                        Ver página completa
+                    </a>
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="loadDevices()">
+                        ↺ Refrescar lista
+                    </button>
+                </div>
+                <div class="qr-panel-footer">
+                    <p class="qr-panel-hint">
+                        Los dispositivos se conectan automáticamente al escanear el QR e ingresar un nombre.
+                        Solo tú puedes revocar el acceso.
+                    </p>
+                </div>
+            </div>
+
+        </div><!-- /split-layout -->
+    </main>
+</div>
+
+<!-- Modal confirmación -->
+<div id="confirm-modal" class="modal-overlay">
+    <div class="modal-box">
+        <h3 id="modal-title" class="modal-title"></h3>
+        <p id="modal-body" class="modal-body"></p>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+            <button type="button" id="modal-confirm" class="btn btn-danger">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const tk = localStorage.getItem('auth_token');
+const headers = { 'Authorization': `Bearer ${tk}`, 'Content-Type': 'application/json' };
+
+// Detectar URL del servidor para mostrarla bajo el QR
+async function loadServerUrl() {
+    try {
+        const r = await fetch('/api/qr/server-config/page');
+        const html = await r.text();
+        const m = html.match(/href="([^"]+)"[^>]*>\s*Ver página completa/);
+        // Extraer URL del texto de la página QR
+        const urlMatch = html.match(/\/device\/pair/);
+        if (urlMatch) {
+            // Construir URL con el host del servidor
+            const base = window.location.origin.replace('localhost','192.168.0.103').replace('127.0.0.1','192.168.0.103');
+            document.getElementById('qr-url').textContent = base + '/device/pair';
+        }
+    } catch(_) {}
+}
+
+async function loadDevices() {
+    if (!tk) { window.location.href = '/login'; return; }
+    try {
+        const r = await fetch('/api/devices', { headers });
+        if (r.status === 401) { window.location.href = '/login'; return; }
+        const devs = await r.json();
+        document.getElementById('device-count').textContent = devs.length;
+        renderDevices(devs);
+    } catch(e) {
+        document.getElementById('device-list').innerHTML =
+            '<div class="empty-state">Error al cargar dispositivos</div>';
+    }
+}
+
+function renderDevices(devs) {
+    const el = document.getElementById('device-list');
+    if (!devs.length) {
+        el.innerHTML = `<div class="empty-state">
+            <div style="font-size:2.5rem;margin-bottom:.5rem">📱</div>
+            <div>No hay dispositivos registrados.</div>
+            <div style="font-size:.82rem;margin-top:.3rem">
+                Escanea el QR para conectar el primer dispositivo.
+            </div>
+        </div>`;
+        return;
+    }
+
+    el.innerHTML = devs.map(d => {
+        const isActive = d.is_active;
+        const typeClass = d.device_type === 'caja' ? 'badge-caja' : 'badge-mesero';
+        const typeIcon  = d.device_type === 'caja' ? '🛒' : '🍽️';
+        const typeLabel = d.device_type === 'caja' ? 'Caja' : 'Mesero';
+        const redirect  = d.redirect_url || (d.device_type === 'caja' ? '/pos' : '/pedidos');
+        const lastSeen  = d.last_seen
+            ? new Date(d.last_seen).toLocaleString('es-EC', {dateStyle:'short', timeStyle:'short'})
+            : 'Nunca';
+        const regDate   = d.registered_at
+            ? new Date(d.registered_at).toLocaleString('es-EC', {dateStyle:'short', timeStyle:'short'})
+            : '—';
+
+        return `<div class="device-row" id="dev-${d.id}">
+            <div>
+                <div class="device-name">${esc(d.device_name)}</div>
+                <div class="device-meta">Registrado: ${regDate} &nbsp;·&nbsp; ${esc(redirect)}</div>
+            </div>
+            <div>
+                <span class="device-type-badge ${typeClass}">${typeIcon} ${typeLabel}</span>
+            </div>
+            <div style="font-size:.8rem;color:var(--color-muted);font-family:monospace">
+                ${esc(d.ip_address || '—')}
+            </div>
+            <div style="font-size:.8rem;color:var(--color-muted)">${lastSeen}</div>
+            <div>
+                <span class="status-dot ${isActive ? 'dot-active' : 'dot-inactive'}"></span>
+                <span style="font-size:.78rem;color:var(--color-muted);margin-left:.3rem">
+                    ${isActive ? 'Activo' : 'Revocado'}
+                </span>
+            </div>
+            <div style="display:flex;gap:.4rem">
+                ${isActive
+                    ? `<button class="btn btn-danger btn-sm" onclick="confirmRevoke(${d.id}, '${esc(d.device_name)}')">Revocar</button>`
+                    : `<button class="btn btn-ghost btn-sm" onclick="confirmDelete(${d.id}, '${esc(d.device_name)}')">Eliminar</button>`
+                }
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function esc(s) {
+    return String(s||'').replace(/[<>&"']/g, c =>
+        ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ── Modal helpers ──────────────────────────────────────────────────────────────
+let _pendingAction = null;
+
+function showModal(title, body, action) {
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-body').textContent  = body;
+    document.getElementById('confirm-modal').style.display = 'flex';
+    _pendingAction = action;
+    document.getElementById('modal-confirm').onclick = async () => {
+        closeModal();
+        await action();
+        loadDevices();
+    };
+}
+function closeModal() {
+    document.getElementById('confirm-modal').style.display = 'none';
+    _pendingAction = null;
+}
+
+function confirmRevoke(id, name) {
+    showModal(
+        'Revocar acceso',
+        `¿Revocar el acceso de "${name}"? El dispositivo no podrá acceder al sistema hasta que se registre nuevamente.`,
+        () => fetch(`/api/devices/${id}/revoke`, { method:'PUT', headers })
+    );
+}
+function confirmDelete(id, name) {
+    showModal(
+        'Eliminar dispositivo',
+        `¿Eliminar permanentemente el registro de "${name}"?`,
+        () => fetch(`/api/devices/${id}`, { method:'DELETE', headers })
+    );
+}
+
+// ── Logout ─────────────────────────────────────────────────────────────────────
+function doLogout() {
+    if(tk) fetch('/api/auth/logout', {method:'POST', headers});
+    localStorage.removeItem('auth_token');
+    window.location.href = '/login';
+}
+
+// ── Inicializar ────────────────────────────────────────────────────────────────
+async function init() {
+    const r = await fetch('/api/auth/me', { headers }).catch(()=>null);
+    if (!r || !r.ok) { window.location.href = '/login'; return; }
+    const user = await r.json();
+    const brand = document.getElementById('brand-name');
+    if (brand) brand.textContent = user.company_name || 'Sistema POS';
+    loadDevices();
+    loadServerUrl();
+    setInterval(loadDevices, 20000);
+}
+init();
+</script>
+</body>
+</html>

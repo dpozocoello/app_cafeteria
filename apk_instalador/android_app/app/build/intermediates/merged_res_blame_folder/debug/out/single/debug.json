@@ -1,34 +1,74 @@
 [
     {
-        "merged": "com.cafeteria.pos.app-merged_res-32:/layout_activity_setup.xml.flat",
-        "source": "com.cafeteria.pos.app-main-34:/layout/activity_setup.xml"
+        "merged": "com.cafeteria.pos.app-merged_res-37:/drawable_ic_launcher_background.xml.flat",
+        "source": "com.cafeteria.pos.app-main-39:/drawable/ic_launcher_background.xml"
     },
     {
-        "merged": "com.cafeteria.pos.app-merged_res-32:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
-        "source": "com.cafeteria.pos.app-main-34:/mipmap-anydpi-v26/ic_launcher_round.xml"
+        "merged": "com.cafeteria.pos.app-merged_res-37:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "com.cafeteria.pos.app-main-39:/mipmap-anydpi-v26/ic_launcher_round.xml"
     },
     {
-        "merged": "com.cafeteria.pos.app-merged_res-32:/layout_activity_main.xml.flat",
-        "source": "com.cafeteria.pos.app-main-34:/layout/activity_main.xml"
+        "merged": "com.cafeteria.pos.app-merged_res-37:/layout_activity_table_selector.xml.flat",
+        "source": "com.cafeteria.pos.app-main-39:/layout/activity_table_selector.xml"
     },
     {
-        "merged": "com.cafeteria.pos.app-merged_res-32:/drawable_ic_launcher_background.xml.flat",
-        "source": "com.cafeteria.pos.app-main-34:/drawable/ic_launcher_background.xml"
+        "merged": "com.cafeteria.pos.app-merged_res-37:/drawable_ic_restaurant.xml.flat",
+        "source": "com.cafeteria.pos.app-main-39:/drawable/ic_restaurant.xml"
     },
     {
-        "merged": "com.cafeteria.pos.app-merged_res-32:/drawable_ic_restaurant.xml.flat",
-        "source": "com.cafeteria.pos.app-main-34:/drawable/ic_restaurant.xml"
+        "merged": "com.cafeteria.pos.app-merged_res-37:/layout_item_order.xml.flat",
+        "source": "com.cafeteria.pos.app-main-39:/layout/item_order.xml"
     },
     {
-        "merged": "com.cafeteria.pos.app-merged_res-32:/drawable_ic_launcher_foreground.xml.flat",
-        "source": "com.cafeteria.pos.app-main-34:/drawable/ic_launcher_foreground.xml"
+        "merged": "com.cafeteria.pos.app-merged_res-37:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "com.cafeteria.pos.app-main-39:/drawable/ic_launcher_foreground.xml"
     },
     {
-        "merged": "com.cafeteria.pos.app-merged_res-32:/menu_main_menu.xml.flat",
-        "source": "com.cafeteria.pos.app-main-34:/menu/main_menu.xml"
+        "merged": "com.cafeteria.pos.app-merged_res-37:/layout_activity_menu.xml.flat",
+        "source": "com.cafeteria.pos.app-main-39:/layout/activity_menu.xml"
     },
     {
-        "merged": "com.cafeteria.pos.app-merged_res-32:/mipmap-anydpi-v26_ic_launcher.xml.flat",
-        "source": "com.cafeteria.pos.app-main-34:/mipmap-anydpi-v26/ic_launcher.xml"
+        "merged": "com.cafeteria.pos.app-merged_res-37:/layout_item_menu_product.xml.flat",
+        "source": "com.cafeteria.pos.app-main-39:/layout/item_menu_product.xml"
+    },
+    {
+        "merged": "com.cafeteria.pos.app-merged_res-37:/layout_activity_main.xml.flat",
+        "source": "com.cafeteria.pos.app-main-39:/layout/activity_main.xml"
+    },
+    {
+        "merged": "com.cafeteria.pos.app-merged_res-37:/layout_item_table.xml.flat",
+        "source": "com.cafeteria.pos.app-main-39:/layout/item_table.xml"
+    },
+    {
+        "merged": "com.cafeteria.pos.app-merged_res-37:/layout_activity_setup.xml.flat",
+        "source": "com.cafeteria.pos.app-main-39:/layout/activity_setup.xml"
+    },
+    {
+        "merged": "com.cafeteria.pos.app-merged_res-37:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "com.cafeteria.pos.app-main-39:/mipmap-anydpi-v26/ic_launcher.xml"
+    },
+    {
+        "merged": "com.cafeteria.pos.app-merged_res-37:/layout_dialog_cart.xml.flat",
+        "source": "com.cafeteria.pos.app-main-39:/layout/dialog_cart.xml"
+    },
+    {
+        "merged": "com.cafeteria.pos.app-merged_res-37:/layout_activity_login.xml.flat",
+        "source": "com.cafeteria.pos.app-main-39:/layout/activity_login.xml"
+    },
+    {
+        "merged": "com.cafeteria.pos.app-merged_res-37:/layout_item_cart.xml.flat",
+        "source": "com.cafeteria.pos.app-main-39:/layout/item_cart.xml"
+    },
+    {
+        "merged": "com.cafeteria.pos.app-merged_res-37:/layout_activity_home.xml.flat",
+        "source": "com.cafeteria.pos.app-main-39:/layout/activity_home.xml"
+    },
+    {
+        "merged": "com.cafeteria.pos.app-merged_res-37:/layout_activity_active_orders.xml.flat",
+        "source": "com.cafeteria.pos.app-main-39:/layout/activity_active_orders.xml"
+    },
+    {
+        "merged": "com.cafeteria.pos.app-merged_res-37:/menu_main_menu.xml.flat",
+        "source": "com.cafeteria.pos.app-main-39:/menu/main_menu.xml"
     }
 ]

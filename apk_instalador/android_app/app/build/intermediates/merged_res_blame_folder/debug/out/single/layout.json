@@ -1,10 +1,50 @@
 [
     {
-        "merged": "com.cafeteria.pos.app-mergeDebugResources-31:/layout/activity_main.xml",
-        "source": "com.cafeteria.pos.app-main-34:/layout/activity_main.xml"
+        "merged": "com.cafeteria.pos.app-mergeDebugResources-36:/layout/item_menu_product.xml",
+        "source": "com.cafeteria.pos.app-main-39:/layout/item_menu_product.xml"
     },
     {
-        "merged": "com.cafeteria.pos.app-mergeDebugResources-31:/layout/activity_setup.xml",
-        "source": "com.cafeteria.pos.app-main-34:/layout/activity_setup.xml"
+        "merged": "com.cafeteria.pos.app-mergeDebugResources-36:/layout/dialog_cart.xml",
+        "source": "com.cafeteria.pos.app-main-39:/layout/dialog_cart.xml"
+    },
+    {
+        "merged": "com.cafeteria.pos.app-mergeDebugResources-36:/layout/activity_table_selector.xml",
+        "source": "com.cafeteria.pos.app-main-39:/layout/activity_table_selector.xml"
+    },
+    {
+        "merged": "com.cafeteria.pos.app-mergeDebugResources-36:/layout/activity_active_orders.xml",
+        "source": "com.cafeteria.pos.app-main-39:/layout/activity_active_orders.xml"
+    },
+    {
+        "merged": "com.cafeteria.pos.app-mergeDebugResources-36:/layout/item_cart.xml",
+        "source": "com.cafeteria.pos.app-main-39:/layout/item_cart.xml"
+    },
+    {
+        "merged": "com.cafeteria.pos.app-mergeDebugResources-36:/layout/activity_home.xml",
+        "source": "com.cafeteria.pos.app-main-39:/layout/activity_home.xml"
+    },
+    {
+        "merged": "com.cafeteria.pos.app-mergeDebugResources-36:/layout/item_table.xml",
+        "source": "com.cafeteria.pos.app-main-39:/layout/item_table.xml"
+    },
+    {
+        "merged": "com.cafeteria.pos.app-mergeDebugResources-36:/layout/activity_main.xml",
+        "source": "com.cafeteria.pos.app-main-39:/layout/activity_main.xml"
+    },
+    {
+        "merged": "com.cafeteria.pos.app-mergeDebugResources-36:/layout/activity_menu.xml",
+        "source": "com.cafeteria.pos.app-main-39:/layout/activity_menu.xml"
+    },
+    {
+        "merged": "com.cafeteria.pos.app-mergeDebugResources-36:/layout/activity_login.xml",
+        "source": "com.cafeteria.pos.app-main-39:/layout/activity_login.xml"
+    },
+    {
+        "merged": "com.cafeteria.pos.app-mergeDebugResources-36:/layout/item_order.xml",
+        "source": "com.cafeteria.pos.app-main-39:/layout/item_order.xml"
+    },
+    {
+        "merged": "com.cafeteria.pos.app-mergeDebugResources-36:/layout/activity_setup.xml",
+        "source": "com.cafeteria.pos.app-main-39:/layout/activity_setup.xml"
     }
 ]

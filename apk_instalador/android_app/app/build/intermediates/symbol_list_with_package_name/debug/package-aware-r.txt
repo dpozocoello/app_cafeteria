@@ -1106,6 +1106,7 @@ attr suffixText
 attr suffixTextAppearance
 attr suffixTextColor
 attr suggestionRowLayout
+attr swipeRefreshLayoutProgressSpinnerBackgroundColor
 attr switchMinWidth
 attr switchPadding
 attr switchStyle
@@ -2113,6 +2114,7 @@ color text_primary
 color text_secondary
 color tooltip_background_dark
 color tooltip_background_light
+color warning
 color zxing_custom_possible_result_points
 color zxing_custom_result_view
 color zxing_custom_viewfinder_laser
@@ -3209,13 +3211,26 @@ id bounce
 id bounceBoth
 id bounceEnd
 id bounceStart
+id btnAction
+id btnAddToCart
+id btnCart
 id btnConnect
+id btnContinue
+id btnLogin
+id btnLogout
+id btnMinus
+id btnMyOrders
+id btnNewOrder
+id btnPlus
+id btnRemoveItem
 id btnScanQR
 id buttonPanel
 id cache_measures
 id callMeasure
 id cancel_button
+id cardTable
 id carryVelocity
+id cartProgress
 id center
 id centerCrop
 id centerInside
@@ -3292,7 +3307,11 @@ id end
 id endToStart
 id enterAlways
 id enterAlwaysCollapsed
+id etAddress
+id etCustomerName
+id etPassword
 id etServerUrl
+id etUsername
 id exitUntilCollapsed
 id expand_activities_button
 id expanded_menu
@@ -3315,6 +3334,7 @@ id frost
 id fullscreen_header
 id ghost_view
 id ghost_view_holder
+id glide_custom_view_target_tag
 id gone
 id graph
 id graph_wrap
@@ -3340,12 +3360,15 @@ id indeterminate
 id info
 id invisible
 id inward
+id is_pooling_container_tag
 id italic
 id item_touch_helper_previous_elevation
+id ivProductImage
 id jumpToEnd
 id jumpToStart
 id labeled
 id layout
+id layoutAddress
 id left
 id leftToRight
 id legacy
@@ -3464,6 +3487,7 @@ id pathRelative
 id peekHeight
 id percent
 id pin
+id pooling_container_listener_holder_tag
 id position
 id postLayout
 id pressed
@@ -3472,15 +3496,23 @@ id progress_circular
 id progress_horizontal
 id radio
 id ratio
+id rbDomicilio
+id rbLlevar
+id rbMesa
 id rectangles
 id report_drawn
 id reverseSawtooth
+id rgServiceType
 id right
 id rightToLeft
 id right_icon
 id right_side
 id rounded
 id row_index_key
+id rvCartItems
+id rvOrders
+id rvProducts
+id rvTables
 id save_non_transition_alpha
 id save_overlay_view
 id sawtooth
@@ -3542,6 +3574,8 @@ id stretch
 id submenuarrow
 id submit_area
 id supportScrollUp
+id swipeRefresh
+id tabMenus
 id tabMode
 id tag_accessibility_actions
 id tag_accessibility_clickable_spans
@@ -3572,6 +3606,7 @@ id textinput_helper_text
 id textinput_placeholder
 id textinput_prefix_text
 id textinput_suffix_text
+id tilCustomer
 id tilServerUrl
 id time
 id title
@@ -3589,7 +3624,29 @@ id transition_position
 id transition_scene_layoutid_cache
 id transition_transform
 id triangle
+id tvCapacity
+id tvCartCount
+id tvCartItemName
+id tvCartItemPrice
+id tvCartQty
+id tvCartTotal
+id tvCategory
+id tvChangeServer
+id tvEmpty
+id tvError
+id tvItems
+id tvOrderNumber
+id tvPrice
+id tvProductName
+id tvServer
 id tvStatus
+id tvTableNumber
+id tvTableStatus
+id tvTableType
+id tvTablesLabel
+id tvTime
+id tvTotal
+id tvWelcome
 id unchecked
 id uniform
 id unlabeled
@@ -3741,8 +3798,13 @@ layout abc_search_dropdown_item_icons_2line
 layout abc_search_view
 layout abc_select_dialog_material
 layout abc_tooltip
+layout activity_active_orders
+layout activity_home
+layout activity_login
 layout activity_main
+layout activity_menu
 layout activity_setup
+layout activity_table_selector
 layout custom_dialog
 layout design_bottom_navigation_item
 layout design_bottom_sheet_dialog
@@ -3759,8 +3821,13 @@ layout design_navigation_menu
 layout design_navigation_menu_item
 layout design_text_input_end_icon
 layout design_text_input_start_icon
+layout dialog_cart
 layout ime_base_split_test_activity
 layout ime_secondary_split_test_activity
+layout item_cart
+layout item_menu_product
+layout item_order
+layout item_table
 layout m3_alert_dialog
 layout m3_alert_dialog_actions
 layout m3_alert_dialog_title
@@ -3875,12 +3942,15 @@ string call_notification_hang_up_action
 string call_notification_incoming_text
 string call_notification_ongoing_text
 string call_notification_screening_text
+string cart_empty
 string character_counter_content_description
 string character_counter_overflowed_content_description
 string character_counter_pattern
 string clear_text_end_icon_content_description
+string confirm_order
 string define_zxingandroidembedded
 string error_a11y_label
+string error_connection
 string error_icon_content_description
 string exposed_dropdown_menu_content_description
 string fab_transformation_scrim_behavior
@@ -3897,6 +3967,7 @@ string library_zxingandroidembedded_libraryVersion
 string library_zxingandroidembedded_libraryWebsite
 string library_zxingandroidembedded_licenseId
 string library_zxingandroidembedded_repositoryLink
+string login_title
 string m3_exceed_max_badge_text_suffix
 string m3_ref_typeface_brand_medium
 string m3_ref_typeface_brand_regular
@@ -3935,6 +4006,7 @@ string material_timepicker_minute
 string material_timepicker_pm
 string material_timepicker_select_time
 string material_timepicker_text_input_mode_description
+string menu_title
 string mtrl_badge_numberless_content_description
 string mtrl_checkbox_button_icon_path_checked
 string mtrl_checkbox_button_icon_path_group_name
@@ -3997,6 +4069,9 @@ string mtrl_switch_track_decoration_path
 string mtrl_switch_track_path
 string mtrl_timepicker_cancel
 string mtrl_timepicker_confirm
+string my_orders
+string new_order
+string no_orders
 string password_toggle_content_description
 string path_password_eye
 string path_password_eye_mask_strike_through
@@ -4006,6 +4081,7 @@ string search_menu_title
 string searchbar_scrolling_view_behavior
 string searchview_clear_text_content_description
 string searchview_navigation_content_description
+string select_table
 string side_sheet_accessibility_pane_title
 string side_sheet_behavior
 string status_bar_notification_info_overflow
@@ -5265,6 +5341,7 @@ styleable State android_id constraints
 styleable StateListDrawable android_dither android_visible android_variablePadding android_constantSize android_enterFadeDuration android_exitFadeDuration
 styleable StateListDrawableItem android_drawable
 styleable StateSet defaultState
+styleable SwipeRefreshLayout swipeRefreshLayoutProgressSpinnerBackgroundColor
 styleable SwitchCompat android_textOn android_textOff android_thumb showText splitTrack switchMinWidth switchPadding switchTextAppearance thumbTextPadding thumbTint thumbTintMode track trackTint trackTintMode
 styleable SwitchMaterial useMaterialThemeColors
 styleable TabItem android_icon android_layout android_text

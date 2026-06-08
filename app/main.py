@@ -7,10 +7,13 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from .database import get_db, engine
-from .models.core import Base, Branch, User, AuditLog, Company, EmissionPoint
+from .models.core import Base, Branch, User, AuditLog, EmissionPoint
+from .models.core import Company  # noqa: F401  — registra modelo en Base.metadata
 from .models.sales import Sale, SaleDetail, SalePayment, TaxParameter
-from .models.expenses import Expense, ExpenseCategory
-from .models.operations import Menu, MenuItem, Table, ServiceConfig
+from .models.expenses import Expense
+from .models.expenses import ExpenseCategory  # noqa: F401
+from .models.operations import Menu
+from .models.operations import MenuItem, Table, ServiceConfig  # noqa: F401
 from .schemas import SaleCreate, SaleResponse, ExpenseCreate
 from .services.inventory_service import InventoryService
 from .services.sri_service import SRIService
@@ -29,6 +32,8 @@ from .routers import orders as orders_router
 from .routers import customers as customers_router
 from .routers import billing_reports as billing_reports_router
 from .routers import images as images_router
+from .routers import devices as devices_router
+from .models import devices as _device_models          # noqa: F401
 from .routers import cash as cash_router
 from .routers import accounting as accounting_router
 from .routers import banking as banking_router
@@ -96,6 +101,8 @@ async def check_licensing_middleware(request: Request, call_next):
     if (
         path.startswith("/static") or
         path.startswith("/api/auth") or
+        path.startswith("/device/") or   # flujo de pareado de dispositivos
+        path == "/device/pair" or
         path == "/login" or
         path == "/activate" or
         path == "/api/activate" or
@@ -111,6 +118,57 @@ async def check_licensing_middleware(request: Request, call_next):
             # Trial expiró y no está activado -> Redirigir a activación
             return RedirectResponse(url="/activate")
             
+    return await call_next(request)
+
+
+@app.middleware("http")
+async def device_auth_middleware(request: Request, call_next):
+    """
+    Protege /pedidos y /device/* para dispositivos no autorizados.
+    - /pedidos: acepta JWT de usuario O cookie de dispositivo aprobado.
+    - /device/pair y /device/pair/status/*: siempre accesibles (flujo de registro).
+    - Todo lo demás: no se toca.
+    """
+    path = request.url.path
+
+    # Rutas del flujo de pareado: siempre públicas
+    if (
+        path == "/device/pair"
+        or path.startswith("/device/pair/status/")
+        or path.startswith("/static")
+        or path.startswith("/api/auth")
+        or path.startswith("/api/devices")
+        or path.startswith("/api/qr")
+        or path == "/login"
+        or path == "/activate"
+    ):
+        return await call_next(request)
+
+    # Proteger /pedidos (mesero) y /pos (caja): JWT de usuario O cookie de dispositivo
+    if path in ("/pedidos", "/pos") or path.startswith("/pedidos"):
+        # ① Verificar JWT en Authorization header (acceso de admin/usuario desde browser)
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            from .services.auth_service import decode_token
+            payload = decode_token(auth_header.split(" ", 1)[1])
+            if payload:
+                return await call_next(request)
+
+        # ② Verificar cookie de dispositivo aprobado
+        from .database import SessionLocal
+        from .routers.devices import validate_device_cookie
+        db = SessionLocal()
+        try:
+            device = validate_device_cookie(request, db)
+        finally:
+            db.close()
+
+        if device:
+            return await call_next(request)
+
+        # Sin autenticación válida → redirigir al flujo de pareado
+        return RedirectResponse(url="/device/pair")
+
     return await call_next(request)
 
 
@@ -149,6 +207,15 @@ def startup_db_migration():
         safe_alter(conn, "sales", "journal_entry_id",         "INTEGER")
         # Expenses: cuenta contable por categoría
         safe_alter(conn, "expense_categories", "accounting_account_code", "VARCHAR(20)")
+        # Devices: tipo de dispositivo (mesero / caja)
+        safe_alter(conn, "device_sessions", "device_type", "VARCHAR(20) DEFAULT 'mesero'")
+        # Aprobar todos los dispositivos activos (se eliminó el flujo de aprobación manual)
+        try:
+            conn.execute(text(
+                "UPDATE device_sessions SET is_approved=1 WHERE is_active=1 AND is_approved=0"
+            ))
+        except Exception:
+            pass
 
     # 3. Seed Plan de Cuentas (solo si tabla vacía)
     db = SessionLocal()
@@ -177,6 +244,7 @@ app.include_router(orders_router.router)
 app.include_router(customers_router.router)
 app.include_router(billing_reports_router.router)
 app.include_router(images_router.router)
+app.include_router(devices_router.router)
 app.include_router(cash_router.router)
 app.include_router(accounting_router.router)
 app.include_router(banking_router.router)
@@ -285,11 +353,17 @@ def get_admin_tables_ui():
 def get_pedidos_ui():
     template_path = os.path.join(os.path.dirname(__file__), "templates", "pedidos.html")
     with open(template_path, "r", encoding="utf-8") as f:
-        return f.read()
+        return HTMLResponse(f.read())
 
 @app.get("/admin/profiles", response_class=HTMLResponse)
 def get_profiles_ui():
     template_path = os.path.join(os.path.dirname(__file__), "templates", "admin_profiles.html")
+    with open(template_path, "r", encoding="utf-8") as f:
+        return f.read()
+
+@app.get("/admin/devices", response_class=HTMLResponse)
+def get_devices_ui():
+    template_path = os.path.join(os.path.dirname(__file__), "templates", "admin_devices.html")
     with open(template_path, "r", encoding="utf-8") as f:
         return f.read()
 

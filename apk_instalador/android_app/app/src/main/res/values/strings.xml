@@ -3,4 +3,13 @@
     <string name="app_name">Cafetería POS</string>
     <string name="action_reload">Recargar</string>
     <string name="action_settings">Cambiar servidor</string>
+    <string name="login_title">Módulo Mesero</string>
+    <string name="new_order">Nuevo Pedido</string>
+    <string name="my_orders">Mis Pedidos Activos</string>
+    <string name="select_table">Seleccionar Mesa</string>
+    <string name="menu_title">Carta de Menú</string>
+    <string name="confirm_order">Confirmar Pedido</string>
+    <string name="cart_empty">El carrito está vacío</string>
+    <string name="no_orders">Sin pedidos activos</string>
+    <string name="error_connection">Error de conexión al servidor</string>
 </resources>

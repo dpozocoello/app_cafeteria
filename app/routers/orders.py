@@ -4,15 +4,17 @@ Permite crear pedidos por mesa, para llevar o domicilio SIN facturar.
 Los pedidos pasan a la pantalla KDS (comandas) para preparación.
 """
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, date
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-
 from ..database import get_db
 from ..models.operations import Table, Menu, ServiceConfig
 from ..models.inventory import Product
 from ..models.sales import Sale, SaleDetail
+from ..models.core import User, AuditLog
+from ..services.auth_service import decode_token
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 router = APIRouter(prefix="/api/orders", tags=["Toma de Pedidos"])
 
@@ -34,6 +36,20 @@ class OrderCreate(BaseModel):
     items: List[OrderItem]
     user_id: int = 1
     branch_id: int = 1
+
+
+# ─── Helper: Obtener usuario actual ─────────────────────────────────────────────
+bearer = HTTPBearer(auto_error=False)
+
+def get_current_user_id(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer)
+) -> int:
+    if not credentials:
+        raise HTTPException(status_code=401, detail="Token requerido")
+    payload = decode_token(credentials.credentials)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Token inválido o expirado")
+    return int(payload["sub"])
 
 
 # ─── Endpoints ────────────────────────────────────────────────────────────────
@@ -150,6 +166,16 @@ def create_order(data: OrderCreate, db: Session = Depends(get_db)):
         t = db.get(Table, data.table_id)
         if t:
             t.status = "OCUPADA"
+    
+    # Crear registro de auditoría para incentivos del mesero
+    if data.table_id or data.service_type == "MESA":
+        db.add(AuditLog(
+            user_id=data.user_id,
+            action="ORDER_CREATED",
+            entity="WaiterIncentive",
+            entity_id=data.table_id,
+            new_values={"sales_amount": float(total), "branch_id": data.branch_id}
+        ))
 
     db.commit()
     db.refresh(sale)
@@ -355,3 +381,83 @@ def get_order_detail(order_id: int, db: Session = Depends(get_db)):
     if not sale:
         raise HTTPException(status_code=404, detail="Pedido no encontrado")
     return _serialize_orders([sale], db)[0]
+
+
+# ─── Endpoints de Incentivos para Meseros ───────────────────────────────────────
+
+@router.get("/waiter-incentive/me")
+def get_my_incentive_status(
+    current_user_id: int = Depends(get_current_user_id),
+    branch_id: int = 1,
+    db: Session = Depends(get_db)
+):
+    """
+    Obtiene el estado de incentivos del mesero actual.
+    Calcula mesas atendidas y ventas del día desde la tabla Sales.
+    """
+    user = db.get(User, current_user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    if not user.role or user.role.name != "Mesero":
+        raise HTTPException(status_code=403, detail="Solo los meseros pueden ver sus incentivos")
+    
+    today = date.today()
+    
+    # Calcular desempeño del día desde la tabla Sales
+    from sqlalchemy import and_
+    today_orders = db.query(Sale).filter(
+        and_(
+            Sale.user_id == current_user_id,
+            Sale.branch_id == branch_id,
+            Sale.sale_date >= datetime.combine(today, datetime.min.time()),
+            Sale.sale_date < datetime.combine(today, datetime.max.time())
+        )
+    ).all()
+    
+    tables_served = len([s for s in today_orders if s.table_id])
+    sales_amount = sum(float(s.total or 0) for s in today_orders)
+    orders_count = len(today_orders)
+    
+    # Valores por defecto para incentivos
+    daily_table_target = 20
+    daily_sales_target = 500.0
+    table_bonus_per_table = 5.0
+    sales_commission_pct = 2.0
+    
+    # Calcular ganancias
+    bonus_today = tables_served * table_bonus_per_table
+    commission_today = sales_amount * sales_commission_pct / 100
+    
+    # Progreso hacia metas
+    table_progress = min(100, (tables_served / daily_table_target * 100)) if daily_table_target > 0 else 0
+    sales_progress = min(100, (sales_amount / daily_sales_target * 100)) if daily_sales_target > 0 else 0
+    
+    return {
+        "user": {
+            "id": user.id,
+            "full_name": user.full_name,
+            "username": user.username
+        },
+        "config": {
+            "daily_table_target": daily_table_target,
+            "daily_sales_target": daily_sales_target,
+            "table_bonus_per_table": table_bonus_per_table,
+            "sales_commission_pct": sales_commission_pct
+        },
+        "today_performance": {
+            "date": today.strftime("%Y-%m-%d"),
+            "tables_served": tables_served,
+            "sales_amount": float(sales_amount),
+            "orders_count": orders_count
+        },
+        "earnings": {
+            "bonus_today": float(bonus_today),
+            "commission_today": float(commission_today),
+            "total_earned": float(bonus_today + commission_today)
+        },
+        "progress": {
+            "table_progress_pct": round(table_progress, 1),
+            "sales_progress_pct": round(sales_progress, 1)
+        }
+    }

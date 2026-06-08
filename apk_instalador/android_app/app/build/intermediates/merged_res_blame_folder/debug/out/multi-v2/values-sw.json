@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.cafeteria.pos.app-mergeDebugResources-30:/values-sw/values-sw.xml",
+            "outputFile": "com.cafeteria.pos.app-mergeDebugResources-35:/values-sw/values-sw.xml",
             "map": [
                 {
                     "source": "C:\\Users\\ASUS TUF\\.gradle\\caches\\transforms-4\\e46189f34bfed7967aaeca6b2c80839e\\transformed\\appcompat-1.6.1\\res\\values-sw\\values-sw.xml",

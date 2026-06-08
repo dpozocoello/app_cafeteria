@@ -5,10 +5,11 @@
     <color name="primary_container">#dbeafe</color>
     <color name="on_primary">#ffffff</color>
     <color name="secondary">#0e9f6e</color>
-    <color name="background">#f9fafb</color>
+    <color name="background">#f3f4f6</color>
     <color name="surface">#ffffff</color>
     <color name="error">#dc2626</color>
     <color name="success">#16a34a</color>
+    <color name="warning">#d97706</color>
     <color name="text_primary">#111827</color>
     <color name="text_secondary">#6b7280</color>
     <color name="divider">#e5e7eb</color>
