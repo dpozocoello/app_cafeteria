@@ -82,7 +82,7 @@ class MenuActivity : AppCompatActivity() {
         val count = CartManager.getTotalItems()
         val total = CartManager.getTotal()
         
-        binding.tvCartSummary.text = "🛒 $count items        $String.format(\"%.2f\", total)"
+        binding.tvCartSummary.text = "🛒 $count items        $${String.format("%.2f", total)}"
         binding.btnViewCart.text = "VER CARRITO ($count)"
         binding.bottomBar.visibility = if (count > 0) View.VISIBLE else View.GONE
     }

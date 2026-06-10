@@ -26,7 +26,7 @@ class MenuProductAdapter(private val onAddClick: (MenuItemDto) -> Unit) : Recycl
 
     override fun getItemCount() = items.size
 
-    inner class ViewHolder(private val binding: ItemMenuProductBinding) : RecyclerView.Adapter.ViewHolder(binding.root) {
+    inner class ViewHolder(private val binding: ItemMenuProductBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(item: MenuItemDto) {
             binding.tvProductName.text = item.name
             binding.tvProductDesc.text = item.description ?: ""

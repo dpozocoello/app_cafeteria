@@ -85,7 +85,7 @@ class OrderDetailActivity : AppCompatActivity() {
         binding.llItemsContainer.removeAllViews()
         for (item in order.items) {
             val tv = TextView(this).apply {
-                text = "${item.qty}x ${item.name}   -   $String.format(\"%.2f\", item.subtotal)"
+                text = "${item.qty}x ${item.name}   -   $${String.format("%.2f", item.subtotal)}"
                 textSize = 15f
                 setPadding(0, 8, 0, 8)
                 setTextColor(resources.getColor(android.R.color.black, null))

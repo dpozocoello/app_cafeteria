@@ -27,7 +27,7 @@ class OrderAdapter(private val onClick: (OrderResponseDto) -> Unit) : RecyclerVi
 
     override fun getItemCount() = items.size
 
-    inner class ViewHolder(private val binding: ItemOrderBinding) : RecyclerView.Adapter.ViewHolder(binding.root) {
+    inner class ViewHolder(private val binding: ItemOrderBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(order: OrderResponseDto) {
             binding.tvOrderNumber.text = order.invoice
             binding.tvTime.text = order.time

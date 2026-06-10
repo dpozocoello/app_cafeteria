@@ -32,7 +32,7 @@ class TableAdapter(private val onTableSelected: (TableDto?) -> Unit) : RecyclerV
 
     override fun getItemCount() = tables.size
 
-    inner class ViewHolder(private val binding: ItemTableBinding) : RecyclerView.Adapter.ViewHolder(binding.root) {
+    inner class ViewHolder(private val binding: ItemTableBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(table: TableDto, isSelected: Boolean) {
             binding.tvTableNumber.text = table.number.toString()
             binding.tvCapacity.text = "${table.capacity} p"
@@ -51,7 +51,7 @@ class TableAdapter(private val onTableSelected: (TableDto?) -> Unit) : RecyclerV
                     card.isClickable = true
                     card.setOnClickListener {
                         val prevSelected = selectedPosition
-                        selectedPosition = adapterPosition
+                        selectedPosition = bindingAdapterPosition
                         notifyItemChanged(prevSelected)
                         notifyItemChanged(selectedPosition)
                         onTableSelected(table)
@@ -59,7 +59,7 @@ class TableAdapter(private val onTableSelected: (TableDto?) -> Unit) : RecyclerV
 
                     if (isSelected) {
                         card.strokeWidth = 6
-                        card.strokeColor = ContextCompat.getColor(context, R.color.md_theme_primary)
+                        card.strokeColor = Color.parseColor("#1a56db")
                     } else {
                         card.strokeWidth = 0
                     }

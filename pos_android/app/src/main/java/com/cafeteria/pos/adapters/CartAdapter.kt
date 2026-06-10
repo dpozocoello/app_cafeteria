@@ -29,7 +29,7 @@ class CartAdapter(
 
     override fun getItemCount() = items.size
 
-    inner class ViewHolder(private val binding: ItemCartBinding) : RecyclerView.Adapter.ViewHolder(binding.root) {
+    inner class ViewHolder(private val binding: ItemCartBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(pair: Pair<MenuItemDto, Int>) {
             val (item, qty) = pair
             binding.tvProductName.text = item.name

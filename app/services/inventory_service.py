@@ -82,12 +82,16 @@ class InventoryService:
         
         new_balance = current_balance + qty_to_store
 
+        product = db.get(Product, product_id)
+        cost_price = product.cost_price if product else 0.0
+
         movement = InventoryMovement(
             product_id=product_id,
             branch_id=branch_id,
             user_id=user_id,
             type=type,
             quantity=qty_to_store,
+            unit_cost=cost_price,
             balance_after=new_balance,
             reference_id=reference_id,
             reference_type=reference_type,
