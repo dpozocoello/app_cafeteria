@@ -41,6 +41,17 @@ class TableSelectorActivity : AppCompatActivity() {
         binding.rvTables.layoutManager = GridLayoutManager(this, 3)
         binding.rvTables.adapter = adapter
 
+        // QR Scanner button
+        binding.btnScanQr.setOnClickListener {
+            val prefs = getSharedPreferences("pos_prefs", Context.MODE_PRIVATE)
+            val serverUrl = prefs.getString("server_url", "") ?: ""
+            val intent = Intent(this, QRScannerActivity::class.java).apply {
+                putExtra("server_url", serverUrl)
+                putExtra("table_name", selectedTable?.number?.toString() ?: "")
+            }
+            startActivity(intent)
+        }
+
         binding.cgServiceType.setOnCheckedStateChangeListener { group, checkedIds ->
             if (checkedIds.isEmpty()) {
                 binding.chipMesa.isChecked = true

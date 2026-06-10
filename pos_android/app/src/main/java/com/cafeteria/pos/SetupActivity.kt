@@ -22,6 +22,12 @@ class SetupActivity : AppCompatActivity() {
         binding = ActivitySetupBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        val prefs = getSharedPreferences("pos_prefs", android.content.Context.MODE_PRIVATE)
+        val savedUrl = prefs.getString("server_url", "") ?: ""
+        if (savedUrl.isNotEmpty()) {
+            binding.etServerUrl.setText(savedUrl)
+        }
+
         binding.btnConnect.setOnClickListener {
             val url = binding.etServerUrl.text.toString()
             if (url.isEmpty()) {
@@ -46,7 +52,6 @@ class SetupActivity : AppCompatActivity() {
                             binding.tvStatus.setTextColor(getColor(android.R.color.holo_green_dark))
                             Toast.makeText(this@SetupActivity, "Servidor detectado", Toast.LENGTH_SHORT).show()
                             
-                            val prefs = getSharedPreferences("pos_prefs", android.content.Context.MODE_PRIVATE)
                             prefs.edit().putString("server_url", url).apply()
                             
                             startActivity(Intent(this@SetupActivity, LoginActivity::class.java))
@@ -64,6 +69,18 @@ class SetupActivity : AppCompatActivity() {
                         binding.tvStatus.setTextColor(getColor(android.R.color.holo_red_dark))
                     }
                 }
+            }
+        }
+
+        binding.btnScanQr.setOnClickListener {
+            if (savedUrl.isNotEmpty()) {
+                val intent = Intent(this, QRScannerActivity::class.java).apply {
+                    putExtra("server_url", savedUrl)
+                    putExtra("is_pairing", true)
+                }
+                startActivity(intent)
+            } else {
+                Toast.makeText(this, "Ingrese la URL del servidor primero", Toast.LENGTH_SHORT).show()
             }
         }
     }
