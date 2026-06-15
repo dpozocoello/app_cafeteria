@@ -17,7 +17,23 @@ class TableAdapter(private val onTableSelected: (TableDto?) -> Unit) : RecyclerV
 
     fun setTables(newTables: List<TableDto>) {
         tables = newTables
+        selectedPosition = -1
         notifyDataSetChanged()
+    }
+
+    fun setSelectedTableId(tableId: Int) {
+        val pos = tables.indexOfFirst { it.id == tableId }
+        if (pos != -1) {
+            val prevSelected = selectedPosition
+            selectedPosition = pos
+            if (prevSelected != -1) notifyItemChanged(prevSelected)
+            notifyItemChanged(selectedPosition)
+            onTableSelected(tables[selectedPosition])
+        }
+    }
+
+    fun getTableById(tableId: Int): TableDto? {
+        return tables.find { it.id == tableId }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {

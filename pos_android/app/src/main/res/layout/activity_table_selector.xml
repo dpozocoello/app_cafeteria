@@ -23,66 +23,83 @@
             app:navigationIcon="@android:drawable/ic_menu_revert" />
     </com.google.android.material.appbar.AppBarLayout>
 
+    <!-- Tipo de servicio - Cards con iconos -->
     <TextView
         android:id="@+id/tvServiceTypeLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:text="TIPO DE SERVICIO"
-        android:textSize="12sp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:text="Tipo de Servicio"
+        android:textSize="14sp"
         android:textStyle="bold"
-        android:textColor="#6b7280"
+        android:textColor="#f8fafc"
         app:layout_constraintTop_toBottomOf="@id/appBarLayout"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <com.google.android.material.chip.ChipGroup
-        android:id="@+id/cgServiceType"
-        android:layout_width="match_parent"
+    <!-- Chip Mesa con icono -->
+    <com.google.android.material.chip.Chip
+        android:id="@+id/chipMesa"
+        style="@style/Widget.Material3.Chip.Filter"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="16dp"
-        app:singleSelection="true"
-        app:selectionRequired="true"
-        app:layout_constraintTop_toBottomOf="@id/tvServiceTypeLabel">
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="8dp"
+        android:text="Mesa"
+        android:icon="@android:drawable/ic_menu_view"
+        android:iconTint="#fbbf24"
+        android:checked="true"
+        app:layout_constraintTop_toBottomOf="@id/tvServiceTypeLabel"
+        app:layout_constraintStart_toStartOf="parent" />
 
-        <com.google.android.material.chip.Chip
-            android:id="@+id/chipMesa"
-            style="@style/Widget.Material3.Chip.Filter"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Mesa"
-            android:checked="true" />
+    <!-- Chip Llevar con icono -->
+    <com.google.android.material.chip.Chip
+        android:id="@+id/chipLlevar"
+        style="@style/Widget.Material3.Chip.Filter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:text="Llevar"
+        android:icon="@android:drawable/ic_menu_camera"
+        android:iconTint="#10b981"
+        app:layout_constraintTop_toBottomOf="@id/tvServiceTypeLabel"
+        app:layout_constraintStart_toEndOf="@id/chipMesa" />
 
-        <com.google.android.material.chip.Chip
-            android:id="@+id/chipLlevar"
-            style="@style/Widget.Material3.Chip.Filter"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Llevar" />
+    <!-- Chip Domicilio con icono -->
+    <com.google.android.material.chip.Chip
+        android:id="@+id/chipDomicilio"
+        style="@style/Widget.Material3.Chip.Filter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:text="Domicilio"
+        android:icon="@android:drawable/ic_menu_myplaces"
+        android:iconTint="#6366f1"
+        app:layout_constraintTop_toBottomOf="@id/tvServiceTypeLabel"
+        app:layout_constraintStart_toEndOf="@id/chipLlevar" />
 
-        <com.google.android.material.chip.Chip
-            android:id="@+id/chipDomicilio"
-            style="@style/Widget.Material3.Chip.Filter"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Domicilio" />
-    </com.google.android.material.chip.ChipGroup>
-
+    <!-- Nombre del cliente -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/tilCustomerName"
         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="8dp"
+        android:layout_margin="16dp"
+        android:layout_marginTop="16dp"
         android:hint="Nombre del cliente (Opcional)">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etCustomerName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="textPersonName" />
+            android:inputType="textPersonName"
+            android:drawableStart="@android:drawable/ic_menu_account_list"
+            android:drawablePadding="8dp" />
     </com.google.android.material.textfield.TextInputLayout>
 
+    <!-- Dirección de entrega -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/tilCustomerAddress"
         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
@@ -91,62 +108,63 @@
         android:layout_marginHorizontal="16dp"
         android:layout_marginTop="8dp"
         android:hint="Dirección de entrega"
-        android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/tilCustomerName">
+        android:visibility="gone">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etCustomerAddress"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="textPostalAddress" />
+            android:inputType="textPostalAddress"
+            android:drawableStart="@android:drawable/ic_menu_myplaces"
+            android:drawablePadding="8dp" />
     </com.google.android.material.textfield.TextInputLayout>
 
+    <!-- Label mesas -->
     <TextView
         android:id="@+id/tvTablesLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:text="SELECCIONA UNA MESA"
-        android:textSize="12sp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:text="Selecciona una Mesa"
+        android:textSize="14sp"
         android:textStyle="bold"
-        android:textColor="#6b7280"
+        android:textColor="#f8fafc"
         app:layout_constraintTop_toBottomOf="@id/tilCustomerAddress"
         app:layout_constraintStart_toStartOf="parent" />
 
+    <!-- Botón escanear QR -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnScanQr"
+        style="@style/Widget.Material3.Button.OutlinedButton"
         android:layout_width="wrap_content"
         android:layout_height="48dp"
-        android:layout_margin="16dp"
-        android:text="Escanear QR de mesa"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="8dp"
+        android:text="Escanear QR"
         android:icon="@android:drawable/ic_menu_camera"
-        app:iconTint="@android:color/white"
+        app:iconTint="#fbbf24"
         app:layout_constraintTop_toBottomOf="@id/tvTablesLabel"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <ProgressBar
-        android:id="@+id/progressBar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/tvTablesLabel"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="16dp" />
-
+    <!-- Lista de mesas -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvTables"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_margin="12dp"
+        android:clipToPadding="false"
         app:layout_constraintTop_toBottomOf="@id/btnScanQr"
         app:layout_constraintBottom_toTopOf="@id/btnContinue" />
 
+    <!-- Botón continuar -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnContinue"
         android:layout_width="match_parent"
         android:layout_height="52dp"
         android:layout_margin="16dp"
         android:text="CONTINUAR AL MENÚ →"
+        android:backgroundTint="#fbbf24"
         android:enabled="false"
         app:layout_constraintBottom_toBottomOf="parent" />
 

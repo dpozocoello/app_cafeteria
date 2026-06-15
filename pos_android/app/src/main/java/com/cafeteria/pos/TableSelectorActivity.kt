@@ -48,36 +48,37 @@ class TableSelectorActivity : AppCompatActivity() {
             val intent = Intent(this, QRScannerActivity::class.java).apply {
                 putExtra("server_url", serverUrl)
                 putExtra("table_name", selectedTable?.number?.toString() ?: "")
+                putExtra("is_pairing", false)
             }
-            startActivity(intent)
+            startActivityForResult(intent, 100)
         }
 
-        binding.cgServiceType.setOnCheckedStateChangeListener { group, checkedIds ->
-            if (checkedIds.isEmpty()) {
-                binding.chipMesa.isChecked = true
-                return@setOnCheckedStateChangeListener
+        // Service type chips
+        binding.chipMesa.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                currentServiceType = "MESA"
+                binding.tilCustomerAddress.visibility = View.GONE
+                binding.rvTables.visibility = View.VISIBLE
+                binding.tvTablesLabel.visibility = View.VISIBLE
             }
-            when (checkedIds[0]) {
-                R.id.chipMesa -> {
-                    currentServiceType = "MESA"
-                    binding.tilCustomerAddress.visibility = View.GONE
-                    binding.rvTables.visibility = View.VISIBLE
-                    binding.tvTablesLabel.visibility = View.VISIBLE
-                }
-                R.id.chipLlevar -> {
-                    currentServiceType = "LLEVAR"
-                    binding.tilCustomerAddress.visibility = View.GONE
-                    binding.rvTables.visibility = View.GONE
-                    binding.tvTablesLabel.visibility = View.GONE
-                }
-                R.id.chipDomicilio -> {
-                    currentServiceType = "DOMICILIO"
-                    binding.tilCustomerAddress.visibility = View.VISIBLE
-                    binding.rvTables.visibility = View.GONE
-                    binding.tvTablesLabel.visibility = View.GONE
-                }
+        }
+
+        binding.chipLlevar.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                currentServiceType = "LLEVAR"
+                binding.tilCustomerAddress.visibility = View.GONE
+                binding.rvTables.visibility = View.GONE
+                binding.tvTablesLabel.visibility = View.GONE
             }
-            updateContinueButton()
+        }
+
+        binding.chipDomicilio.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                currentServiceType = "DOMICILIO"
+                binding.tilCustomerAddress.visibility = View.VISIBLE
+                binding.rvTables.visibility = View.GONE
+                binding.tvTablesLabel.visibility = View.GONE
+            }
         }
 
         binding.btnContinue.setOnClickListener {
@@ -145,6 +146,20 @@ class TableSelectorActivity : AppCompatActivity() {
                     binding.progressBar.visibility = View.GONE
                     Toast.makeText(this@TableSelectorActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
+            }
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == 100 && resultCode == RESULT_OK) {
+            val tableId = data?.getIntExtra("table_id", -1)
+            if (tableId != null && tableId != -1) {
+                // Buscar la mesa seleccionada y marcarla
+                adapter.setSelectedTableId(tableId)
+                selectedTable = adapter.getTableById(tableId)
+                updateContinueButton()
+                Toast.makeText(this, "Mesa $tableId seleccionada", Toast.LENGTH_SHORT).show()
             }
         }
     }
