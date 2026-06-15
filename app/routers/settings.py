@@ -38,6 +38,7 @@ class ThemeUpdate(BaseModel):
     phone:                 Optional[str] = None
     obligado_contabilidad: Optional[bool] = None
     environment:           Optional[int] = None
+    p12_password:          Optional[str] = None
 
 
 class DatabaseConfig(BaseModel):
@@ -87,7 +88,9 @@ def get_theme_settings(db: Session = Depends(get_db)):
         "phone": company.phone,
         "obligado_contabilidad": company.obligado_contabilidad,
         "environment": company.environment,
-        "logo_path": company.logo_path or "/static/logo.png"
+        "logo_path": company.logo_path or "/static/logo.png",
+        "has_p12": bool(company.p12_certificate_path),
+        "has_p12_password": bool(company.p12_password)
     }
 
 
@@ -141,6 +144,8 @@ def update_theme(data: ThemeUpdate, db: Session = Depends(get_db)):
         company.obligado_contabilidad = data.obligado_contabilidad
     if data.environment is not None:
         company.environment = data.environment
+    if data.p12_password is not None:
+        company.p12_password = data.p12_password
 
     db.commit()
     db.refresh(company)
@@ -257,6 +262,31 @@ async def upload_logo(file: UploadFile = File(...)):
     with open(dest, "wb") as f:
         shutil.copyfileobj(file.file, f)
     return {"ok": True, "message": "Logo actualizado."}
+
+
+# ─── Endpoint Certificado SRI ─────────────────────────────────────────────────
+
+@router.post("/certificate")
+async def upload_certificate(file: UploadFile = File(...), db: Session = Depends(get_db)):
+    from ..models.core import Company
+    company = db.query(Company).filter(Company.is_active == True).first()
+    if not company:
+        raise HTTPException(status_code=404, detail="Empresa no encontrada")
+
+    certs_dir = os.path.join(BASE_DIR, "app", "certs")
+    os.makedirs(certs_dir, exist_ok=True)
+    
+    # Save file with a fixed internal name
+    filename = "sri_cert.p12"
+    dest = os.path.join(certs_dir, filename)
+    
+    with open(dest, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+        
+    company.p12_certificate_path = dest
+    db.commit()
+    
+    return {"ok": True, "message": "Certificado de firma electrónica subido exitosamente."}
 
 
 # ─── Configuración de Correo SMTP ─────────────────────────────────────────────
