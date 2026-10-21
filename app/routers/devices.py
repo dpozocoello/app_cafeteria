@@ -361,11 +361,26 @@ def _render_form() -> str:
   button{width:100%;padding:.85rem;border-radius:.75rem;background:#fbbf24;color:#020617;
          font-weight:700;font-size:1rem;border:none;cursor:pointer;transition:opacity .15s}
   button:hover{opacity:.9}
+  .btn-back-link{background:none;border:none;color:#94a3b8;font-size:.9rem;cursor:pointer;
+                 display:inline-flex;align-items:center;gap:.35rem;padding:.35rem .65rem;
+                 border-radius:.5rem;transition:all .15s;text-decoration:none}
+  .btn-back-link:hover{color:#fbbf24;background:#1e293b}
+  .top-bar{display:flex;align-items:center;justify-content:flex-start;margin-bottom:.5rem}
+  .btn-secondary{width:100%;padding:.75rem;border-radius:.75rem;background:transparent;
+                 color:#94a3b8;border:1.5px solid #334155;font-weight:600;font-size:.95rem;
+                 cursor:pointer;margin-top:.6rem;transition:all .15s;display:inline-flex;
+                 align-items:center;justify-content:center;gap:.4rem}
+  .btn-secondary:hover{background:#1e293b;color:#f8fafc;border-color:#64748b}
   .hint{font-size:.75rem;color:#475569;margin-top:.75rem}
   #err{color:#ef4444;font-size:.85rem;margin-bottom:.5rem;display:none}
 </style></head>
 <body>
 <div class="card">
+  <div class="top-bar">
+    <button type="button" class="btn-back-link" onclick="goBack()" title="Regresar">
+      ← Volver
+    </button>
+  </div>
   <div class="logo">📱</div>
   <h1>Conectar al Sistema POS</h1>
   <p>Selecciona el tipo de uso y asigna un nombre a este dispositivo.</p>
@@ -386,9 +401,19 @@ def _render_form() -> str:
   <div id="err"></div>
   <input id="name" type="text" placeholder="Ej: Tablet Mesero 1" maxlength="60" autocomplete="off">
   <button onclick="register()">Conectar Dispositivo</button>
+  <button type="button" class="btn-secondary" onclick="goBack()">
+    ← Regresar
+  </button>
   <p class="hint">Solo dispositivos en la red local. Tu IP será registrada.</p>
 </div>
 <script>
+function goBack(){
+  if (window.history.length > 1 && document.referrer) {
+    window.history.back();
+  } else {
+    window.location.href = '/login';
+  }
+}
 let selectedRole = 'mesero';
 function selectRole(r){
   selectedRole = r;
@@ -438,6 +463,11 @@ def _render_waiting(device_name: str, token: str) -> str:
   .status-dot{{display:inline-block;width:8px;height:8px;border-radius:50%;
                background:#f59e0b;margin-right:6px;animation:pulse 2s ease-in-out infinite}}
   @keyframes pulse{{0%,100%{{opacity:1}}50%{{opacity:.3}}}}
+  .btn-secondary{{width:100%;padding:.75rem;border-radius:.75rem;background:transparent;
+                 color:#94a3b8;border:1.5px solid #334155;font-weight:600;font-size:.95rem;
+                 cursor:pointer;margin-top:1.2rem;transition:all .15s;display:inline-flex;
+                 align-items:center;justify-content:center;gap:.4rem}}
+  .btn-secondary:hover{{background:#1e293b;color:#f8fafc;border-color:#64748b}}
   .hint{{font-size:.75rem;color:#334155;margin-top:1rem;border-top:1px solid #1e293b;padding-top:.75rem}}
 </style></head>
 <body>
@@ -447,10 +477,18 @@ def _render_waiting(device_name: str, token: str) -> str:
   <p>Solicitud enviada para:</p>
   <div class="device-name">📱 {device_name}</div>
   <p>El administrador debe aprobar este dispositivo<br>desde el panel de control.</p>
+  <button type="button" class="btn-secondary" onclick="goBack()">← Cancelar y Volver</button>
   <p class="hint">Esta pantalla se actualizará automáticamente.<br>
      No cierres esta pestaña.</p>
 </div>
 <script>
+function goBack(){{
+  if (window.history.length > 1 && document.referrer) {{
+    window.history.back();
+  }} else {{
+    window.location.href = '/login';
+  }}
+}}
 const token = "{token}";
 async function poll(){{
   try{{

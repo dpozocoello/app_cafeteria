@@ -115,6 +115,7 @@
             <button class="tab" onclick="switchTab('emission-points', this)">🏪 Puntos de Emisión</button>
             <button class="tab" onclick="switchTab('taxes', this)">⚖️ Impuestos (IVA)</button>
             <button class="tab" onclick="switchTab('email', this)">📧 Correo SMTP</button>
+            <button class="tab" onclick="switchTab('firma-sri', this)">✒️ Firma Electrónica SRI</button>
         </div>
 
         <!-- ═══ TAB: APARIENCIA ═══════════════════════════════════════════ -->
@@ -411,6 +412,107 @@
             </div>
         </div>
 
+        <!-- ═══ TAB: FIRMA ELECTRÓNICA SRI ═══════════════════════════════════════ -->
+        <div class="tab-section" id="tab-firma-sri">
+            <div class="flex-between mb-lg">
+                <h2>✒️ Firma Electrónica SRI</h2>
+                <div class="flex gap-sm">
+                    <button class="btn btn-ghost" onclick="verifyCertificate()">🔍 Verificar Certificado</button>
+                    <button class="btn btn-primary" onclick="saveSignaturePassword()">💾 Guardar Contraseña</button>
+                </div>
+            </div>
+
+            <!-- Status Card -->
+            <div class="card mb-lg" id="card-sig-status">
+                <h3 class="mb-md">Estado Actual de la Firma</h3>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
+                    <div style="display:flex;align-items:center;gap:1rem;padding:1rem;border:1px solid var(--color-border);border-radius:var(--radius-lg)">
+                        <div id="status-p12-icon" style="font-size:2.5rem">⏳</div>
+                        <div>
+                            <div style="font-weight:700;font-size:1rem">Archivo de Firma (.p12)</div>
+                            <div class="text-muted text-sm" id="status-p12-text">Verificando...</div>
+                        </div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:1rem;padding:1rem;border:1px solid var(--color-border);border-radius:var(--radius-lg)">
+                        <div id="status-pwd-icon" style="font-size:2.5rem">⏳</div>
+                        <div>
+                            <div style="font-weight:700;font-size:1rem">Contraseña de la Firma</div>
+                            <div class="text-muted text-sm" id="status-pwd-text">Verificando...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
+                <!-- Subida del certificado -->
+                <div class="card">
+                    <h3 class="mb-md">📁 Certificado Digital (.p12 / .pfx)</h3>
+                    <p style="color:var(--color-muted);font-size:.85rem;margin-bottom:1.2rem">
+                        Sube el archivo de firma electrónica emitido por el BCE, Security Data u otra entidad certificadora autorizada.
+                        El archivo se almacenará en un directorio seguro del servidor, <strong>no accesible desde el navegador</strong>.
+                    </p>
+                    <div style="border:2px dashed var(--color-border);border-radius:var(--radius-lg);padding:2rem;text-align:center;transition:all .3s;cursor:pointer" id="drop-zone"
+                        onclick="document.getElementById('p12-file-input').click()"
+                        ondragover="event.preventDefault();this.style.borderColor='var(--color-accent)'"
+                        ondragleave="this.style.borderColor='var(--color-border)'"
+                        ondrop="handleCertDrop(event)">
+                        <div style="font-size:3rem;margin-bottom:.5rem">📜</div>
+                        <div style="font-weight:600;margin-bottom:.3rem">Arrastra tu archivo .p12 aquí</div>
+                        <div class="text-muted text-sm">o haz clic para seleccionar</div>
+                        <input type="file" id="p12-file-input" accept=".p12,.pfx" style="display:none" onchange="onCertFileSelected(this)">
+                    </div>
+                    <div id="cert-filename" style="margin-top:.8rem;font-size:.85rem;color:var(--color-muted);display:none">
+                        📎 <span id="cert-fname-text"></span>
+                    </div>
+                    <button class="btn btn-success btn-block" style="margin-top:1rem" id="btn-upload-cert" onclick="uploadCertificate()" disabled>
+                        📤 Subir Certificado al Servidor
+                    </button>
+                    <div id="cert-upload-result" style="margin-top:.8rem;display:none;padding:.8rem;border-radius:8px;font-size:.88rem"></div>
+                </div>
+
+                <!-- Contraseña de la firma -->
+                <div class="card">
+                    <h3 class="mb-md">🔑 Contraseña de la Firma</h3>
+                    <p style="color:var(--color-muted);font-size:.85rem;margin-bottom:1.2rem">
+                        Ingresa la contraseña del archivo <code>.p12</code>. Esta clave es necesaria para que el sistema firme los comprobantes electrónicos al momento de su emisión.
+                    </p>
+                    <div class="form-group mb-md">
+                        <label>Contraseña del certificado</label>
+                        <div style="position:relative">
+                            <input type="password" id="p12-password" placeholder="Contraseña del archivo .p12"
+                                style="padding-right:3rem">
+                            <button onclick="togglePwdVisibility()" style="position:absolute;right:.8rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--color-muted);font-size:1.1rem" title="Mostrar/ocultar contraseña">👁</button>
+                        </div>
+                    </div>
+                    <div class="form-group mb-md">
+                        <label>Confirmar contraseña</label>
+                        <input type="password" id="p12-password-confirm" placeholder="Repite la contraseña">
+                    </div>
+                    <div id="pwd-save-result" style="margin-top:.8rem;display:none;padding:.8rem;border-radius:8px;font-size:.88rem"></div>
+                    <div style="margin-top:1.5rem;padding:1rem;background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.25);border-radius:var(--radius-lg);font-size:.8rem;color:var(--color-muted)">
+                        ⚠️ <strong style="color:var(--color-accent)">Importante:</strong> La contraseña se almacena en la base de datos del sistema para permitir la firma automática de facturas. Asegúrate de mantener acceso seguro al servidor.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ambiente de facturación (recordatorio) -->
+            <div class="card mt-lg" style="background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.25)">
+                <div style="display:flex;align-items:center;gap:1rem">
+                    <span style="font-size:2rem">ℹ️</span>
+                    <div>
+                        <strong>Recuerda configurar el Ambiente de Facturación</strong>
+                        <p class="text-muted text-sm" style="margin-top:.3rem">
+                            El ambiente (<strong>Pruebas = 1 / Producción = 2</strong>) se configura en la pestaña <strong>🏢 Empresa y Marca</strong>.
+                            Asegúrate de que esté en <strong>Pruebas (1)</strong> mientras realizas validaciones con el SRI.
+                        </p>
+                    </div>
+                    <button class="btn btn-info" style="white-space:nowrap;flex-shrink:0" onclick="switchTab('brand', document.querySelector('.tab:nth-child(3)'))">
+                        Ir a Empresa y Marca
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- ═══ TAB: CORREO SMTP ══════════════════════════════════════════════════ -->
         <div class="tab-section" id="tab-email">
             <div class="flex-between mb-lg">
@@ -584,6 +686,7 @@ async function init() {
     loadEmissionPoints();
     loadTaxes();
     loadEmailConfig();
+    updateSignatureStatus(currentTheme);
 
     // Config DB
     const dbRes = await fetch('/api/settings/database');
@@ -982,6 +1085,129 @@ async function testEmail() {
     resultEl.innerText = d.ok ? (d.message || '✅ Conexión exitosa') : ('❌ ' + (d.error || 'Error'));
 }
 
+
+// ─── Firma Electrónica SRI ───────────────────────────────────────────────────
+function updateSignatureStatus(theme) {
+    const hasP12 = theme.has_p12;
+    const hasPwd = theme.has_p12_password;
+    document.getElementById('status-p12-icon').innerText = hasP12 ? '✅' : '❌';
+    document.getElementById('status-p12-text').innerText = hasP12
+        ? 'Certificado cargado en el servidor'
+        : 'Sin certificado — sube tu archivo .p12';
+    document.getElementById('status-pwd-icon').innerText = hasPwd ? '✅' : '❌';
+    document.getElementById('status-pwd-text').innerText = hasPwd
+        ? 'Contraseña registrada en el sistema'
+        : 'Sin contraseña — ingresa la clave del .p12';
+}
+
+async function verifyCertificate() {
+    const res = await fetch('/api/settings/theme');
+    const data = await res.json();
+    currentTheme = { ...currentTheme, ...data };
+    updateSignatureStatus(data);
+    showToast('🔍 Estado del certificado actualizado.');
+}
+
+function onCertFileSelected(input) {
+    const file = input.files[0];
+    if (!file) return;
+    document.getElementById('cert-fname-text').innerText = file.name;
+    document.getElementById('cert-filename').style.display = 'block';
+    document.getElementById('btn-upload-cert').disabled = false;
+    document.getElementById('drop-zone').style.borderColor = 'var(--color-accent)';
+}
+
+function handleCertDrop(event) {
+    event.preventDefault();
+    document.getElementById('drop-zone').style.borderColor = 'var(--color-border)';
+    const file = event.dataTransfer.files[0];
+    if (!file || (!file.name.endsWith('.p12') && !file.name.endsWith('.pfx'))) {
+        alert('Por favor selecciona un archivo .p12 o .pfx válido');
+        return;
+    }
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    const input = document.getElementById('p12-file-input');
+    input.files = dt.files;
+    onCertFileSelected(input);
+}
+
+async function uploadCertificate() {
+    const input = document.getElementById('p12-file-input');
+    if (!input.files[0]) return alert('Selecciona un archivo .p12 primero');
+    const form = new FormData();
+    form.append('file', input.files[0]);
+    const resultEl = document.getElementById('cert-upload-result');
+    resultEl.style.display = 'block';
+    resultEl.style.background = 'rgba(255,255,255,.04)';
+    resultEl.style.border = '1px solid var(--glass-border)';
+    resultEl.style.color = 'var(--color-muted)';
+    resultEl.innerText = '⏳ Subiendo certificado...';
+    const res = await fetch('/api/settings/certificate', { method: 'POST', body: form });
+    const data = await res.json();
+    if (data.ok) {
+        resultEl.style.background = 'rgba(16,185,129,.1)';
+        resultEl.style.border = '1px solid var(--color-success)';
+        resultEl.style.color = 'var(--color-success)';
+        resultEl.innerText = '✅ ' + data.message;
+        currentTheme.has_p12 = true;
+        updateSignatureStatus(currentTheme);
+        showToast('✅ Certificado subido correctamente.');
+    } else {
+        resultEl.style.background = 'rgba(239,68,68,.1)';
+        resultEl.style.border = '1px solid var(--color-danger)';
+        resultEl.style.color = 'var(--color-danger)';
+        resultEl.innerText = '❌ ' + (data.detail || 'Error al subir el certificado');
+    }
+}
+
+async function saveSignaturePassword() {
+    const pwd = document.getElementById('p12-password').value;
+    const pwdConfirm = document.getElementById('p12-password-confirm').value;
+    const resultEl = document.getElementById('pwd-save-result');
+    resultEl.style.display = 'block';
+    if (!pwd) {
+        resultEl.style.background = 'rgba(239,68,68,.1)';
+        resultEl.style.border = '1px solid var(--color-danger)';
+        resultEl.style.color = 'var(--color-danger)';
+        resultEl.innerText = '❌ Ingresa la contraseña del certificado';
+        return;
+    }
+    if (pwd !== pwdConfirm) {
+        resultEl.style.background = 'rgba(239,68,68,.1)';
+        resultEl.style.border = '1px solid var(--color-danger)';
+        resultEl.style.color = 'var(--color-danger)';
+        resultEl.innerText = '❌ Las contraseñas no coinciden';
+        return;
+    }
+    const res = await fetch('/api/settings/theme', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ p12_password: pwd })
+    });
+    const data = await res.json();
+    if (data.ok) {
+        resultEl.style.background = 'rgba(16,185,129,.1)';
+        resultEl.style.border = '1px solid var(--color-success)';
+        resultEl.style.color = 'var(--color-success)';
+        resultEl.innerText = '✅ Contraseña guardada correctamente';
+        document.getElementById('p12-password').value = '';
+        document.getElementById('p12-password-confirm').value = '';
+        currentTheme.has_p12_password = true;
+        updateSignatureStatus(currentTheme);
+        showToast('✅ Contraseña de firma actualizada.');
+    } else {
+        resultEl.style.background = 'rgba(239,68,68,.1)';
+        resultEl.style.border = '1px solid var(--color-danger)';
+        resultEl.style.color = 'var(--color-danger)';
+        resultEl.innerText = '❌ Error al guardar la contraseña';
+    }
+}
+
+function togglePwdVisibility() {
+    const input = document.getElementById('p12-password');
+    input.type = input.type === 'password' ? 'text' : 'password';
+}
 
 // Toast
 function showToast(msg, isError = false) {
