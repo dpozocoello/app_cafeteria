@@ -37,6 +37,7 @@ from .models import devices as _device_models          # noqa: F401
 from .routers import cash as cash_router
 from .routers import accounting as accounting_router
 from .routers import banking as banking_router
+from .routers import payments as payments_router
 # Nuevos modelos — necesarios para que Base.metadata los registre
 from .models import cash as _cash_models          # noqa: F401
 from .models import accounting as _acc_models     # noqa: F401
@@ -209,6 +210,34 @@ def startup_db_migration():
         safe_alter(conn, "expense_categories", "accounting_account_code", "VARCHAR(20)")
         # Devices: tipo de dispositivo (mesero / caja)
         safe_alter(conn, "device_sessions", "device_type", "VARCHAR(20) DEFAULT 'mesero'")
+        # Módulo de cobros: metadatos de formas de pago (Tabla 24 SRI)
+        safe_alter(conn, "payment_methods", "code",                  "VARCHAR(30)")
+        safe_alter(conn, "payment_methods", "category",              "VARCHAR(20)")
+        safe_alter(conn, "payment_methods", "icon",                  "VARCHAR(10)")
+        safe_alter(conn, "payment_methods", "sort_order",            "INTEGER DEFAULT 0")
+        safe_alter(conn, "payment_methods", "requires_reference",    "BOOLEAN DEFAULT 0")
+        safe_alter(conn, "payment_methods", "requires_bank_account", "BOOLEAN DEFAULT 0")
+        safe_alter(conn, "payment_methods", "requires_origin_bank",  "BOOLEAN DEFAULT 0")
+        safe_alter(conn, "payment_methods", "description",           "VARCHAR(255)")
+        # Módulo de cobros: detalle de cada pago (transferencias, tarjetas, cheques, crédito)
+        safe_alter(conn, "sale_payments", "received_amount",     "NUMERIC(12,2)")
+        safe_alter(conn, "sale_payments", "change_amount",       "NUMERIC(12,2)")
+        safe_alter(conn, "sale_payments", "bank_account_id",     "INTEGER")
+        safe_alter(conn, "sale_payments", "origin_bank",         "VARCHAR(100)")
+        safe_alter(conn, "sale_payments", "payer_name",          "VARCHAR(150)")
+        safe_alter(conn, "sale_payments", "payer_id",            "VARCHAR(20)")
+        safe_alter(conn, "sale_payments", "payment_date",        "DATETIME")
+        safe_alter(conn, "sale_payments", "bank_transaction_id", "INTEGER")
+        safe_alter(conn, "sale_payments", "card_brand",          "VARCHAR(30)")
+        safe_alter(conn, "sale_payments", "card_last4",          "VARCHAR(4)")
+        safe_alter(conn, "sale_payments", "authorization_code",  "VARCHAR(30)")
+        safe_alter(conn, "sale_payments", "installments",        "INTEGER")
+        safe_alter(conn, "sale_payments", "term_days",           "INTEGER")
+        safe_alter(conn, "sale_payments", "status",              "VARCHAR(20) DEFAULT 'REGISTRADO'")
+        safe_alter(conn, "sale_payments", "verified_at",         "DATETIME")
+        safe_alter(conn, "sale_payments", "verified_by_id",      "INTEGER")
+        safe_alter(conn, "sale_payments", "notes",               "VARCHAR(255)")
+        safe_alter(conn, "sale_payments", "created_at",          "DATETIME")
         # Aprobar todos los dispositivos activos (se eliminó el flujo de aprobación manual)
         try:
             conn.execute(text(
@@ -223,6 +252,16 @@ def startup_db_migration():
         AccountingService.seed_chart_of_accounts(db)
     except Exception as e:
         print(f"[CONTABILIDAD] Error al sembrar Plan de Cuentas: {e}")
+    finally:
+        db.close()
+
+    # 4. Catálogo de formas de pago Ecuador (Tabla 24 SRI)
+    db = SessionLocal()
+    try:
+        from .services.payment_service import PaymentService
+        PaymentService.seed_payment_methods(db)
+    except Exception as e:
+        print(f"[COBROS] Error al sembrar formas de pago: {e}")
     finally:
         db.close()
 
@@ -248,6 +287,7 @@ app.include_router(devices_router.router)
 app.include_router(cash_router.router)
 app.include_router(accounting_router.router)
 app.include_router(banking_router.router)
+app.include_router(payments_router.router)
 
 @app.get("/api/branches")
 def list_branches(db=Depends(get_db)):
@@ -592,7 +632,8 @@ def create_sale(sale_data: SaleCreate, db: Session = Depends(get_db)):
         withholding_number=sale_data.withholding_number,
         withholding_iva=sale_data.withholding_iva or Decimal(0),
         withholding_renta=sale_data.withholding_renta or Decimal(0),
-        withholding_date=sale_date if sale_data.withholding_number else None
+        withholding_date=sale_date if sale_data.withholding_number else None,
+        total=Decimal(0)
     )
     
     db.add(sale)
@@ -621,23 +662,39 @@ def create_sale(sale_data: SaleCreate, db: Session = Depends(get_db)):
     sale.tax_amount = total_tax
     sale.total = total_subtotal + total_tax
 
-    # 3. Registrar Pago
+    # 3. Registrar Pago(s) — módulo de cobros (efectivo, tarjeta, transferencia, etc.)
+    from .services.payment_service import PaymentService
+    from .schemas import SalePaymentCreate
+    from .models.sales import PaymentMethod
+
     withholding_total = Decimal(sale.withholding_iva or 0) + Decimal(sale.withholding_renta or 0)
     net_payment_amount = sale.total - withholding_total
-    
+    if net_payment_amount < 0:
+        raise HTTPException(status_code=400, detail="Las retenciones no pueden superar el total de la factura.")
+
+    payments_data = sale_data.payments
+    if not payments_data and net_payment_amount > 0:
+        # Compatibilidad: pago único por el total con el método indicado
+        payments_data = [SalePaymentCreate(
+            payment_method_id=sale_data.payment_method_id or 1,
+            amount=Decimal(net_payment_amount).quantize(Decimal("0.01")),
+        )]
+
+    sale_payments = []
     if net_payment_amount > 0:
-        payment = SalePayment(
-            sale_id=sale.id,
-            payment_method_id=sale_data.payment_method_id,
-            amount=net_payment_amount
-        )
-        db.add(payment)
-        
+        sale_payments = PaymentService.build_sale_payments(db, sale, payments_data, net_payment_amount)
+        for sp in sale_payments:
+            db.add(sp)
+        db.flush()
+        # Método principal (mayor monto) para reportes rápidos
+        main_pay = max(sale_payments, key=lambda x: Decimal(x.amount or 0))
+        sale.payment_method_id = main_pay.payment_method_id
+
     if withholding_total > 0:
-        from .models.sales import PaymentMethod
-        pm_ret = db.query(PaymentMethod).filter(PaymentMethod.name.like("%Reten%")).first()
+        pm_ret = PaymentService.get_by_code(db, "RETENCION") or \
+            db.query(PaymentMethod).filter(PaymentMethod.name.like("%Reten%")).first()
         if not pm_ret:
-            pm_ret = PaymentMethod(name="Retención", sri_code="20")
+            pm_ret = PaymentMethod(name="Retención", sri_code="20", code="RETENCION", category="RETENCION")
             db.add(pm_ret)
             db.flush()
         
@@ -645,9 +702,11 @@ def create_sale(sale_data: SaleCreate, db: Session = Depends(get_db)):
             sale_id=sale.id,
             payment_method_id=pm_ret.id,
             amount=withholding_total,
-            reference=sale.withholding_number
+            reference=sale.withholding_number,
+            status="VERIFICADO",
         )
         db.add(ret_payment)
+    db.flush()
 
     # 4. Generar Clave SRI y XML
     sale.access_key = SRIService.generate_access_key(sale, branch)
@@ -663,6 +722,13 @@ def create_sale(sale_data: SaleCreate, db: Session = Depends(get_db)):
             sale.journal_entry_id = je.id
     except Exception as e:
         print(f"[CONTABILIDAD] Asiento de venta no generado: {e}")
+
+    # 7. Transferencias / depósitos / billeteras → movimiento en la cuenta bancaria destino
+    for sp in sale_payments:
+        try:
+            PaymentService.register_bank_movement(db, sale, sp)
+        except Exception as e:
+            print(f"[BANCOS] Movimiento bancario no registrado para pago {sp.id}: {e}")
 
     db.commit()
     db.refresh(sale)

@@ -19,7 +19,10 @@ from ..models.expenses import Expense
 
 # ── Códigos de cuentas usados en asientos automáticos ──────────────────────────
 ACC_CAJA_GENERAL        = "1.1.01.001"
+ACC_BANCOS_CORRIENTE    = "1.1.01.003"
+ACC_BANCOS_AHORROS      = "1.1.01.004"
 ACC_TARJETA_LIQUIDAR    = "1.1.01.005"
+ACC_CXC_CLIENTES        = "1.1.02.001"
 ACC_IVA_COMPRAS         = "1.1.04.001"
 ACC_RETENCIONES_FAVOR   = "1.1.04.002"
 ACC_PROVEEDORES         = "2.1.01.001"
@@ -157,11 +160,21 @@ class AccountingService:
             wh_renta   = float(sale.withholding_renta or 0)
             withholding = wh_iva + wh_renta
 
-            # Determinar cuenta de cobro: efectivo vs. tarjeta
-            payment = db.query(SalePayment).filter_by(sale_id=sale.id).first()
-            pm = db.query(PaymentMethod).get(payment.payment_method_id) if payment else None
-            is_cash = not pm or pm.sri_code in CASH_SRI_CODES
-            debit_code = ACC_CAJA_GENERAL if is_cash else ACC_TARJETA_LIQUIDAR
+            # Determinar cuentas de cobro por cada forma de pago (pago mixto)
+            payments = db.query(SalePayment).filter_by(sale_id=sale.id).all()
+            debit_lines = []  # (account_code, amount, description)
+            for pay in payments:
+                pm = db.query(PaymentMethod).get(pay.payment_method_id)
+                category = AccountingService._payment_category(pm)
+                if category == "RETENCION":
+                    continue  # se registra en la línea de retenciones
+                code = AccountingService._collection_account_code(db, pay, category)
+                debit_lines.append((
+                    code,
+                    float(pay.amount or 0),
+                    f"Cobro {pm.name if pm else 'efectivo'}"
+                    f"{' ref. ' + pay.reference if pay.reference else ''} factura {sale.invoice_number}",
+                ))
 
             # Cuenta de ventas según si hay IVA
             sales_code = ACC_VENTAS_IVA if tax > 0 else ACC_VENTAS_0
@@ -185,14 +198,18 @@ class AccountingService:
             db.flush()
 
             lines = []
-            # Débito: efectivo/tarjeta por el neto cobrado
+            # Débito: una línea por forma de pago (caja, bancos, tarjetas, CxC)
             net_collected = total - withholding
-            if net_collected > 0:
+            if not debit_lines and net_collected > 0:
+                debit_lines.append((ACC_CAJA_GENERAL, net_collected, f"Cobro efectivo factura {sale.invoice_number}"))
+            for code, amount, desc in debit_lines:
+                if amount <= 0:
+                    continue
                 lines.append(JournalEntryLine(
                     entry_id=entry.id,
-                    account_id=AccountingService._account(db, debit_code).id,
-                    description=f"Cobro {'efectivo' if is_cash else 'tarjeta'} factura {sale.invoice_number}",
-                    debit=round(net_collected, 2),
+                    account_id=AccountingService._account(db, code).id,
+                    description=desc[:255],
+                    debit=round(amount, 2),
                     credit=0.0,
                 ))
             # Débito: retenciones recibidas → activo
@@ -235,6 +252,108 @@ class AccountingService:
         except Exception as e:
             print(f"[CONTABILIDAD] Error en asiento de venta {sale.id}: {e}")
             return None
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # Cuentas de cobro por forma de pago
+    # ─────────────────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def _payment_category(pm: Optional[PaymentMethod]) -> str:
+        """Categoría de la forma de pago; deduce por código SRI si falta el metadato."""
+        if not pm:
+            return "EFECTIVO"
+        if pm.category:
+            return pm.category
+        if "reten" in (pm.name or "").lower():
+            return "RETENCION"
+        return {
+            "01": "EFECTIVO", "15": "COMPENSACION", "16": "TARJETA", "17": "DINERO_ELECTRONICO",
+            "18": "TARJETA", "19": "TARJETA", "20": "TRANSFERENCIA", "21": "ENDOSO",
+        }.get(pm.sri_code or "01", "EFECTIVO")
+
+    @staticmethod
+    def _collection_account_code(db: Session, pay: SalePayment, category: str) -> str:
+        """
+        Cuenta contable de débito según la forma de cobro:
+          EFECTIVO / CHEQUE          → 1.1.01.001 Caja General (cheque en custodia hasta depósito)
+          TARJETA / PASARELA         → 1.1.01.005 Tarjetas por Liquidar
+          TRANSFERENCIA / DEPÓSITO /
+          BILLETERA / DINERO ELECTR. → Cuenta contable de la cuenta bancaria destino
+                                        (o 1.1.01.003 / 1.1.01.004 según tipo de cuenta)
+          CRÉDITO / ENDOSO           → 1.1.02.001 Cuentas por Cobrar Clientes
+          COMPENSACIÓN               → 2.1.01.001 Proveedores (cruce de cuentas)
+        """
+        if category in ("EFECTIVO", "CHEQUE"):
+            return ACC_CAJA_GENERAL
+        if category in ("TARJETA", "PASARELA"):
+            return ACC_TARJETA_LIQUIDAR
+        if category in ("TRANSFERENCIA", "DEPOSITO", "BILLETERA", "DINERO_ELECTRONICO"):
+            if pay.bank_account_id:
+                from ..models.banking import BankAccount
+                acc = db.get(BankAccount, pay.bank_account_id)
+                if acc:
+                    if acc.accounting_account_id:
+                        plan = db.get(AccountPlan, acc.accounting_account_id)
+                        if plan and plan.allows_entries:
+                            return plan.code
+                    if (acc.account_type or "").upper() == "AHORROS":
+                        return ACC_BANCOS_AHORROS
+            return ACC_BANCOS_CORRIENTE
+        if category in ("CREDITO", "ENDOSO"):
+            return ACC_CXC_CLIENTES
+        if category == "COMPENSACION":
+            return ACC_PROVEEDORES
+        return ACC_CAJA_GENERAL
+
+    @staticmethod
+    def create_payment_rejection_entry(db: Session, sale: Sale, pay: SalePayment, reason: str) -> Optional[JournalEntry]:
+        """
+        Reverso de un cobro no acreditado (transferencia falsa / revertida, cheque protestado):
+          Dr. Cuentas por Cobrar Clientes   [monto]
+            Cr. Banco / Caja / Tarjetas      [monto]
+        La deuda queda pendiente de cobro al cliente.
+        """
+        if not sale.company_id:
+            return None
+        pm = db.query(PaymentMethod).get(pay.payment_method_id)
+        category = AccountingService._payment_category(pm)
+        credit_code = AccountingService._collection_account_code(db, pay, category)
+        amount = round(float(pay.amount or 0), 2)
+        if amount <= 0 or credit_code == ACC_CXC_CLIENTES:
+            return None
+
+        now = datetime.utcnow()
+        period = AccountingService.get_or_create_period(db, sale.company_id, now)
+        entry = JournalEntry(
+            company_id=sale.company_id,
+            period_id=period.id if period else None,
+            entry_number=AccountingService.next_entry_number(db, sale.company_id, now.year),
+            entry_date=now,
+            description=f"Reverso cobro {pm.name if pm else ''} factura {sale.invoice_number}: {reason}"[:255],
+            reference=pay.reference or sale.invoice_number,
+            entry_type="AJUSTE",
+            status="APROBADO",
+            source_type="SalePayment",
+            source_id=pay.id,
+        )
+        db.add(entry)
+        db.flush()
+        db.add(JournalEntryLine(
+            entry_id=entry.id,
+            account_id=AccountingService._account(db, ACC_CXC_CLIENTES).id,
+            description=f"CxC por cobro no acreditado {sale.invoice_number}",
+            debit=amount, credit=0.0,
+        ))
+        db.add(JournalEntryLine(
+            entry_id=entry.id,
+            account_id=AccountingService._account(db, credit_code).id,
+            description=f"Reverso {pay.reference or ''}",
+            debit=0.0, credit=amount,
+        ))
+        entry.total_debit = amount
+        entry.total_credit = amount
+        db.flush()
+        return entry
 
     # ─────────────────────────────────────────────────────────────────────────
     # Asiento automático de GASTO

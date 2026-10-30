@@ -84,12 +84,34 @@ class SaleDetailCreate(BaseModel):
     discount: Decimal = Decimal(0)
 
 
+class SalePaymentCreate(BaseModel):
+    """Forma de pago aplicada a una venta (admite pago mixto)."""
+    payment_method_id: int
+    amount: Decimal                              # Efectivo: monto entregado por el cliente (se calcula vuelto)
+    reference: Optional[str] = None              # N° comprobante / voucher / cheque / transacción
+    # Transferencia / depósito / billetera / cheque
+    bank_account_id: Optional[int] = None        # Cuenta destino de la empresa
+    origin_bank: Optional[str] = None            # Banco / cooperativa / billetera de origen
+    payer_name: Optional[str] = None             # Titular ordenante / girador
+    payer_id: Optional[str] = None               # Cédula / RUC del ordenante
+    payment_date: Optional[str] = None           # AAAA-MM-DD (fecha transferencia o fecha del cheque)
+    # Tarjeta / pasarela
+    card_brand: Optional[str] = None
+    card_last4: Optional[str] = None
+    authorization_code: Optional[str] = None
+    installments: Optional[int] = None           # Meses diferido (0 / None = corriente)
+    # Crédito directo
+    term_days: Optional[int] = None
+    notes: Optional[str] = None
+
+
 class SaleCreate(BaseModel):
     customer_name: str = "CONSUMIDOR FINAL"
     customer_id: str = "9999999999999"
     customer_id_type: str = "07"
     details: List[SaleDetailCreate]
-    payment_method_id: int
+    payment_method_id: Optional[int] = 1         # Compatibilidad: pago único por el total
+    payments: Optional[List[SalePaymentCreate]] = None  # Cobro detallado (uno o varios pagos)
     branch_id: int
     user_id: int
     emission_point_id: Optional[int] = None

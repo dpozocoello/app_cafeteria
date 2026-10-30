@@ -122,15 +122,33 @@ class CashService:
 
         total_sales       = sum(float(s.total or 0) for s in sales_list)
         total_sales_cash  = 0.0
-        total_sales_card  = 0.0
+        total_sales_card  = 0.0   # Todo lo no-efectivo (compatibilidad histórica)
+        by_category: dict = {}
+        by_method: dict = {}
+        pending_verification = 0
 
         for s in sales_list:
             for pay in db.query(SalePayment).filter_by(sale_id=s.id).all():
+                if (pay.status or "") == "RECHAZADO":
+                    continue
                 pm = db.query(PaymentMethod).get(pay.payment_method_id)
-                if pm and pm.sri_code in _CASH_SRI_CODES:
-                    total_sales_cash += float(pay.amount or 0)
+                amount = float(pay.amount or 0)
+                category = (pm.category if pm and pm.category else
+                            ("EFECTIVO" if pm and pm.sri_code in _CASH_SRI_CODES else "OTRO"))
+                if category == "EFECTIVO":
+                    total_sales_cash += amount
                 else:
-                    total_sales_card += float(pay.amount or 0)
+                    total_sales_card += amount
+                by_category[category] = round(by_category.get(category, 0.0) + amount, 2)
+                key = pm.name if pm else "Sin método"
+                m = by_method.setdefault(key, {"method": key, "category": category, "count": 0, "total": 0.0})
+                m["count"] += 1
+                m["total"] = round(m["total"] + amount, 2)
+                if (pay.status or "") == "REGISTRADO" and category in ("TRANSFERENCIA", "DEPOSITO", "BILLETERA", "PASARELA", "CHEQUE"):
+                    pending_verification += 1
+
+        total_sales_transfer = sum(by_category.get(c, 0.0) for c in ("TRANSFERENCIA", "DEPOSITO", "BILLETERA"))
+        total_sales_cards_only = sum(by_category.get(c, 0.0) for c in ("TARJETA", "PASARELA"))
 
         # Gastos en efectivo del período
         expenses_q = db.query(Expense).filter(
@@ -164,6 +182,13 @@ class CashService:
             "total_sales": round(total_sales, 2),
             "total_sales_cash": round(total_sales_cash, 2),
             "total_sales_card": round(total_sales_card, 2),
+            "total_sales_cards_only": round(total_sales_cards_only, 2),
+            "total_sales_transfer": round(total_sales_transfer, 2),
+            "total_sales_cheque": round(by_category.get("CHEQUE", 0.0), 2),
+            "total_sales_credit": round(by_category.get("CREDITO", 0.0), 2),
+            "sales_by_category": by_category,
+            "sales_by_method": sorted(by_method.values(), key=lambda x: -x["total"]),
+            "pending_verification": pending_verification,
             "total_expenses": round(total_expenses, 2),
             "total_cash_in": round(total_in, 2),
             "total_cash_out": round(total_out, 2),

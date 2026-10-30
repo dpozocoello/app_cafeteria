@@ -98,6 +98,20 @@ class SaleDetail(Base):
 class PaymentMethod(Base):
     """
     Catálogo de métodos de pago (Efectivo, Tarjeta, etc).
+
+    sri_code → Tabla 24 SRI (Formas de pago):
+        01 Sin utilización del sistema financiero (efectivo)
+        15 Compensación de deudas
+        16 Tarjeta de débito
+        17 Dinero electrónico
+        18 Tarjeta prepago
+        19 Tarjeta de crédito
+        20 Otros con utilización del sistema financiero (transferencias, depósitos, cheques, billeteras)
+        21 Endoso de títulos
+
+    category → agrupación interna usada por caja, contabilidad y UI:
+        EFECTIVO | TARJETA | TRANSFERENCIA | DEPOSITO | BILLETERA | CHEQUE |
+        PASARELA | CREDITO | COMPENSACION | ENDOSO | DINERO_ELECTRONICO | RETENCION
     """
     __tablename__ = "payment_methods"
 
@@ -106,9 +120,20 @@ class PaymentMethod(Base):
     sri_code: Mapped[str] = mapped_column(String(2)) # Código SRI (01: Efectivo, 19: Tarjeta, etc)
     is_active: Mapped[bool] = mapped_column(default=True)
 
+    # Metadatos para el módulo de cobros
+    code: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)        # Clave interna estable (EFECTIVO, TRANSFERENCIA…)
+    category: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    icon: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    requires_reference: Mapped[bool] = mapped_column(default=False)                # N° comprobante / voucher obligatorio
+    requires_bank_account: Mapped[bool] = mapped_column(default=False)             # Cuenta bancaria destino de la empresa
+    requires_origin_bank: Mapped[bool] = mapped_column(default=False)              # Banco / entidad de origen del cliente
+    description: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+
 class SalePayment(Base):
     """
     Registro de pagos recibidos por venta.
+    Una venta puede tener varios pagos (pago mixto: ej. parte efectivo + parte transferencia).
     """
     __tablename__ = "sale_payments"
 
@@ -118,7 +143,36 @@ class SalePayment(Base):
     amount: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
     reference: Mapped[Optional[str]] = mapped_column(String(100)) # Voucher, Transfer ID
 
+    # ── Efectivo ─────────────────────────────────────────────────────────────
+    received_amount: Mapped[Optional[float]] = mapped_column(Numeric(12, 2), nullable=True)  # Monto entregado por el cliente
+    change_amount: Mapped[Optional[float]] = mapped_column(Numeric(12, 2), nullable=True)    # Vuelto
+
+    # ── Transferencia / Depósito / Billetera / Cheque ────────────────────────
+    bank_account_id: Mapped[Optional[int]] = mapped_column(ForeignKey("bank_accounts.id"), nullable=True)  # Cuenta destino (empresa)
+    origin_bank: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)   # Banco / cooperativa / billetera de origen
+    payer_name: Mapped[Optional[str]] = mapped_column(String(150), nullable=True)    # Titular ordenante / girador
+    payer_id: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)       # Cédula / RUC del ordenante
+    payment_date: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)  # Fecha de la transferencia / fecha del cheque
+    bank_transaction_id: Mapped[Optional[int]] = mapped_column(ForeignKey("bank_transactions.id"), nullable=True)
+
+    # ── Tarjeta / Pasarela ───────────────────────────────────────────────────
+    card_brand: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)      # VISA, MASTERCARD, DINERS…
+    card_last4: Mapped[Optional[str]] = mapped_column(String(4), nullable=True)
+    authorization_code: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    installments: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)       # 0/None = corriente; >0 = diferido (meses)
+
+    # ── Crédito directo ──────────────────────────────────────────────────────
+    term_days: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)          # Plazo (SRI: plazo / unidadTiempo)
+
+    # REGISTRADO → VERIFICADO | RECHAZADO (transferencias y depósitos se verifican contra el banco)
+    status: Mapped[str] = mapped_column(String(20), default="REGISTRADO")
+    verified_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    verified_by_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
+    notes: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime, default=datetime.utcnow, nullable=True)
+
     sale: Mapped["Sale"] = relationship(back_populates="payments")
+    payment_method: Mapped["PaymentMethod"] = relationship()
 
 
 class CreditNote(Base):
